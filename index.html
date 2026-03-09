@@ -185,7 +185,7 @@
   <div class="bank-cols">
     <div><div class="bank-col-title arm">ARM</div><div id="bank-arm"></div></div>
     <div><div class="bank-col-title leg">LEG</div><div id="bank-leg"></div></div>
-    <div><div class="bank-col-title alt">Others</div><div id="bank-alt"></div></div>
+    <div><div class="bank-col-title alt">Strength</div><div id="bank-alt"></div></div>
   </div>
 </div>
 
@@ -203,7 +203,7 @@
       <div class="seg-btns" id="catBtns">
         <div class="seg-btn" data-cat="arm">ARM</div>
         <div class="seg-btn" data-cat="leg">LEG</div>
-        <div class="seg-btn" data-cat="alt">Others</div>
+        <div class="seg-btn" data-cat="alt">Strength</div>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;margin-top:12px;">
@@ -342,6 +342,16 @@
     <div class="confirm-actions">
       <button class="btn-cancel" id="clearNo">Cancel</button>
       <button class="btn-danger" id="clearYes">Clear</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="removeModal">
+  <div class="confirm-box">
+    <p>Remove <strong id="removeName"></strong> from this day?</p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" id="removeNo">Cancel</button>
+      <button class="btn-danger" id="removeYes">Remove</button>
     </div>
   </div>
 </div>
@@ -838,7 +848,7 @@ function renderDay(day) {
       const rm=document.createElement('button');
       rm.className='rm-btn'; rm.textContent='×';
       rm.addEventListener('pointerdown',e=>e.stopPropagation());
-      rm.addEventListener('click',e=>{ e.stopPropagation(); schedule[day].splice(idx,1); renderDay(day); updateTotal(); saveState(); });
+      rm.addEventListener('click',e=>{ e.stopPropagation(); openRemoveModal(day,idx,item.name); });
       pill.appendChild(rm);
 
       pill.addEventListener('pointerdown', e => {
@@ -876,7 +886,7 @@ function updateTotal() {
     <div class="total-item">Time: <span style="color:var(--accent);font-weight:700">${fmtMin(totalMins)}</span></div>
     <div class="total-item">Arm: <span style="color:var(--arm);font-weight:700">${arm}</span></div>
     <div class="total-item">Leg: <span style="color:var(--leg);font-weight:700">${leg}</span></div>
-    <div class="total-item">Others: <span style="color:var(--alt);font-weight:700">${alt}</span></div>
+    <div class="total-item">Strength: <span style="color:var(--alt);font-weight:700">${alt}</span></div>
   `;
 }
 
@@ -1264,6 +1274,23 @@ document.getElementById('confirmYes').addEventListener('click',()=>{
 document.getElementById('confirmModal').addEventListener('click',e=>{ if(e.target===document.getElementById('confirmModal')){ document.getElementById('confirmModal').classList.add('hidden'); deleteTarget=null; } });
 document.getElementById('clearNo').addEventListener('click',()=>{ document.getElementById('clearModal').classList.add('hidden'); });
 document.getElementById('clearModal').addEventListener('click',e=>{ if(e.target===document.getElementById('clearModal')) document.getElementById('clearModal').classList.add('hidden'); });
+
+// ── Remove from day confirmation ──────────────────────────────────────
+let removeTarget=null;
+function openRemoveModal(day,idx,name) {
+  removeTarget={day,idx};
+  document.getElementById('removeName').textContent=name;
+  document.getElementById('removeModal').classList.remove('hidden');
+}
+document.getElementById('removeNo').addEventListener('click',()=>{ document.getElementById('removeModal').classList.add('hidden'); removeTarget=null; });
+document.getElementById('removeYes').addEventListener('click',()=>{
+  if (!removeTarget) return;
+  const {day,idx}=removeTarget;
+  schedule[day].splice(idx,1); renderDay(day); updateTotal(); saveState();
+  document.getElementById('removeModal').classList.add('hidden');
+  removeTarget=null;
+});
+document.getElementById('removeModal').addEventListener('click',e=>{ if(e.target===document.getElementById('removeModal')){ document.getElementById('removeModal').classList.add('hidden'); removeTarget=null; } });
 
 // ── Init ──────────────────────────────────────────────────────────────
 openDB().then(loadStateFromDB).then(saved => {
