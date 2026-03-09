@@ -483,6 +483,16 @@ function calcDayMinutes(day) {
   });
   return Math.round(t);
 }
+function calcDayDoneMinutes(day) {
+  let t=0;
+  schedule[day].forEach(item => {
+    const p=item.planned||item, d=item.done||{};
+    const pm=parseFloat(p.mins), ps=parseFloat(p.sets)||1, ds=parseFloat(d.sets)||0;
+    if (!isNaN(pm)&&pm>0) t+=ds>0 ? Math.min(pm,(ds/ps)*pm) : 0;
+    else t+=ds*3;
+  });
+  return Math.round(t);
+}
 function fmtMin(m) {
   if (m<60) return m+'min';
   const h=Math.floor(m/60), r=m%60;
@@ -874,17 +884,18 @@ function renderAllDays() { DAYS.forEach(renderDay); updateTotal(); saveState(); 
 
 function updateTotal() {
   const bar=document.getElementById('totalBar');
-  let total=0, arm=0, leg=0, alt=0, totalMins=0;
+  let total=0, totalMins=0, doneMins=0;
   DAYS.forEach(d => {
-    schedule[d].forEach(i => { total++; if(i.cat==='arm')arm++; else if(i.cat==='leg')leg++; else alt++; });
+    schedule[d].forEach(i => { total++; });
     totalMins+=calcDayMinutes(d);
+    doneMins+=calcDayDoneMinutes(d);
   });
+  const timeDisplay = totalMins===0
+    ? fmtMin(0)
+    : `${fmtMin(doneMins)}<span style="color:var(--muted);font-weight:400"> / ${fmtMin(totalMins)}</span>`;
   bar.innerHTML=`
     <div class="total-item">Week: <span style="color:var(--accent);font-weight:700">${total} ex</span></div>
-    <div class="total-item">Time: <span style="color:var(--accent);font-weight:700">${fmtMin(totalMins)}</span></div>
-    <div class="total-item">Arm: <span style="color:var(--arm);font-weight:700">${arm}</span></div>
-    <div class="total-item">Leg: <span style="color:var(--leg);font-weight:700">${leg}</span></div>
-    <div class="total-item">Strength: <span style="color:var(--alt);font-weight:700">${alt}</span></div>
+    <div class="total-item">Time: <span style="color:var(--accent);font-weight:700">${timeDisplay}</span></div>
   `;
 }
 
