@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Rehab Planner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #0a0a0a; --dark: #111; --card: #1a1a1a;
+    --border: #2a2a2a; --accent: #c8f135; --text: #e8e8e8; --muted: #555;
+    --leg: #f1a035; --arm: #35c8f1; --alt: #c835f1;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+  body { background: var(--black); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; padding: 16px; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+  h1 { font-size: 24px; font-weight: 800; letter-spacing: -1px; color: var(--accent); margin-bottom: 2px; }
+  .subtitle { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
+
+  /* WEEK NAV */
+  .week-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; background: var(--dark); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; gap: 8px; }
+  .week-nav-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 6px 10px; border-radius: 6px; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; min-height: 36px; }
+  .week-nav-btn:hover, .week-nav-btn:active { border-color: var(--accent); color: var(--accent); }
+  .week-nav-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text); font-weight: 500; text-align: center; letter-spacing: 0.3px; flex: 1; }
+  .week-nav-label span { color: var(--accent); font-weight: 700; }
+
+  /* WEEK GRID */
+  .week-grid { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .day-row { background: var(--dark); border: 2px solid var(--border); border-radius: 10px; display: flex; flex-direction: row; align-items: stretch; min-height: 52px; transition: border-color 0.15s, background 0.15s; overflow: hidden; }
+  .day-row.drop-active { border-color: var(--accent); background: rgba(200,241,53,0.04); }
+  .day-label { width: 72px; flex-shrink: 0; padding: 6px 10px; border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; }
+  .day-name { font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .day-date { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 1px; }
+  .day-count { font-family: 'DM Mono', monospace; font-size: 8px; color: var(--muted); margin-top: 2px; }
+  .day-body { flex: 1; padding: 6px 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-width: 0; }
+  .drop-hint { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); border: 1px dashed var(--border); border-radius: 6px; padding: 3px 8px; letter-spacing: 1px; pointer-events: none; white-space: nowrap; }
+  .day-row.drop-active .drop-hint { border-color: var(--accent); color: var(--accent); }
+  .day-actions { display: flex; align-items: center; padding: 0 8px; border-left: 1px solid var(--border); flex-shrink: 0; }
+  .clear-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 1px; padding: 4px 6px; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.15s; min-height: 28px; }
+  .clear-btn:hover, .clear-btn:active { border-color: #f13570; color: #f13570; }
+
+  /* PLACED PILLS */
+  .placed-pill { border-radius: 6px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: stretch; cursor: pointer; white-space: nowrap; touch-action: manipulation; position: relative; overflow: hidden; border: 1px solid rgba(120,120,120,0.3); background: rgba(120,120,120,0.12); color: #888; }
+  .placed-pill.dragging { opacity: 0.35; }
+  .placed-pill.arm.has-progress { border-color: rgba(53,200,241,0.55); color: var(--arm); }
+  .placed-pill.leg.has-progress { border-color: rgba(241,160,53,0.55); color: var(--leg); }
+  .placed-pill.alt.has-progress { border-color: rgba(200,53,241,0.55); color: var(--alt); }
+  .placed-pill.completed { border-color: rgba(100,220,100,0.55); color: #6ddc6d; }
+  .pill-content { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 4px; padding: 4px 4px 4px 7px; }
+  .pill-detail-tag { font-family: 'DM Mono', monospace; font-size: 8px; opacity: 0.7; font-weight: 400; }
+  .rm-btn { position: relative; z-index: 1; background: none; border: none; border-left: 1px solid rgba(255,255,255,0.06); color: inherit; cursor: pointer; opacity: 0.45; font-size: 13px; line-height: 1; padding: 0 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; min-width: 24px; }
+  .rm-btn:hover, .rm-btn:active { opacity: 1; }
+
+  .stepper-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 20px; line-height: 1; cursor: pointer; padding: 0; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; touch-action: manipulation; }
+  .stepper-btn:active { background: var(--border); }
+  .stepper-input { flex:1; min-width:0; text-align: center; color: var(--text) !important; font-size:22px !important; font-weight:700 !important; padding: 10px 4px !important; cursor:ns-resize; touch-action:none; user-select:none; }
+  .scrubber-track { position:relative; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; margin-top:10px; cursor:ew-resize; touch-action:none; }
+  .scrubber-fill { position:absolute; left:0; top:0; height:100%; background:var(--accent); border-radius:3px; width:50%; pointer-events:none; }
+  .scrubber-thumb { position:absolute; top:50%; width:18px; height:18px; background:var(--accent); border-radius:50%; transform:translate(-50%,-50%); left:50%; pointer-events:none; box-shadow:0 0 0 3px rgba(0,0,0,0.4); }
+
+  .total-bar { background: var(--dark); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; display: flex; gap: 16px; font-family: 'DM Mono', monospace; font-size: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+  .total-item { color: var(--muted); }
+
+  /* BANK */
+  .bank { background: var(--dark); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .bank-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; }
+  .bank-title { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .add-ex-btn { background: var(--accent); color: var(--black); font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 800; border: none; border-radius: 6px; padding: 7px 14px; cursor: pointer; letter-spacing: 0.5px; transition: opacity 0.15s; white-space: nowrap; flex-shrink: 0; min-height: 36px; }
+  .add-ex-btn:hover, .add-ex-btn:active { opacity: 0.85; }
+
+  /* 3 columns default — collapses to 1 at narrow widths via @media below */
+
+  .bank-col-title { font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 10px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+  .bank-col-title.arm { color: var(--arm); background: rgba(53,200,241,0.1); }
+  .bank-col-title.leg { color: var(--leg); background: rgba(241,160,53,0.1); }
+  .bank-col-title.alt { color: var(--alt); background: rgba(200,53,241,0.1); }
+
+  .bank-pill { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s; touch-action: pan-y; }
+  .bank-pill:hover { border-color: var(--accent); }
+  .bank-pill.reorder-over { border-color: var(--accent); border-style: dashed; }
+  .drag-handle { cursor: grab; flex-shrink: 0; touch-action: none; min-width: 20px; min-height: 24px; display: grid; grid-template-columns: repeat(3, 3px); grid-template-rows: repeat(3, 3px); gap: 2px; align-content: center; justify-content: center; padding: 4px; }
+  .drag-handle span { width: 3px; height: 3px; border-radius: 50%; background: var(--muted); display: block; pointer-events: none; }
+  .drag-handle:active { cursor: grabbing; }
+  .pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .bank-pill-detail { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); font-weight: 400; margin-left: auto; flex-shrink: 0; }
+  .bank-pill-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px; margin-left: 4px; flex-shrink: 0; opacity: 0.4; transition: opacity 0.15s, color 0.15s; min-width: 24px; min-height: 24px; display: flex; align-items: center; justify-content: center; }
+  .bank-pill-del:hover, .bank-pill-del:active { opacity: 1; color: #f13570; }
+
+
+  /* GHOST */
+  .ghost { position: fixed; pointer-events: none; z-index: 9999; opacity: 0.92; transform: rotate(2deg) scale(1.07); box-shadow: 0 8px 28px rgba(0,0,0,0.6); background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+
+  /* MODAL OVERLAY */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .overlay.hidden { display: none; }
+  .modal { background: var(--dark); border: 1px solid var(--border); border-radius: 14px; padding: 24px 20px; width: 100%; max-width: 500px; }
+  .modal-title { font-size: 16px; font-weight: 800; margin-bottom: 4px; color: var(--accent); }
+  .modal-sub { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 18px; letter-spacing: 1px; text-transform: uppercase; }
+  .form-row { margin-bottom: 12px; }
+  .form-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; display: block; }
+  .form-input { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 7px; padding: 12px; color: var(--text); font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 600; outline: none; transition: border-color 0.15s; user-select: text; -webkit-user-select: text; }
+  .form-input:focus { border-color: var(--accent); }
+  .form-input:disabled { opacity: 0.4; cursor: not-allowed; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .seg-btns { display: flex; gap: 6px; }
+  .seg-btn { flex: 1; padding: 10px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.15s; text-align: center; min-height: 40px; }
+  .seg-btn.active-arm { border-color: var(--arm); color: var(--arm); background: rgba(53,200,241,0.1); }
+  .seg-btn.active-leg { border-color: var(--leg); color: var(--leg); background: rgba(241,160,53,0.1); }
+  .seg-btn.active-alt { border-color: var(--alt); color: var(--alt); background: rgba(200,53,241,0.1); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-primary { flex: 1; background: var(--accent); color: var(--black); font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; border: none; border-radius: 7px; padding: 13px; cursor: pointer; transition: opacity 0.15s; min-height: 48px; }
+  .btn-primary:hover, .btn-primary:active { opacity: 0.85; }
+  .btn-cancel { flex: 1; background: none; color: var(--muted); font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600; border: 1px solid var(--border); border-radius: 7px; padding: 13px; cursor: pointer; transition: all 0.15s; min-height: 48px; }
+  .btn-cancel:hover, .btn-cancel:active { border-color: var(--muted); color: var(--text); }
+
+  /* CONFIRM */
+  .confirm-box { background: var(--dark); border: 1px solid #f13570; border-radius: 14px 14px 0 0; padding: 24px 20px; width: 100%; max-width: 500px; text-align: center; }
+  .confirm-box p { margin-bottom: 18px; font-size: 14px; line-height: 1.5; }
+  .confirm-box strong { color: var(--text); }
+  .confirm-actions { display: flex; gap: 10px; }
+  .btn-danger { flex: 1; background: #f13570; color: #fff; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; border: none; border-radius: 7px; padding: 13px; cursor: pointer; min-height: 48px; }
+  .btn-danger:hover, .btn-danger:active { opacity: 0.85; }
+
+  /* ── RESPONSIVE ── */
+
+  /* Bank columns: 3 if space allows, otherwise 1 — no awkward 2-col middle */
+  .bank-cols {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  /* Tablet tightening */
+  @media (max-width: 680px) {
+    body { padding: 10px; }
+    .bank-pill-detail { display: none; }
+  }
+
+  /* Narrow: collapse to 1 column — each category stacks vertically */
+  @media (max-width: 500px) {
+    .bank-cols { grid-template-columns: 1fr; gap: 4px; }
+    /* Category sections flow as a flat list with colored titles as dividers */
+    .bank-col-title { display: block; margin-bottom: 6px; margin-top: 10px; }
+    h1 { font-size: 20px; }
+    .week-nav-label { font-size: 9px; }
+    .week-nav-btn { font-size: 9px; padding: 6px 8px; }
+    .day-label { width: 60px; padding: 5px 8px; }
+    .day-name { font-size: 11px; }
+    .placed-pill { font-size: 10px; padding: 3px 6px; }
+  }
+
+  /* Safe area for notched phones */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    body { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+  }
+</style>
+</head>
+<body>
+
+<h1>REHAB PLANNER</h1>
+<p class="subtitle">Drag exercises into any day · Click placed exercise to edit</p>
+
+<div class="week-nav">
+  <button class="week-nav-btn" id="prevWeekBtn">← Prev</button>
+  <div class="week-nav-label" id="weekLabel"></div>
+  <button class="week-nav-btn" id="nextWeekBtn">Next →</button>
+</div>
+<div class="week-grid" id="weekGrid"></div>
+<div class="total-bar" id="totalBar"></div>
+
+<div class="bank">
+  <div class="bank-header">
+    <div class="bank-title">Exercise Bank — drag to any day above</div>
+    <button class="add-ex-btn" id="addExBtn">+ Add Exercise</button>
+  </div>
+  <div class="bank-cols">
+    <div><div class="bank-col-title arm">ARM</div><div id="bank-arm"></div></div>
+    <div><div class="bank-col-title leg">LEG</div><div id="bank-leg"></div></div>
+    <div><div class="bank-col-title alt">Others</div><div id="bank-alt"></div></div>
+  </div>
+</div>
+
+<!-- ADD EXERCISE MODAL -->
+<div class="overlay hidden" id="addModal">
+  <div class="modal">
+    <div class="modal-title" id="addModalTitle">New Exercise</div>
+    <div class="modal-sub" id="addModalSub">Add to exercise bank</div>
+    <div class="form-row">
+      <label class="form-label">Name</label>
+      <input class="form-input" id="newName" placeholder="Exercise name" autocomplete="off">
+    </div>
+    <div class="form-row" id="addCatRow">
+      <label class="form-label">Column</label>
+      <div class="seg-btns" id="catBtns">
+        <div class="seg-btn" data-cat="arm">ARM</div>
+        <div class="seg-btn" data-cat="leg">LEG</div>
+        <div class="seg-btn" data-cat="alt">Others</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:12px;">
+      <div>
+        <label class="form-label" style="margin-bottom:6px;display:block;">SETS <span style="color:var(--muted);font-size:9px;">DEFAULT</span></label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="stepper-btn" id="newSetsMinus">−</button>
+          <input class="form-input stepper-input" id="newSets" placeholder="0" autocomplete="off" inputmode="numeric" readonly>
+          <button class="stepper-btn" id="newSetsPlus">+</button>
+        </div>
+      </div>
+      <div>
+        <label class="form-label" style="margin-bottom:6px;display:block;">REPS <span style="color:var(--muted);font-size:9px;">DEFAULT</span></label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="stepper-btn" id="newRepsMinus">−</button>
+          <input class="form-input stepper-input" id="newReps" placeholder="0" autocomplete="off" inputmode="numeric" readonly>
+          <button class="stepper-btn" id="newRepsPlus">+</button>
+        </div>
+      </div>
+      <div>
+        <label class="form-label" style="margin-bottom:6px;display:block;">MINUTES <span style="color:var(--muted);font-size:9px;">DEFAULT</span></label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="stepper-btn" id="newTimeMinus">−</button>
+          <input class="form-input stepper-input" id="newTime" placeholder="0" autocomplete="off" inputmode="numeric" readonly>
+          <button class="stepper-btn" id="newTimePlus">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="addCancelBtn">Cancel</button>
+      <button class="btn-primary" id="addSaveBtn">Add Exercise</button>
+    </div>
+  </div>
+</div>
+
+<!-- PLAN EXERCISE MODAL (opened when dropped onto week) -->
+<div class="overlay hidden" id="planModal">
+  <div class="modal">
+    <div class="modal-title" id="planModalTitle"></div>
+    <div class="modal-sub">Set targets for this session</div>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:12px;">
+      <div>
+        <label class="form-label" style="margin-bottom:6px;display:block;">SETS</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="stepper-btn" id="planSetsMinus">−</button>
+          <input class="form-input stepper-input" id="planSets" placeholder="0" autocomplete="off" inputmode="numeric" readonly>
+          <button class="stepper-btn" id="planSetsPlus">+</button>
+        </div>
+      </div>
+      <div>
+        <label class="form-label" style="margin-bottom:6px;display:block;">REPS</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="stepper-btn" id="planRepsMinus">−</button>
+          <input class="form-input stepper-input" id="planReps" placeholder="0" autocomplete="off" inputmode="numeric" readonly>
+          <button class="stepper-btn" id="planRepsPlus">+</button>
+        </div>
+      </div>
+      <div>
+        <label class="form-label" style="margin-bottom:6px;display:block;">MINUTES</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="stepper-btn" id="planTimeMinus">−</button>
+          <input class="form-input stepper-input" id="planTime" placeholder="0" autocomplete="off" inputmode="decimal" readonly>
+          <button class="stepper-btn" id="planTimePlus">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="planCancelBtn">Cancel</button>
+      <button class="btn-primary" id="planSaveBtn">Add to Day</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PLACED EXERCISE MODAL -->
+<div class="overlay hidden" id="editModal">
+  <div class="modal">
+    <div class="modal-title" id="editModalTitle">Log Progress</div>
+    <div id="editFieldsRow" style="display:flex;flex-direction:column;gap:14px;margin-top:12px;">
+      <div id="editSetsField">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+          <label class="form-label" style="margin:0;">SETS</label>
+          <span id="editSetsRatio" style="color:var(--accent);font-family:'DM Mono',monospace;font-size:13px;"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="stepper-btn" id="editSetsMinus">−</button>
+          <input class="form-input stepper-input" id="editSets" placeholder="0" autocomplete="off" inputmode="numeric" readonly>
+          <button class="stepper-btn" id="editSetsPlus">+</button>
+        </div>
+      </div>
+      <div id="editRepsField">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+          <label class="form-label" style="margin:0;">REPS</label>
+          <span id="editRepsRatio" style="color:var(--accent);font-family:'DM Mono',monospace;font-size:13px;"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="stepper-btn" id="editRepsMinus">−</button>
+          <input class="form-input stepper-input" id="editReps" placeholder="0" autocomplete="off" inputmode="numeric" readonly>
+          <button class="stepper-btn" id="editRepsPlus">+</button>
+        </div>
+        <div class="scrubber-track" id="editRepsScrubber"><div class="scrubber-fill" id="editRepsFill"></div><div class="scrubber-thumb" id="editRepsThumb"></div></div>
+      </div>
+      <div id="editTimeField">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+          <label class="form-label" style="margin:0;">MIN</label>
+          <span id="editTimeRatio" style="color:var(--accent);font-family:'DM Mono',monospace;font-size:13px;"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="stepper-btn" id="editTimeMinus">−</button>
+          <input class="form-input stepper-input" id="editTime" placeholder="0" autocomplete="off" inputmode="decimal" readonly>
+          <button class="stepper-btn" id="editTimePlus">+</button>
+        </div>
+        <div class="scrubber-track" id="editTimeScrubber"><div class="scrubber-fill" id="editTimeFill"></div><div class="scrubber-thumb" id="editTimeThumb"></div></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="editCancelBtn">Cancel</button>
+      <button class="btn-primary" id="editSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div class="overlay hidden" id="confirmModal">
+  <div class="confirm-box">
+    <p>Delete <strong id="confirmName"></strong> from the bank?<br><span style="font-size:12px;color:var(--muted)">It will also be removed from any days it was assigned to.</span></p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" id="confirmNo">Cancel</button>
+      <button class="btn-danger" id="confirmYes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="clearModal">
+  <div class="confirm-box">
+    <p>Clear all exercises from <strong id="clearDayName"></strong>?</p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" id="clearNo">Cancel</button>
+      <button class="btn-danger" id="clearYes">Clear</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── IndexedDB Persistence ─────────────────────────────────────────────
+const DB_NAME    = 'RehabPlannerDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'appState';
+const STATE_KEY  = 'state';
+
+const DEFAULT_EXERCISES = {
+  arm: [
+    { name: 'EMS',            sets:'', reps:'', mins:'40' },
+    { name: 'Weight Bearing', sets:'', reps:'', mins:'16' },
+    { name: 'Pilates Ring',   sets:'2', reps:'', mins:''  },
+    { name: 'PNF',            sets:'2', reps:'10', mins:'' },
+    { name: 'Pillow',         sets:'2', reps:'', mins:''  },
+    { name: 'Superman',       sets:'3', reps:'15', mins:'' },
+    { name: 'Wrist Lift',     sets:'2', reps:'15', mins:'' },
+    { name: 'Wrist Rotation', sets:'2', reps:'', mins:''  },
+  ],
+  leg: [
+    { name: 'Stretch',            sets:'', reps:'', mins:'30'  },
+    { name: 'Toes',               sets:'', reps:'100', mins:'' },
+    { name: 'Heel Rise',          sets:'', reps:'100', mins:'' },
+    { name: 'One Leg Squat',      sets:'', reps:'', mins:''    },
+    { name: 'One Leg Balance',    sets:'', reps:'', mins:'5'   },
+    { name: 'Marching',           sets:'2', reps:'', mins:''   },
+    { name: 'Standing Knee Bent', sets:'1', reps:'', mins:''   },
+  ],
+  alt: [
+    { name: 'Sit to Stand',   sets:'', reps:'', mins:'' },
+    { name: 'Walk Sideways',  sets:'', reps:'', mins:'' },
+    { name: 'Walk Backwards', sets:'', reps:'', mins:'' },
+    { name: 'Shoulder Front', sets:'', reps:'', mins:'' },
+    { name: 'Forward Reach',  sets:'', reps:'', mins:'' },
+    { name: 'Toe Squats',     sets:'', reps:'', mins:'' },
+  ],
+};
+
+let _db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      e.target.result.createObjectStore(STORE_NAME);
+    };
+    req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+function saveState() {
+  if (!_db) return;
+  const tx    = _db.transaction(STORE_NAME, 'readwrite');
+  const store = tx.objectStore(STORE_NAME);
+  store.put({ exercises, allSchedules, weekOffset }, STATE_KEY);
+}
+
+function loadStateFromDB() {
+  return new Promise((resolve, reject) => {
+    const tx    = _db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const req   = store.get(STATE_KEY);
+    req.onsuccess = e => resolve(e.target.result || null);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+// ── Exercise data ─────────────────────────────────────────────────────
+let exercises    = JSON.parse(JSON.stringify(DEFAULT_EXERCISES));
+
+const DOT_COLOR = { arm: '#35c8f1', leg: '#f1a035', alt: '#c835f1' };
+const DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+
+// ── Week navigation ───────────────────────────────────────────────────
+let weekOffset   = 0;
+let allSchedules = {};
+
+function getMonday(offset) {
+  const base = new Date(2026, 2, 9);
+  const d = new Date(base);
+  d.setDate(d.getDate() + offset * 7);
+  return d;
+}
+function weekKey(offset) { return getMonday(offset).toISOString().slice(0,10); }
+function getSchedule(offset) {
+  const key = weekKey(offset);
+  if (!allSchedules[key]) { const s={}; DAYS.forEach(d=>s[d]=[]); allSchedules[key]=s; }
+  return allSchedules[key];
+}
+function currentSchedule() { return getSchedule(weekOffset); }
+let schedule = new Proxy({}, {
+  get(_, day) { return currentSchedule()[day]; },
+  set(_, day, val) { currentSchedule()[day] = val; return true; }
+});
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function ordinal(n) { const s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+
+function updateWeekLabel() {
+  const mon = getMonday(weekOffset);
+  const sun = new Date(mon); sun.setDate(sun.getDate()+6);
+  document.getElementById('weekLabel').innerHTML =
+    `<span>${MONTHS[mon.getMonth()]} ${ordinal(mon.getDate())}</span> &nbsp;to&nbsp; <span>${MONTHS[sun.getMonth()]} ${ordinal(sun.getDate())}</span>`;
+  DAYS.forEach((day,i) => {
+    const d = new Date(mon); d.setDate(d.getDate()+i);
+    const el = document.getElementById('date-'+day);
+    if (el) el.textContent = d.getDate()+'/'+(d.getMonth()+1);
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+function detailStr(sets, reps, mins) {
+  const p=[];
+  if (sets) p.push(sets+'×');
+  if (reps) p.push(reps+' reps');
+  if (mins) p.push(mins+' min');
+  return p.join(' ');
+}
+function calcDayMinutes(day) {
+  let t=0;
+  schedule[day].forEach(item => {
+    const p = item.planned || item;
+    const m=parseFloat(p.mins);
+    if (!isNaN(m)&&m>0) t+=m;
+    else t+=(parseInt(p.sets)||1)*3;
+  });
+  return Math.round(t);
+}
+function fmtMin(m) {
+  if (m<60) return m+'min';
+  const h=Math.floor(m/60), r=m%60;
+  return r ? h+'h '+r+'min' : h+'h';
+}
+
+// ── Drag engine ───────────────────────────────────────────────────────
+// Uses document-level pointermove/pointerup listeners.
+// touch-action:pan-y on pills means browser handles vertical scroll freely.
+// We only intercept when the pointer moves significantly.
+
+let drag = null;
+let bankDrag = null;
+let scrollRAF = null;
+
+const SCROLL_SPEED = 15;
+
+function autoScroll() {
+  if (!drag && !bankDrag) { scrollRAF=null; return; }
+  const y = drag ? drag.curY : bankDrag.curY;
+  const vh = window.innerHeight;
+  const topZone    = vh * 0.30;
+  const bottomZone = vh * 0.70;
+  if (y < topZone) {
+    window.scrollBy(0, -SCROLL_SPEED * (1 - y / topZone));
+  } else if (y > bottomZone) {
+    window.scrollBy(0,  SCROLL_SPEED * (y - bottomZone) / (vh - bottomZone));
+  }
+  scrollRAF = requestAnimationFrame(autoScroll);
+}
+
+// Call on pointerdown of any draggable pill.
+// data: exercise object  fromDay/fromIdx: null for bank pill
+// onTap: called if released without dragging
+function initDrag(e, data, fromDay, fromIdx, onTap) {
+  if (drag||bankDrag) return;
+  const sx=e.clientX, sy=e.clientY;
+  let started=false;
+
+  // ghost created lazily on first real move
+  let ghost=null;
+
+  function onMove(me) {
+    me.preventDefault();
+    const dx=me.clientX-sx, dy=me.clientY-sy;
+
+    if (Math.hypot(dx,dy) < 6) return;
+
+    if (!started) {
+      started=true;
+      ghost=document.createElement('div');
+      ghost.className='ghost';
+      ghost.innerHTML='<span class="pill-dot" style="background:'+DOT_COLOR[data.cat]+'"></span>'+data.name;
+      ghost.style.left=(me.clientX+14)+'px';
+      ghost.style.top=(me.clientY-20)+'px';
+      document.body.appendChild(ghost);
+      drag={ ghost, data, fromDay:fromDay??null, fromIdx:fromIdx??null, curY:me.clientY };
+      scrollRAF=requestAnimationFrame(autoScroll);
+    }
+
+    drag.curY=me.clientY;
+    ghost.style.left=(me.clientX+14)+'px';
+    ghost.style.top=(me.clientY-20)+'px';
+
+    document.querySelectorAll('.day-row').forEach(row => {
+      const r=row.getBoundingClientRect();
+      row.classList.toggle('drop-active',
+        me.clientX>=r.left && me.clientX<=r.right &&
+        me.clientY>=r.top  && me.clientY<=r.bottom);
+    });
+  }
+
+  function onUp(ue) {
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup',   onUp);
+
+    if (!started) {
+      if (!started && onTap) onTap();
+      return;
+    }
+
+    ghost.remove();
+    if (scrollRAF) { cancelAnimationFrame(scrollRAF); scrollRAF=null; }
+
+    let targetDay=null;
+    document.querySelectorAll('.day-row').forEach(row => {
+      row.classList.remove('drop-active');
+      const r=row.getBoundingClientRect();
+      if (ue.clientX>=r.left && ue.clientX<=r.right &&
+          ue.clientY>=r.top  && ue.clientY<=r.bottom) targetDay=row.dataset.day;
+    });
+
+    if (targetDay) {
+      if (drag.fromDay && drag.fromDay!==targetDay) {
+        schedule[drag.fromDay].splice(drag.fromIdx,1);
+        renderDay(drag.fromDay);
+      }
+      if (drag.fromDay!==targetDay) {
+        const ex=drag.data;
+        schedule[targetDay].push({name:ex.name,cat:ex.cat,
+          planned:{sets:ex.sets||'',reps:ex.reps||'',mins:ex.mins||''},
+          done:{sets:'',reps:'',mins:''}, progress:0});
+        renderDay(targetDay);
+      }
+      updateTotal();
+      saveState();
+    }
+    drag=null;
+  }
+
+  document.addEventListener('pointermove', onMove, { passive: false });
+  document.addEventListener('pointerup',   onUp);
+}
+
+// Bank column reorder
+function initReorder(e, cat, fromIdx) {
+  if (drag||bankDrag) return;
+  const sx=e.clientX, sy=e.clientY;
+  let started=false;
+  let ghost=null;
+
+  function onMove(me) {
+    me.preventDefault();
+    const dx=me.clientX-sx, dy=me.clientY-sy;
+    if (Math.hypot(dx,dy) < 6) return;
+
+    if (!started) {
+      started=true;
+      const ex=exercises[cat][fromIdx];
+      ghost=document.createElement('div');
+      ghost.className='ghost';
+      ghost.innerHTML='<span class="pill-dot" style="background:'+DOT_COLOR[cat]+'"></span>'+ex.name;
+      ghost.style.left=(me.clientX+14)+'px';
+      ghost.style.top=(me.clientY-20)+'px';
+      document.body.appendChild(ghost);
+      bankDrag={ cat, fromIdx, ghost, overIdx:null };
+    }
+
+    ghost.style.left=(me.clientX+14)+'px';
+    ghost.style.top=(me.clientY-20)+'px';
+    bankDrag.curY = me.clientY;
+    if (!scrollRAF) scrollRAF = requestAnimationFrame(autoScroll);
+
+    // Highlight day rows when dragging over them
+    document.querySelectorAll('.day-row').forEach(row => {
+      const r=row.getBoundingClientRect();
+      row.classList.toggle('drop-active',
+        me.clientX>=r.left && me.clientX<=r.right &&
+        me.clientY>=r.top  && me.clientY<=r.bottom);
+    });
+
+    // Highlight bank pills for reorder (only when not over a day row)
+    const overDay=document.querySelector('.day-row.drop-active');
+    const pills=document.querySelectorAll('#bank-'+cat+' .bank-pill');
+    let found=null;
+    pills.forEach((pill,i) => {
+      const r=pill.getBoundingClientRect();
+      const over=!overDay && me.clientY>=r.top && me.clientY<=r.bottom;
+      pill.classList.toggle('reorder-over', over && i!==fromIdx);
+      if (over && i!==fromIdx) found=i;
+    });
+    bankDrag.overIdx=found;
+  }
+
+  function onUp(ue) {
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup',   onUp);
+    document.removeEventListener('pointercancel', onUp);
+    if (scrollRAF) { cancelAnimationFrame(scrollRAF); scrollRAF=null; }
+    if (!started || !bankDrag) return;
+    ghost.remove();
+    document.querySelectorAll('.bank-pill').forEach(p=>p.classList.remove('reorder-over'));
+
+    // Check drop on a day row first
+    let targetDay=null;
+    document.querySelectorAll('.day-row').forEach(row => {
+      row.classList.remove('drop-active');
+      const r=row.getBoundingClientRect();
+      if (ue.clientX>=r.left && ue.clientX<=r.right &&
+          ue.clientY>=r.top  && ue.clientY<=r.bottom) targetDay=row.dataset.day;
+    });
+
+    if (targetDay) {
+      const ex=exercises[cat][fromIdx];
+      openPlanModal(ex.name, cat, targetDay, ex);
+    } else if (bankDrag.overIdx!==null) {
+      const arr=exercises[cat];
+      const [moved]=arr.splice(fromIdx,1);
+      arr.splice(bankDrag.overIdx,0,moved);
+      renderBankCol(cat);
+      saveState();
+    }
+    bankDrag=null;
+  }
+
+  document.addEventListener('pointermove', onMove, { passive: false });
+  document.addEventListener('pointerup',   onUp);
+  document.addEventListener('pointercancel', onUp);
+}
+
+// ── Build bank ────────────────────────────────────────────────────────
+function buildBank() { ['arm','leg','alt'].forEach(cat=>renderBankCol(cat)); }
+
+function renderBankCol(cat) {
+  const container=document.getElementById('bank-'+cat);
+  container.innerHTML='';
+  exercises[cat].forEach((ex,idx) => {
+    const pill=document.createElement('div');
+    pill.className='bank-pill';
+    const detail=detailStr(ex.sets,ex.reps,ex.mins);
+
+    const handle=document.createElement('span');
+    handle.className='drag-handle';
+    handle.innerHTML='<span></span>'.repeat(9);
+    handle.title='Drag to reorder';
+    handle.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); initReorder(e,cat,idx); });
+
+    const dot=document.createElement('span');
+    dot.className='pill-dot';
+    dot.style.background=DOT_COLOR[cat];
+
+    const name=document.createElement('span');
+    name.style.flex='1';
+    name.textContent=ex.name;
+
+    pill.appendChild(handle);
+    pill.appendChild(dot);
+    pill.appendChild(name);
+
+    if (detail) {
+      const d=document.createElement('span');
+      d.className='bank-pill-detail';
+      d.textContent=detail;
+      pill.appendChild(d);
+    }
+
+    const editBtn=document.createElement('button');
+    editBtn.className='bank-pill-del';
+    editBtn.innerHTML='✎';
+    editBtn.title='Edit defaults';
+    editBtn.style.opacity='0.4';
+    editBtn.addEventListener('pointerdown', e=>e.stopPropagation());
+    editBtn.addEventListener('click', e=>{ e.stopPropagation(); openEditBankModal(cat,idx); });
+    pill.appendChild(editBtn);
+
+    const del=document.createElement('button');
+    del.className='bank-pill-del';
+    del.textContent='×';
+    del.addEventListener('pointerdown', e=>e.stopPropagation());
+    del.addEventListener('click', e=>{ e.stopPropagation(); openConfirmDelete(cat,idx,ex.name); });
+    pill.appendChild(del);
+
+    // Drag pill to a day — handle only
+
+    container.appendChild(pill);
+  });
+}
+
+// ── Build week ────────────────────────────────────────────────────────
+function buildWeek() {
+  const grid=document.getElementById('weekGrid');
+  DAYS.forEach(day => {
+    const row=document.createElement('div');
+    row.className='day-row'; row.dataset.day=day;
+    const label=document.createElement('div');
+    label.className='day-label';
+    label.innerHTML=`<div class="day-name">${day}</div><div id="date-${day}" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:1px"></div><div class="day-count" id="cnt-${day}">rest day</div>`;
+    const body=document.createElement('div');
+    body.className='day-body'; body.id='body-'+day;
+    const actions=document.createElement('div');
+    actions.className='day-actions';
+    const btn=document.createElement('button');
+    btn.className='clear-btn'; btn.textContent='Clear';
+    btn.addEventListener('pointerdown',e=>e.stopPropagation());
+    btn.addEventListener('click',()=>{
+      document.getElementById('clearDayName').textContent=day;
+      document.getElementById('clearModal').classList.remove('hidden');
+      document.getElementById('clearYes').onclick=()=>{
+        schedule[day]=[]; renderDay(day); updateTotal(); saveState();
+        document.getElementById('clearModal').classList.add('hidden');
+      };
+    });
+    actions.appendChild(btn);
+    row.appendChild(label); row.appendChild(body); row.appendChild(actions);
+    grid.appendChild(row);
+  });
+  updateWeekLabel();
+  renderAllDays();
+}
+
+function switchWeek(delta) { weekOffset+=delta; updateWeekLabel(); renderAllDays(); saveState(); }
+document.getElementById('prevWeekBtn').addEventListener('click',()=>switchWeek(-1));
+document.getElementById('nextWeekBtn').addEventListener('click',()=>switchWeek(1));
+
+// ── Render day ────────────────────────────────────────────────────────
+function calcProgress(item) {
+  const p = item.planned || {}, d = item.done || {};
+  const ps = parseFloat(p.sets)||0, pr = parseFloat(p.reps)||0, pm = parseFloat(p.mins)||0;
+  const ds = parseFloat(d.sets)||0, dr = parseFloat(d.reps)||0, dm = parseFloat(d.mins)||0;
+
+  // sets + time: total = sets × mins, done = done_sets × done_mins
+  if (ps > 0 && pm > 0 && pr === 0) {
+    const total = ps * pm;
+    const done  = ds * dm;
+    return Math.min(1, total > 0 ? done / total : 0);
+  }
+  // sets + reps: total = sets × reps, done = done_sets × done_reps
+  if (ps > 0 && pr > 0 && pm === 0) {
+    const total = ps * pr;
+    const done  = ds * dr;
+    return Math.min(1, total > 0 ? done / total : 0);
+  }
+  // sets + reps + time: use sets as primary
+  if (ps > 0 && pr > 0 && pm > 0) {
+    return Math.min(1, ps > 0 ? ds / ps : 0);
+  }
+  // only sets
+  if (ps > 0) return Math.min(1, ds / ps);
+  // only reps
+  if (pr > 0) return Math.min(1, dr / pr);
+  // only time
+  if (pm > 0) return Math.min(1, dm / pm);
+  return 0;
+}
+
+function renderDay(day) {
+  const body=document.getElementById('body-'+day);
+  const cnt=document.getElementById('cnt-'+day);
+  body.innerHTML='';
+  if (schedule[day].length===0) {
+    const hint=document.createElement('div');
+    hint.className='drop-hint'; hint.textContent='+ drop here';
+    body.appendChild(hint);
+  } else {
+    schedule[day].forEach((item,idx) => {
+      const pct = calcProgress(item);
+      const done = pct >= 1;
+
+      const pill=document.createElement('div');
+      pill.className='placed-pill '+item.cat+(pct>0?' has-progress':'')+(done?' completed':'');
+
+      // Set progress as background gradient directly on pill
+      const fillColor = done
+        ? 'rgba(100,220,100,0.3)'
+        : item.cat==='arm' ? 'rgba(53,200,241,0.35)'
+        : item.cat==='leg' ? 'rgba(241,160,53,0.35)'
+        : 'rgba(200,53,241,0.35)';
+      if (pct > 0) {
+        const p = Math.round(pct * 100);
+        pill.style.background = `linear-gradient(to right, ${fillColor} ${p}%, rgba(120,120,120,0.12) ${p}%)`;
+      }
+
+      // Content wrapper (sits above fill via z-index)
+      const content=document.createElement('div');
+      content.className='pill-content';
+
+      const nm=document.createElement('span'); nm.textContent=item.name;
+      content.appendChild(nm);
+
+      pill.appendChild(content);
+
+      const rm=document.createElement('button');
+      rm.className='rm-btn'; rm.textContent='×';
+      rm.addEventListener('pointerdown',e=>e.stopPropagation());
+      rm.addEventListener('click',e=>{ e.stopPropagation(); schedule[day].splice(idx,1); renderDay(day); updateTotal(); saveState(); });
+      pill.appendChild(rm);
+
+      pill.addEventListener('pointerdown', e => {
+        if (e.target===rm) return;
+        const sx=e.clientX, sy=e.clientY;
+        const id=e.pointerId;
+        function onUp(ue) {
+          if (ue.pointerId!==id) return;
+          document.removeEventListener('pointerup', onUp);
+          document.removeEventListener('pointercancel', onUp);
+          if (Math.hypot(ue.clientX-sx, ue.clientY-sy) < 12) openEditModal(day,idx);
+        }
+        document.addEventListener('pointerup', onUp);
+        document.addEventListener('pointercancel', onUp);
+      });
+
+      body.appendChild(pill);
+    });
+  }
+  const n=schedule[day].length;
+  cnt.textContent = n===0 ? 'rest day' : n+' ex · '+fmtMin(calcDayMinutes(day));
+}
+
+function renderAllDays() { DAYS.forEach(renderDay); updateTotal(); saveState(); }
+
+function updateTotal() {
+  const bar=document.getElementById('totalBar');
+  let total=0, arm=0, leg=0, alt=0, totalMins=0;
+  DAYS.forEach(d => {
+    schedule[d].forEach(i => { total++; if(i.cat==='arm')arm++; else if(i.cat==='leg')leg++; else alt++; });
+    totalMins+=calcDayMinutes(d);
+  });
+  bar.innerHTML=`
+    <div class="total-item">Week: <span style="color:var(--accent);font-weight:700">${total} ex</span></div>
+    <div class="total-item">Time: <span style="color:var(--accent);font-weight:700">${fmtMin(totalMins)}</span></div>
+    <div class="total-item">Arm: <span style="color:var(--arm);font-weight:700">${arm}</span></div>
+    <div class="total-item">Leg: <span style="color:var(--leg);font-weight:700">${leg}</span></div>
+    <div class="total-item">Others: <span style="color:var(--alt);font-weight:700">${alt}</span></div>
+  `;
+}
+
+// ── Add / Edit Bank Exercise Modal ────────────────────────────────────
+let selectedCat='arm';
+let editBankTarget=null; // {cat, idx} when editing existing
+
+function openAddModal() {
+  editBankTarget=null;
+  document.getElementById('addModalTitle').textContent='New Exercise';
+  document.getElementById('addModalSub').textContent='Add to exercise bank';
+  document.getElementById('addCatRow').style.display='';
+  document.getElementById('addSaveBtn').textContent='Add Exercise';
+  document.getElementById('newName').value='';
+  document.getElementById('newSets').value='0';
+  document.getElementById('newReps').value='0';
+  document.getElementById('newTime').value='0';
+  selectedCat='arm'; updateCatBtns();
+  document.getElementById('addModal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('newName').focus(),50);
+}
+
+function openEditBankModal(cat, idx) {
+  editBankTarget={cat,idx};
+  const ex=exercises[cat][idx];
+  document.getElementById('addModalTitle').textContent='Edit Exercise';
+  document.getElementById('addModalSub').textContent='Update default values';
+  document.getElementById('addCatRow').style.display=''; // show category selector
+  document.getElementById('addSaveBtn').textContent='Save Changes';
+  document.getElementById('newName').value=ex.name;
+  document.getElementById('newSets').value=ex.sets||'0';
+  document.getElementById('newReps').value=ex.reps||'0';
+  document.getElementById('newTime').value=ex.mins||'0';
+  selectedCat=cat; updateCatBtns();
+  document.getElementById('addModal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('newName').focus(),50);
+}
+
+document.getElementById('addExBtn').addEventListener('click', openAddModal);
+document.getElementById('addCancelBtn').addEventListener('click',()=>{ document.getElementById('addModal').classList.add('hidden'); editBankTarget=null; });
+document.getElementById('addModal').addEventListener('click',e=>{ if(e.target===document.getElementById('addModal')){ document.getElementById('addModal').classList.add('hidden'); editBankTarget=null; }});
+
+// Add modal steppers
+addHoldStepper('newSetsMinus','newSets',-1);
+addHoldStepper('newSetsPlus', 'newSets',+1);
+addHoldStepper('newRepsMinus','newReps',-1);
+addHoldStepper('newRepsPlus', 'newReps',+1);
+addHoldStepper('newTimeMinus','newTime',-1);
+addHoldStepper('newTimePlus', 'newTime',+1);
+
+document.querySelectorAll('#catBtns .seg-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{ selectedCat=btn.dataset.cat; updateCatBtns(); });
+});
+function updateCatBtns() {
+  document.querySelectorAll('#catBtns .seg-btn').forEach(b=>{
+    b.className='seg-btn'+(b.dataset.cat===selectedCat?' active-'+selectedCat:'');
+  });
+}
+document.getElementById('addSaveBtn').addEventListener('click',()=>{
+  const name=document.getElementById('newName').value.trim();
+  if (!name) { document.getElementById('newName').focus(); return; }
+  const sets=document.getElementById('newSets').value;
+  const reps=document.getElementById('newReps').value;
+  const mins=document.getElementById('newTime').value;
+  if (editBankTarget) {
+    const oldCat=editBankTarget.cat;
+    exercises[oldCat].splice(editBankTarget.idx,1);
+    exercises[selectedCat].push({ name, sets:sets==='0'?'':sets, reps:reps==='0'?'':reps, mins:mins==='0'?'':mins });
+    if (oldCat!==selectedCat) renderBankCol(oldCat);
+    renderBankCol(selectedCat);
+    editBankTarget=null;
+  } else {
+    exercises[selectedCat].push({ name, sets:sets==='0'?'':sets, reps:reps==='0'?'':reps, mins:mins==='0'?'':mins });
+    renderBankCol(selectedCat);
+  }
+  document.getElementById('addModal').classList.add('hidden');
+  saveState();
+});
+
+// ── Plan Modal (drop to day) ───────────────────────────────────────────
+let planTarget=null;
+function openPlanModal(name, cat, day, ex) {
+  planTarget={name,cat,day};
+  document.getElementById('planModalTitle').textContent=name;
+  document.getElementById('planSets').value=ex?.sets||'0';
+  document.getElementById('planReps').value=ex?.reps||'0';
+  document.getElementById('planTime').value=ex?.mins||'0';
+  document.getElementById('planModal').classList.remove('hidden');
+}
+// ── Hold-to-accelerate stepper ─────────────────────────────────────────
+// Tap (<1s): +1 only
+// Hold 1-5s: 12/s (slow phase, covers ~50 units in 4s)
+// Hold 5s+:  25/s (fast phase, covers ~100 units in 4s)
+function addHoldStepper(btnId, inputId, dir, onUpdate) {
+  const btn = document.getElementById(btnId);
+  const inp = document.getElementById(inputId);
+  if (!btn || !inp) return;
+
+  let delayTimer = null;
+  let slowInterval = null;
+  let fastTimer = null;
+  let fastInterval = null;
+
+  function applyStep(amount) {
+    let val = (parseInt(inp.value) || 0) + Math.round(amount) * dir;
+    const max = parseInt(inp.dataset.max) || 500;
+    val = Math.max(0, Math.min(max, val));
+    inp.value = val;
+    if (onUpdate) onUpdate();
+  }
+
+  function startSlow() {
+    // 12 steps/sec = interval of ~83ms
+    slowInterval = setInterval(() => applyStep(1), 83);
+    // after 4 more seconds switch to fast
+    fastTimer = setTimeout(startFast, 4000);
+  }
+
+  function startFast() {
+    if (slowInterval) { clearInterval(slowInterval); slowInterval = null; }
+    // 25 steps/sec = interval of 40ms
+    fastInterval = setInterval(() => applyStep(1), 40);
+  }
+
+  function start(e) {
+    e.preventDefault();
+    applyStep(1); // immediate single step
+    // wait 1s before starting auto-repeat
+    delayTimer = setTimeout(startSlow, 1000);
+  }
+
+  function stop() {
+    if (delayTimer)   { clearTimeout(delayTimer);    delayTimer = null; }
+    if (slowInterval) { clearInterval(slowInterval); slowInterval = null; }
+    if (fastTimer)    { clearTimeout(fastTimer);     fastTimer = null; }
+    if (fastInterval) { clearInterval(fastInterval); fastInterval = null; }
+  }
+
+  btn.addEventListener('pointerdown', start, { passive: false });
+  btn.addEventListener('pointerup',     stop);
+  btn.addEventListener('pointerleave',  stop);
+  btn.addEventListener('pointercancel', stop);
+  btn.addEventListener('click', e => e.preventDefault());
+}
+
+// Plan modal steppers
+['Sets','Reps'].forEach(f => {
+  addHoldStepper('plan'+f+'Minus', 'plan'+f, -1);
+  addHoldStepper('plan'+f+'Plus',  'plan'+f, +1);
+});
+addHoldStepper('planTimeMinus', 'planTime', -1);
+addHoldStepper('planTimePlus',  'planTime', +1);
+addScrollStepper('planSets', null, false);
+addScrollStepper('planReps', null, false);
+addScrollStepper('planTime', null, false);
+
+document.getElementById('planCancelBtn').addEventListener('click',()=>{
+  document.getElementById('planModal').classList.add('hidden');
+  planTarget=null;
+});
+document.getElementById('planSaveBtn').addEventListener('click',()=>{
+  if (!planTarget) return;
+  const {name,cat,day}=planTarget;
+  schedule[day].push({name,cat,
+    planned:{
+      sets:document.getElementById('planSets').value.trim(),
+      reps:document.getElementById('planReps').value.trim(),
+      mins:document.getElementById('planTime').value.trim()
+    },
+    done:{sets:'',reps:'',mins:''}, progress:0});
+  document.getElementById('planModal').classList.add('hidden');
+  planTarget=null;
+  renderDay(day);
+  updateTotal();
+  saveState();
+});
+// ── Edit Placed Modal ─────────────────────────────────────────────────
+let editTarget=null;
+function openEditModal(day,idx) {
+  const item=schedule[day][idx];
+  editTarget={day,idx};
+  document.getElementById('editModalTitle').textContent=item.name;
+  const p=item.planned||{}, d=item.done||{};
+
+  // Sets field
+  const hasSets = p.sets && parseFloat(p.sets) > 0;
+  const hasReps = p.reps && parseFloat(p.reps) > 0;
+  const hasTime = p.mins && parseFloat(p.mins) > 0;
+
+  const setsField = document.getElementById('editSetsField');
+  setsField.style.display = hasSets ? '' : 'none';
+  if (hasSets) {
+    const val = d.sets || '0';
+    document.getElementById('editSets').value = val;
+    document.getElementById('editSetsRatio').textContent = val+'/'+p.sets;
+  }
+
+  const repsField = document.getElementById('editRepsField');
+  repsField.style.display = hasReps ? '' : 'none';
+  if (hasReps) {
+    const val = d.reps || p.reps;
+    document.getElementById('editReps').value = val;
+    document.getElementById('editRepsRatio').textContent = (val||'0')+'/'+p.reps;
+  }
+
+  const timeField = document.getElementById('editTimeField');
+  // Show time if: only time planned, OR sets+time planned. Hide if sets+reps (reps are per-set, time N/A)
+  const showTime = hasTime;
+  timeField.style.display = showTime ? '' : 'none';
+  if (showTime) {
+    const val = d.mins || p.mins;
+    document.getElementById('editTime').value = val;
+    document.getElementById('editTimeRatio').textContent = (val||'0')+'/'+p.mins;
+  }
+
+  document.getElementById('editModal').classList.remove('hidden');
+}
+
+// Stepper buttons
+// Edit modal steppers with hold-to-accelerate
+addHoldStepper('editSetsMinus', 'editSets', -1, ()=>updateRatio('editSets','editSetsRatio'));
+addHoldStepper('editSetsPlus',  'editSets', +1, ()=>{
+  const item=editTarget?schedule[editTarget.day][editTarget.idx]:null;
+  const max=item?parseInt(item.planned?.sets)||500:500;
+  const inp=document.getElementById('editSets');
+  inp.value=Math.min(max,parseInt(inp.value)||0);
+  updateRatio('editSets','editSetsRatio');
+});
+addHoldStepper('editRepsMinus', 'editReps', -1, ()=>{ updateRatio('editReps','editRepsRatio'); if(updateRepBar) updateRepBar(); });
+addHoldStepper('editRepsPlus',  'editReps', +1, ()=>{ updateRatio('editReps','editRepsRatio'); if(updateRepBar) updateRepBar(); });
+addHoldStepper('editTimeMinus', 'editTime', -1, ()=>{ updateRatio('editTime','editTimeRatio'); if(updateTimeBar) updateTimeBar(); });
+addHoldStepper('editTimePlus',  'editTime', +1, ()=>{ updateRatio('editTime','editTimeRatio'); if(updateTimeBar) updateTimeBar(); });
+// Drag-to-scroll on stepper inputs
+function addScrollStepper(inputId, ratioId, isFloat) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  let startY = null, startVal = 0, moved = false;
+  const THRESHOLD = 8; // px per step
+
+  inp.addEventListener('pointerdown', e => {
+    startY = e.clientY;
+    startVal = parseFloat(inp.value) || 0;
+    moved = false;
+    inp.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }, { passive: false });
+
+  inp.addEventListener('pointermove', e => {
+    if (startY === null) return;
+    const dy = startY - e.clientY; // positive = dragged up = increase
+    const steps = Math.round(dy / THRESHOLD);
+    if (Math.abs(dy) > 3) moved = true;
+    let newVal = startVal + steps * (isFloat ? 0.5 : 1);
+    newVal = Math.max(0, isFloat ? Math.round(newVal*2)/2 : Math.round(newVal));
+    inp.value = newVal;
+    if (ratioId) updateRatio(inputId, ratioId);
+  }, { passive: false });
+
+  inp.addEventListener('pointerup', () => { startY = null; });
+  inp.addEventListener('pointercancel', () => { startY = null; });
+}
+
+addScrollStepper('editSets', 'editSetsRatio', false);
+addScrollStepper('editReps', 'editRepsRatio', false);
+addScrollStepper('editTime', 'editTimeRatio', false);
+
+// Horizontal scrubber bars for reps and time
+function addScrubber(trackId, fillId, thumbId, inputId, ratioId, isFloat, maxVal) {
+  const track = document.getElementById(trackId);
+  if (!track) return;
+  const fill  = document.getElementById(fillId);
+  const thumb = document.getElementById(thumbId);
+  const inp   = document.getElementById(inputId);
+
+  function updateBar() {
+    const val = parseFloat(inp.value)||0;
+    const max = parseFloat(inp.dataset.max)||maxVal;
+    const pct = Math.min(1, max > 0 ? val/max : 0);
+    fill.style.width  = (pct*100)+'%';
+    thumb.style.left  = (pct*100)+'%';
+  }
+
+  let startX=null, startVal=0;
+  track.addEventListener('pointerdown', e=>{
+    startX=e.clientX;
+    startVal=parseFloat(inp.value)||0;
+    track.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  },{passive:false});
+  track.addEventListener('pointermove', e=>{
+    if (startX===null) return;
+    const w=track.getBoundingClientRect().width;
+    const max=parseFloat(inp.dataset.max)||maxVal;
+    const dx=e.clientX-startX;
+    const delta=dx/w*max;
+    let val=startVal+delta;
+    val=Math.max(0, isFloat ? Math.round(val*2)/2 : Math.round(val));
+    inp.value=val;
+    if (ratioId) updateRatio(inputId, ratioId);
+    updateBar();
+  },{passive:false});
+  track.addEventListener('pointerup',  ()=>{ startX=null; });
+  track.addEventListener('pointercancel',()=>{ startX=null; });
+
+  // keep bar in sync when steppers used
+  inp.addEventListener('change', updateBar);
+  return updateBar;
+}
+
+const updateRepBar  = addScrubber('editRepsScrubber','editRepsFill','editRepsThumb','editReps','editRepsRatio',false,50);
+const updateTimeBar = addScrubber('editTimeScrubber','editTimeFill','editTimeThumb','editTime','editTimeRatio',false,120);
+
+// Patch openEditModal to set max and refresh bars
+const _origOpenEdit = openEditModal;
+openEditModal = function(day,idx) {
+  _origOpenEdit(day,idx);
+  const item=schedule[day][idx];
+  const p=item.planned||{};
+  const setsInp = document.getElementById('editSets');
+  const repsInp = document.getElementById('editReps');
+  const timeInp = document.getElementById('editTime');
+  if (p.sets) setsInp.dataset.max = parseFloat(p.sets);
+  if (p.reps) { repsInp.dataset.max=parseFloat(p.reps); }
+  if (p.mins) { timeInp.dataset.max=parseFloat(p.mins); }
+  if (updateRepBar)  updateRepBar();
+  if (updateTimeBar) updateTimeBar();
+};
+
+function updateRatio(inputId, ratioId) {
+  if (!editTarget) return;
+  const item = schedule[editTarget.day][editTarget.idx];
+  const p = item.planned||{}, d = {};
+  d.sets = document.getElementById('editSets').value;
+  d.reps = document.getElementById('editReps').value;
+  d.mins = document.getElementById('editTime').value;
+  const map = { editSetsRatio: [d.sets, p.sets], editRepsRatio: [d.reps, p.reps], editTimeRatio: [d.mins, p.mins] };
+  const [done, planned] = map[ratioId]||[];
+  const el = document.getElementById(ratioId);
+  if (el && planned) el.textContent = (done||'0')+'/'+planned;
+}
+
+function saveEdit() {
+  if (!editTarget) return;
+  const {day,idx}=editTarget;
+  const item=schedule[day][idx];
+  item.done={
+    sets:document.getElementById('editSets').value.trim(),
+    reps:document.getElementById('editReps').value.trim(),
+    mins:document.getElementById('editTime').value.trim()
+  };
+  item.progress = 0; // always recalculated by calcProgress
+  renderDay(day);
+  updateTotal();
+  saveState();
+  document.getElementById('editModal').classList.add('hidden');
+  editTarget=null;
+}
+
+document.getElementById('editCancelBtn').addEventListener('click',()=>{ document.getElementById('editModal').classList.add('hidden'); editTarget=null; });
+document.getElementById('editModal').addEventListener('click',e=>{ if(e.target===document.getElementById('editModal')){ document.getElementById('editModal').classList.add('hidden'); editTarget=null; } });
+document.getElementById('editSaveBtn').addEventListener('click',saveEdit);
+
+// ── Confirm Delete ────────────────────────────────────────────────────
+let deleteTarget=null;
+function openConfirmDelete(cat,idx,name) {
+  deleteTarget={cat,idx,name};
+  document.getElementById('confirmName').textContent=name;
+  document.getElementById('confirmModal').classList.remove('hidden');
+}
+document.getElementById('confirmNo').addEventListener('click',()=>{ document.getElementById('confirmModal').classList.add('hidden'); deleteTarget=null; });
+document.getElementById('confirmYes').addEventListener('click',()=>{
+  if (!deleteTarget) return;
+  const {cat,idx,name}=deleteTarget;
+  exercises[cat].splice(idx,1);
+  DAYS.forEach(d=>{ schedule[d]=schedule[d].filter(i=>!(i.name===name&&i.cat===cat)); renderDay(d); });
+  renderBankCol(cat); updateTotal(); saveState();
+  document.getElementById('confirmModal').classList.add('hidden');
+  deleteTarget=null;
+});
+document.getElementById('confirmModal').addEventListener('click',e=>{ if(e.target===document.getElementById('confirmModal')){ document.getElementById('confirmModal').classList.add('hidden'); deleteTarget=null; } });
+document.getElementById('clearNo').addEventListener('click',()=>{ document.getElementById('clearModal').classList.add('hidden'); });
+document.getElementById('clearModal').addEventListener('click',e=>{ if(e.target===document.getElementById('clearModal')) document.getElementById('clearModal').classList.add('hidden'); });
+
+// ── Init ──────────────────────────────────────────────────────────────
+openDB().then(loadStateFromDB).then(saved => {
+  if (saved) {
+    if (saved.exercises)    exercises    = saved.exercises;
+    if (saved.allSchedules) allSchedules = saved.allSchedules;
+    if (saved.weekOffset != null) weekOffset = saved.weekOffset;
+  }
+  buildBank();
+  buildWeek();
+  updateCatBtns();
+}).catch(err => {
+  console.warn('DB load failed, starting fresh:', err);
+  buildBank();
+  buildWeek();
+  updateCatBtns();
+});
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body>
+</html>
