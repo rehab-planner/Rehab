@@ -493,8 +493,8 @@ function calcDayDoneMinutes(day) {
       // time only: done mins stored directly
       t += Math.min(pm, dm);
     } else if (ps > 0 && pm > 0 && pr === 0) {
-      // sets × time: credit done_sets/planned_sets * planned_mins
-      t += ps > 0 ? Math.min(pm, (ds/ps)*pm) : 0;
+      // sets × time: done_sets * done_mins (e.g. 2×8 = 16min)
+      t += Math.min(ps * pm, ds * dm);
     } else {
       // sets or reps based: use done_sets/planned_sets * estimated 3min
       const plannedMins = (parseInt(p.sets)||1)*3;
