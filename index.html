@@ -39,7 +39,7 @@
   .day-label { width: 72px; flex-shrink: 0; padding: 6px 10px; border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; }
   .day-name { font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
   .day-date { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 1px; }
-  .day-count { font-family: 'DM Mono', monospace; font-size: 8px; color: var(--muted); margin-top: 2px; }
+  .day-count { font-family: 'DM Mono', monospace; font-size: 11px; color: #aaa; margin-top: 7px; }
   .day-body { flex: 1; padding: 6px 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-width: 0; }
   .drop-hint { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); border: 1px dashed var(--border); border-radius: 6px; padding: 3px 8px; letter-spacing: 1px; pointer-events: none; white-space: nowrap; }
   .day-row.drop-active .drop-hint { border-color: var(--accent); color: var(--accent); }
@@ -505,9 +505,9 @@ function calcDayDoneMinutes(day) {
   return Math.round(t);
 }
 function fmtMin(m) {
-  if (m<60) return m+'min';
+  if (m<60) return m+' min';
   const h=Math.floor(m/60), r=m%60;
-  return r ? h+'h '+r+'min' : h+'h';
+  return h+':'+(r<10?'0':'')+r;
 }
 
 // ── Drag engine ───────────────────────────────────────────────────────
@@ -771,7 +771,7 @@ function buildWeek() {
     row.className='day-row'; row.dataset.day=day;
     const label=document.createElement('div');
     label.className='day-label';
-    label.innerHTML=`<div class="day-name">${day}</div><div id="date-${day}" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:1px"></div><div class="day-count" id="cnt-${day}">rest day</div>`;
+    label.innerHTML=`<div class="day-name">${day}</div><div class="day-count" id="cnt-${day}"></div>`;
     const body=document.createElement('div');
     body.className='day-body'; body.id='body-'+day;
     const actions=document.createElement('div');
@@ -888,7 +888,8 @@ function renderDay(day) {
     });
   }
   const n=schedule[day].length;
-  cnt.textContent = n===0 ? 'rest day' : n+' ex · '+fmtMin(calcDayMinutes(day));
+  const done=calcDayDoneMinutes(day);
+  cnt.textContent = done > 0 ? fmtMin(done) : '';
 }
 
 function renderAllDays() { DAYS.forEach(renderDay); updateTotal(); saveState(); }
