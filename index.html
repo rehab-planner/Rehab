@@ -53,7 +53,6 @@
   .placed-pill.arm.has-progress { border-color: rgba(53,200,241,0.55); color: var(--arm); }
   .placed-pill.leg.has-progress { border-color: rgba(241,160,53,0.55); color: var(--leg); }
   .placed-pill.alt.has-progress { border-color: rgba(200,53,241,0.55); color: var(--alt); }
-  .placed-pill.completed { border-color: rgba(100,220,100,0.55); color: #6ddc6d; }
   .pill-content { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 4px; padding: 4px 4px 4px 7px; }
   .pill-detail-tag { font-family: 'DM Mono', monospace; font-size: 8px; opacity: 0.7; font-weight: 400; }
   .rm-btn { position: relative; z-index: 1; background: none; border: none; border-left: 1px solid rgba(255,255,255,0.06); color: inherit; cursor: pointer; opacity: 0.45; font-size: 13px; line-height: 1; padding: 0 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; min-width: 24px; }
@@ -826,9 +825,7 @@ function renderDay(day) {
       pill.className='placed-pill '+item.cat+(pct>0?' has-progress':'')+(done?' completed':'');
 
       // Set progress as background gradient directly on pill
-      const fillColor = done
-        ? 'rgba(100,220,100,0.3)'
-        : item.cat==='arm' ? 'rgba(53,200,241,0.35)'
+      const fillColor = item.cat==='arm' ? 'rgba(53,200,241,0.35)'
         : item.cat==='leg' ? 'rgba(241,160,53,0.35)'
         : 'rgba(200,53,241,0.35)';
       if (pct > 0) {
