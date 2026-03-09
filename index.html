@@ -62,7 +62,8 @@
   .stepper-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 20px; line-height: 1; cursor: pointer; padding: 0; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; touch-action: manipulation; }
   .stepper-btn:active { background: var(--border); }
   .stepper-input { flex:1; min-width:0; text-align: center; color: var(--text) !important; font-size:22px !important; font-weight:700 !important; padding: 10px 4px !important; cursor:ns-resize; touch-action:none; user-select:none; }
-  .scrubber-track { position:relative; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; margin-top:10px; cursor:ew-resize; touch-action:none; }
+  .scrubber-track { position:relative; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; margin-top:13px; cursor:ew-resize; touch-action:none; }
+  .scrubber-track::before { content:''; position:absolute; left:0; right:0; top:-28px; bottom:-28px; }
   .scrubber-fill { position:absolute; left:0; top:0; height:100%; background:var(--accent); border-radius:3px; width:50%; pointer-events:none; }
   .scrubber-thumb { position:absolute; top:50%; width:18px; height:18px; background:var(--accent); border-radius:50%; transform:translate(-50%,-50%); left:50%; pointer-events:none; box-shadow:0 0 0 3px rgba(0,0,0,0.4); }
 
@@ -911,7 +912,6 @@ function openEditBankModal(cat, idx) {
   document.getElementById('newTime').value=ex.mins||'0';
   selectedCat=cat; updateCatBtns();
   document.getElementById('addModal').classList.remove('hidden');
-  setTimeout(()=>document.getElementById('newName').focus(),50);
 }
 
 document.getElementById('addExBtn').addEventListener('click', openAddModal);
@@ -1164,15 +1164,21 @@ function addScrubber(trackId, fillId, thumbId, inputId, ratioId, isFloat, maxVal
     startVal=parseFloat(inp.value)||0;
     track.setPointerCapture(e.pointerId);
     e.preventDefault();
+    // also seek immediately to touch position
+    const rect=track.getBoundingClientRect();
+    const max=parseFloat(inp.dataset.max)||maxVal;
+    let val=(e.clientX-rect.left)/rect.width*max;
+    val=Math.max(0, Math.min(max, isFloat ? Math.round(val*2)/2 : Math.round(val)));
+    inp.value=val; startVal=val; startX=e.clientX;
+    if (ratioId) updateRatio(inputId, ratioId);
+    updateBar();
   },{passive:false});
   track.addEventListener('pointermove', e=>{
     if (startX===null) return;
-    const w=track.getBoundingClientRect().width;
+    const rect=track.getBoundingClientRect();
     const max=parseFloat(inp.dataset.max)||maxVal;
-    const dx=e.clientX-startX;
-    const delta=dx/w*max;
-    let val=startVal+delta;
-    val=Math.max(0, isFloat ? Math.round(val*2)/2 : Math.round(val));
+    let val=(e.clientX-rect.left)/rect.width*max;
+    val=Math.max(0, Math.min(max, isFloat ? Math.round(val*2)/2 : Math.round(val)));
     inp.value=val;
     if (ratioId) updateRatio(inputId, ratioId);
     updateBar();
