@@ -135,7 +135,7 @@
   .bank-cols {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: 6px;
   }
 
   /* Tablet tightening */
@@ -165,7 +165,7 @@
 </head>
 <body>
 
-<h1>REHAB PLANNER</h1>
+<h1>REHAB&nbsp;&nbsp;&nbsp;PLANNER</h1>
 <p class="subtitle">Drag exercises into any day · Click placed exercise to edit</p>
 
 <div class="week-nav">
@@ -716,6 +716,7 @@ function renderBankCol(cat) {
       const d=document.createElement('span');
       d.className='bank-pill-detail';
       d.textContent=detail;
+      d.style.display='none';
       pill.appendChild(d);
     }
 
