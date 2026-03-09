@@ -1012,8 +1012,7 @@ function addHoldStepper(btnId, inputId, dir, onUpdate) {
 
   function applyStep(amount) {
     let val = (parseInt(inp.value) || 0) + Math.round(amount) * dir;
-    const max = parseInt(inp.dataset.max) || 500;
-    val = Math.max(0, Math.min(max, val));
+    val = Math.max(0, val);
     inp.value = val;
     if (onUpdate) onUpdate();
   }
@@ -1129,10 +1128,6 @@ function openEditModal(day,idx) {
 // Edit modal steppers with hold-to-accelerate
 addHoldStepper('editSetsMinus', 'editSets', -1, ()=>updateRatio('editSets','editSetsRatio'));
 addHoldStepper('editSetsPlus',  'editSets', +1, ()=>{
-  const item=editTarget?schedule[editTarget.day][editTarget.idx]:null;
-  const max=item?parseInt(item.planned?.sets)||500:500;
-  const inp=document.getElementById('editSets');
-  inp.value=Math.min(max,parseInt(inp.value)||0);
   updateRatio('editSets','editSetsRatio');
 });
 addHoldStepper('editRepsMinus', 'editReps', -1, ()=>{ updateRatio('editReps','editRepsRatio'); if(updateRepBar) updateRepBar(); });
@@ -1199,7 +1194,7 @@ function addScrubber(trackId, fillId, thumbId, inputId, ratioId, isFloat, maxVal
     const rect=track.getBoundingClientRect();
     const max=parseFloat(inp.dataset.max)||maxVal;
     let val=(e.clientX-rect.left)/rect.width*max;
-    val=Math.max(0, Math.min(max, isFloat ? Math.round(val*2)/2 : Math.round(val)));
+    val=Math.max(0, isFloat ? Math.round(val*2)/2 : Math.round(val));
     inp.value=val; startVal=val; startX=e.clientX;
     if (ratioId) updateRatio(inputId, ratioId);
     updateBar();
@@ -1209,7 +1204,7 @@ function addScrubber(trackId, fillId, thumbId, inputId, ratioId, isFloat, maxVal
     const rect=track.getBoundingClientRect();
     const max=parseFloat(inp.dataset.max)||maxVal;
     let val=(e.clientX-rect.left)/rect.width*max;
-    val=Math.max(0, Math.min(max, isFloat ? Math.round(val*2)/2 : Math.round(val)));
+    val=Math.max(0, isFloat ? Math.round(val*2)/2 : Math.round(val));
     inp.value=val;
     if (ratioId) updateRatio(inputId, ratioId);
     updateBar();
@@ -1225,7 +1220,7 @@ function addScrubber(trackId, fillId, thumbId, inputId, ratioId, isFloat, maxVal
 const updateRepBar  = addScrubber('editRepsScrubber','editRepsFill','editRepsThumb','editReps','editRepsRatio',false,50);
 const updateTimeBar = addScrubber('editTimeScrubber','editTimeFill','editTimeThumb','editTime','editTimeRatio',false,120);
 
-// Patch openEditModal to set max and refresh bars
+// Patch openEditModal to refresh bars (no max cap — allow beyond defaults)
 const _origOpenEdit = openEditModal;
 openEditModal = function(day,idx) {
   _origOpenEdit(day,idx);
@@ -1234,9 +1229,14 @@ openEditModal = function(day,idx) {
   const setsInp = document.getElementById('editSets');
   const repsInp = document.getElementById('editReps');
   const timeInp = document.getElementById('editTime');
-  if (p.sets) setsInp.dataset.max = parseFloat(p.sets);
-  if (p.reps) { repsInp.dataset.max=parseFloat(p.reps); }
-  if (p.mins) { timeInp.dataset.max=parseFloat(p.mins); }
+  // Set a generous max for scrubber display (2× planned or fallback)
+  setsInp.dataset.max = p.sets ? parseFloat(p.sets)*2 : 500;
+  repsInp.dataset.max = p.reps ? parseFloat(p.reps)*2 : 50;
+  timeInp.dataset.max = p.mins ? parseFloat(p.mins)*2 : 120;
+  // Also remove the hard stepper cap
+  setsInp.dataset.hardmax = 500;
+  repsInp.dataset.hardmax = 500;
+  timeInp.dataset.hardmax = 500;
   if (updateRepBar)  updateRepBar();
   if (updateTimeBar) updateTimeBar();
 };
