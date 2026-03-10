@@ -166,8 +166,7 @@
 <body>
 
 <h1>REHAB&nbsp;&nbsp;&nbsp;PLANNER</h1>
-<p class="subtitle">Drag exercises into any day · Click placed exercise to edit</p>
-
+<div style="height:16px"></div>
 <div class="week-nav">
   <button class="week-nav-btn" id="prevWeekBtn">← Prev</button>
   <div class="week-nav-label" id="weekLabel"></div>
@@ -198,7 +197,7 @@
       <input class="form-input" id="newName" placeholder="Exercise name" autocomplete="off">
     </div>
     <div class="form-row" id="addCatRow">
-      <label class="form-label">Column</label>
+      <label class="form-label">Category</label>
       <div class="seg-btns" id="catBtns">
         <div class="seg-btn" data-cat="arm">ARM</div>
         <div class="seg-btn" data-cat="leg">LEG</div>
@@ -689,13 +688,8 @@ function initReorder(e, cat, fromIdx) {
     if (targetDay) {
       const ex=exercises[cat][fromIdx];
       openPlanModal(ex.name, cat, targetDay, ex);
-    } else if (bankDrag.overIdx!==null) {
-      const arr=exercises[cat];
-      const [moved]=arr.splice(fromIdx,1);
-      arr.splice(bankDrag.overIdx,0,moved);
-      renderBankCol(cat);
-      saveState();
     }
+    // dropped within column — no reorder, just snap back
     bankDrag=null;
   }
 
@@ -710,7 +704,10 @@ function buildBank() { ['arm','leg','alt'].forEach(cat=>renderBankCol(cat)); }
 function renderBankCol(cat) {
   const container=document.getElementById('bank-'+cat);
   container.innerHTML='';
-  exercises[cat].forEach((ex,idx) => {
+  // Sort a display copy alphabetically — original array order is preserved
+  const sorted=[...exercises[cat]].sort((a,b)=>a.name.localeCompare(b.name));
+  sorted.forEach((ex) => {
+    const idx=exercises[cat].indexOf(ex);
     const pill=document.createElement('div');
     pill.className='bank-pill';
     const detail=detailStr(ex.sets,ex.reps,ex.mins);
@@ -718,7 +715,7 @@ function renderBankCol(cat) {
     const handle=document.createElement('span');
     handle.className='drag-handle';
     handle.innerHTML='<span></span>'.repeat(9);
-    handle.title='Drag to reorder';
+    handle.title='Drag to day';
     handle.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); initReorder(e,cat,idx); });
 
     const dot=document.createElement('span');
