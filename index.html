@@ -1499,7 +1499,7 @@ document.getElementById('importFile').addEventListener('change', e => {
       }
       weekOffset = data.weekOffset || 0;
       renderAllDays();
-      renderBank();
+      ['arm','leg','alt'].forEach(renderBankCol);
       updateTotal();
       saveState();
       alert('✓ Import successful');
