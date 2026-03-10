@@ -998,7 +998,10 @@ function renderDay(day) {
   const di = ['MON','TUE','WED','THU','FRI','SAT','SUN'].indexOf(day);
   const dd = new Date(mon2); dd.setDate(dd.getDate()+di);
   const nk = dd.getFullYear()+'-'+(dd.getMonth()+1)+'-'+dd.getDate()+'-'+day;
-  moreBtn.classList.toggle('has-note', !!dayNotes[nk]);
+  // also check old UTC key format for backwards compatibility
+  const nkUtc = dd.toISOString().slice(0,10)+'-'+day;
+  const hasNote = !!(dayNotes[nk] || dayNotes[nkUtc]);
+  moreBtn.classList.toggle('has-note', hasNote);
   body.appendChild(moreBtn);
 }
 
@@ -1450,7 +1453,14 @@ function getDayNoteKey(day) {
   const mon = getMonday(weekOffset);
   const i = ['MON','TUE','WED','THU','FRI','SAT','SUN'].indexOf(day);
   const d = new Date(mon); d.setDate(d.getDate()+i);
-  return d.toISOString().slice(0,10) + '-' + day;
+  const newKey = d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'-'+day;
+  const oldKey = d.toISOString().slice(0,10)+'-'+day;
+  // migrate old key to new key
+  if (dayNotes[oldKey] && !dayNotes[newKey]) {
+    dayNotes[newKey] = dayNotes[oldKey];
+    delete dayNotes[oldKey];
+  }
+  return newKey;
 }
 
 let _currentNoteKey = null;
@@ -1544,6 +1554,7 @@ document.getElementById('daySummaryNoteSave').addEventListener('click',()=>{
     else delete dayNotes[_currentNoteKey];
     saveState();
     updateWeekLabel();
+    renderDay(_currentNoteKey.split('-').pop()); // re-render to update More button
   }
   document.getElementById('daySummaryModal').classList.add('hidden');
 });
