@@ -1098,7 +1098,7 @@ function openEditModal(day,idx) {
   const setsField = document.getElementById('editSetsField');
   setsField.style.display = hasSets ? '' : 'none';
   if (hasSets) {
-    const val = p.sets;
+    const val = d.sets || '1';
     document.getElementById('editSets').value = val;
     document.getElementById('editSetsRatio').textContent = val+'/'+p.sets;
   }
