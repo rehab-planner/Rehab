@@ -109,15 +109,16 @@
   .bank-col-title.leg { color: var(--leg); background: rgba(241,160,53,0.1); }
   .bank-col-title.alt { color: var(--alt); background: rgba(200,53,241,0.1); }
 
-  .bank-pill { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s; touch-action: pan-y; }
+  .bank-pill { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 8px; margin-bottom: 6px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; transition: border-color 0.15s; touch-action: pan-y; min-width: 0; overflow: hidden; }
   .bank-pill:hover { border-color: var(--accent); }
   .bank-pill.reorder-over { border-color: var(--accent); border-style: dashed; }
+  .bank-pill-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .drag-handle { cursor: grab; flex-shrink: 0; touch-action: none; min-width: 20px; min-height: 24px; display: grid; grid-template-columns: repeat(3, 3px); grid-template-rows: repeat(3, 3px); gap: 2px; align-content: center; justify-content: center; padding: 4px; }
   .drag-handle span { width: 3px; height: 3px; border-radius: 50%; background: var(--muted); display: block; pointer-events: none; }
   .drag-handle:active { cursor: grabbing; }
   .pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
   .bank-pill-detail { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); font-weight: 400; margin-left: auto; flex-shrink: 0; }
-  .bank-pill-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px; margin-left: 4px; flex-shrink: 0; opacity: 0.4; transition: opacity 0.15s, color 0.15s; min-width: 24px; min-height: 24px; display: flex; align-items: center; justify-content: center; }
+  .bank-pill-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 0; margin-left: 0; flex-shrink: 0; opacity: 0.4; transition: opacity 0.15s, color 0.15s; min-width: 20px; min-height: 24px; display: flex; align-items: center; justify-content: center; }
   .bank-pill-del:hover, .bank-pill-del:active { opacity: 1; color: #f13570; }
 
 
@@ -805,7 +806,7 @@ function renderBankCol(cat) {
     dot.style.background=DOT_COLOR[cat];
 
     const name=document.createElement('span');
-    name.style.flex='1';
+    name.className='bank-pill-name';
     name.textContent=ex.name;
 
     pill.appendChild(handle);
