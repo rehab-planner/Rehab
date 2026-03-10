@@ -47,6 +47,8 @@
   .day-actions { display: flex; flex-direction: column; align-items: center; padding: 6px 8px; border-left: 1px solid var(--border); flex-shrink: 0; gap: 5px; justify-content: center; }
   .clear-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 1px; padding: 4px 6px; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.15s; min-height: 28px; width: 100%; }
   .clear-btn:hover, .clear-btn:active { border-color: #f13570; color: #f13570; }
+  .view-day-btn { border-color: #444 !important; color: #888 !important; }
+  .view-day-btn:hover, .view-day-btn:active { border-color: var(--accent) !important; color: var(--accent) !important; }
   .text-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 1px; padding: 4px 6px; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.15s; min-height: 28px; width: 100%; }
   .text-btn:hover, .text-btn:active { border-color: var(--accent); color: var(--accent); }
   .more-btn { position: absolute; bottom: 4px; right: 4px; width: auto; min-height: 20px; font-size: 8px; padding: 2px 6px; z-index: 2; border-radius: 3px; }
@@ -861,6 +863,11 @@ function buildWeek() {
       };
     });
     actions.appendChild(btn);
+    const viewBtn=document.createElement('button');
+    viewBtn.className='clear-btn view-day-btn'; viewBtn.textContent='View';
+    viewBtn.addEventListener('pointerdown',e=>e.stopPropagation());
+    viewBtn.addEventListener('click',()=>openDaySummary(day, false));
+    actions.appendChild(viewBtn);
     row.appendChild(label); row.appendChild(body); row.appendChild(actions);
     grid.appendChild(row);
   });
@@ -990,9 +997,9 @@ function renderDay(day) {
   const moreBtn = document.createElement('button');
   moreBtn.className = 'text-btn more-btn';
   moreBtn.id = 'note-btn-'+day;
-  moreBtn.textContent = 'More';
+  moreBtn.textContent = 'Note';
   moreBtn.addEventListener('pointerdown', e => e.stopPropagation());
-  moreBtn.addEventListener('click', () => openDaySummary(day));
+  moreBtn.addEventListener('click', () => openDaySummary(day, true));
   // apply has-note indicator
   const mon2 = getMonday(weekOffset);
   const di = ['MON','TUE','WED','THU','FRI','SAT','SUN'].indexOf(day);
@@ -1465,13 +1472,18 @@ function getDayNoteKey(day) {
 
 let _currentNoteKey = null;
 
-function openDaySummary(day) {
+function openDaySummary(day, noteOnly=false) {
   const items = schedule[day];
   document.getElementById('daySummaryTitle').textContent = day;
   const content = document.getElementById('daySummaryContent');
   content.innerHTML = '';
 
-  if (items.length === 0) {
+  if (noteOnly) {
+    // hide exercise content and stats, show only note
+    content.style.display = 'none';
+  } else {
+    content.style.display = '';
+    if (items.length === 0) {
     content.innerHTML = '<p style="color:var(--muted);font-size:13px">Rest day</p>';
   } else {
     // Order: strength (alt), arm, leg
@@ -1542,9 +1554,11 @@ function openDaySummary(day) {
     `;
     content.appendChild(stats);
   }
+  } // end !noteOnly
   _currentNoteKey = getDayNoteKey(day);
   document.getElementById('daySummaryNote').value = dayNotes[_currentNoteKey] || '';
   document.getElementById('daySummaryModal').classList.remove('hidden');
+  if (noteOnly) setTimeout(()=>{ document.getElementById('daySummaryNote').focus(); }, 100);
 }
 document.getElementById('daySummaryClose').addEventListener('click',()=>{ document.getElementById('daySummaryModal').classList.add('hidden'); });
 document.getElementById('daySummaryNoteSave').addEventListener('click',()=>{
