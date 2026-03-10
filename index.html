@@ -1471,7 +1471,7 @@ document.getElementById('daySummaryModal').addEventListener('click',e=>{ if(e.ta
 
 // ── Export / Import ───────────────────────────────────────────────────
 document.getElementById('exportBtn').addEventListener('click', () => {
-  const data = { exercises, schedule, weekOffset, exportedAt: new Date().toISOString() };
+  const data = { exercises, allSchedules, weekOffset, exportedAt: new Date().toISOString(), version: 2 };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1486,18 +1486,25 @@ document.getElementById('importFile').addEventListener('change', e => {
   reader.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
-      if (!data.exercises || !data.schedule) throw new Error('Invalid file');
+      const hasExercises = data.exercises && typeof data.exercises === 'object';
+      const hasSchedule  = data.allSchedules || data.schedule;
+      if (!hasExercises || !hasSchedule) throw new Error('Missing exercises or schedule data');
       if (!confirm('This will replace all current data. Continue?')) return;
-      exercises = data.exercises;
-      schedule  = data.schedule;
+      exercises    = data.exercises;
+      allSchedules = data.allSchedules || {};
+      // v1 fallback: wrap single-week schedule into allSchedules
+      if (!data.allSchedules && data.schedule) {
+        const key = weekKey(data.weekOffset || 0);
+        allSchedules[key] = data.schedule;
+      }
       weekOffset = data.weekOffset || 0;
       renderAllDays();
       renderBank();
       updateTotal();
       saveState();
-      alert('✓ Data imported successfully');
+      alert('✓ Import successful');
     } catch(err) {
-      alert('Import failed — invalid file');
+      alert('Import failed — ' + err.message);
     }
     e.target.value = '';
   };
