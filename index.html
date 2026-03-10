@@ -61,7 +61,7 @@
   .stepper-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 20px; line-height: 1; cursor: pointer; padding: 0; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; touch-action: manipulation; }
   .stepper-btn:active { background: var(--border); }
   .stepper-input { flex:1; min-width:0; text-align: center; color: var(--text) !important; font-size:22px !important; font-weight:700 !important; padding: 10px 4px !important; cursor:ns-resize; touch-action:none; user-select:none; }
-  .scrubber-track { position:relative; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; margin-top:18px; cursor:ew-resize; touch-action:none; }
+  .scrubber-track { position:relative; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; margin-top:22px; cursor:ew-resize; touch-action:none; }
   .scrubber-track::before { content:''; position:absolute; left:0; right:0; top:-28px; bottom:-28px; }
   .scrubber-fill { position:absolute; left:0; top:0; height:100%; background:var(--accent); border-radius:3px; width:50%; pointer-events:none; }
   .scrubber-thumb { position:absolute; top:50%; width:18px; height:18px; background:var(--accent); border-radius:50%; transform:translate(-50%,-50%); left:50%; pointer-events:none; box-shadow:0 0 0 3px rgba(0,0,0,0.4); }
@@ -1098,7 +1098,7 @@ function openEditModal(day,idx) {
   const setsField = document.getElementById('editSetsField');
   setsField.style.display = hasSets ? '' : 'none';
   if (hasSets) {
-    const val = d.sets || '0';
+    const val = p.sets;
     document.getElementById('editSets').value = val;
     document.getElementById('editSetsRatio').textContent = val+'/'+p.sets;
   }
@@ -1106,9 +1106,9 @@ function openEditModal(day,idx) {
   const repsField = document.getElementById('editRepsField');
   repsField.style.display = hasReps ? '' : 'none';
   if (hasReps) {
-    const val = d.reps || p.reps;
+    const val = p.reps;
     document.getElementById('editReps').value = val;
-    document.getElementById('editRepsRatio').textContent = (val||'0')+'/'+p.reps;
+    document.getElementById('editRepsRatio').textContent = val+'/'+p.reps;
   }
 
   const timeField = document.getElementById('editTimeField');
@@ -1116,9 +1116,9 @@ function openEditModal(day,idx) {
   const showTime = hasTime;
   timeField.style.display = showTime ? '' : 'none';
   if (showTime) {
-    const val = d.mins || p.mins;
+    const val = p.mins;
     document.getElementById('editTime').value = val;
-    document.getElementById('editTimeRatio').textContent = (val||'0')+'/'+p.mins;
+    document.getElementById('editTimeRatio').textContent = val+'/'+p.mins;
   }
 
   document.getElementById('editModal').classList.remove('hidden');
@@ -1194,7 +1194,7 @@ function addScrubber(trackId, fillId, thumbId, inputId, ratioId, isFloat, maxVal
     const rect=track.getBoundingClientRect();
     const max=parseFloat(inp.dataset.max)||maxVal;
     let val=(e.clientX-rect.left)/rect.width*max;
-    val=Math.max(0, isFloat ? Math.round(val*2)/2 : Math.round(val));
+    val=Math.max(0, Math.min(max, isFloat ? Math.round(val*2)/2 : Math.round(val)));
     inp.value=val; startVal=val; startX=e.clientX;
     if (ratioId) updateRatio(inputId, ratioId);
     updateBar();
@@ -1204,7 +1204,7 @@ function addScrubber(trackId, fillId, thumbId, inputId, ratioId, isFloat, maxVal
     const rect=track.getBoundingClientRect();
     const max=parseFloat(inp.dataset.max)||maxVal;
     let val=(e.clientX-rect.left)/rect.width*max;
-    val=Math.max(0, isFloat ? Math.round(val*2)/2 : Math.round(val));
+    val=Math.max(0, Math.min(max, isFloat ? Math.round(val*2)/2 : Math.round(val)));
     inp.value=val;
     if (ratioId) updateRatio(inputId, ratioId);
     updateBar();
@@ -1229,14 +1229,10 @@ openEditModal = function(day,idx) {
   const setsInp = document.getElementById('editSets');
   const repsInp = document.getElementById('editReps');
   const timeInp = document.getElementById('editTime');
-  // Set a generous max for scrubber display (2× planned or fallback)
-  setsInp.dataset.max = p.sets ? parseFloat(p.sets)*2 : 500;
-  repsInp.dataset.max = p.reps ? parseFloat(p.reps)*2 : 50;
-  timeInp.dataset.max = p.mins ? parseFloat(p.mins)*2 : 120;
-  // Also remove the hard stepper cap
-  setsInp.dataset.hardmax = 500;
-  repsInp.dataset.hardmax = 500;
-  timeInp.dataset.hardmax = 500;
+  // Scrubber max = planned value (slider capped at default), steppers can go beyond
+  setsInp.dataset.max = p.sets ? parseFloat(p.sets) : 500;
+  repsInp.dataset.max = p.reps ? parseFloat(p.reps) : 50;
+  timeInp.dataset.max = p.mins ? parseFloat(p.mins) : 120;
   if (updateRepBar)  updateRepBar();
   if (updateTimeBar) updateTimeBar();
 };
