@@ -869,10 +869,12 @@ function sortedDayItems(day) {
       const catB = catOrder[b.item.cat] ?? 3;
       if (catA !== catB) return catA - catB;
       const pA = calcProgress(a.item), pB = calcProgress(b.item);
-      // complete (1) first, then partial (>0), then planned (0)
+      // complete (1) first, then partial (>0) by descending %, then planned (0)
       const rankA = pA >= 1 ? 0 : pA > 0 ? 1 : 2;
       const rankB = pB >= 1 ? 0 : pB > 0 ? 1 : 2;
-      return rankA - rankB;
+      if (rankA !== rankB) return rankA - rankB;
+      if (rankA === 1) return pB - pA; // both partial: higher % first
+      return 0;
     });
 }
 
