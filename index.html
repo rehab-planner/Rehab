@@ -205,7 +205,11 @@
   </div>
 </div>
 
-<!-- ADD EXERCISE MODAL -->
+<div style="margin-top:18px;padding:16px;border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:10px;">
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;">Data Backup</div>
+  <button id="exportBtn" class="btn-primary" style="background:none;border:1px solid var(--accent);color:var(--accent);">↓ Export Data</button>
+  <label id="importLabel" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);text-align:center;cursor:pointer;">↑ Import Data<input type="file" id="importFile" accept=".json" style="display:none;"></label>
+</div>
 <div class="overlay hidden" id="addModal">
   <div class="modal">
     <div class="modal-title" id="addModalTitle">New Exercise</div>
@@ -1464,6 +1468,41 @@ function openDaySummary(day) {
 }
 document.getElementById('daySummaryClose').addEventListener('click',()=>{ document.getElementById('daySummaryModal').classList.add('hidden'); });
 document.getElementById('daySummaryModal').addEventListener('click',e=>{ if(e.target===document.getElementById('daySummaryModal')) document.getElementById('daySummaryModal').classList.add('hidden'); });
+
+// ── Export / Import ───────────────────────────────────────────────────
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const data = { exercises, schedule, weekOffset, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = `rehab-planner-${date}.json`;
+  a.click(); URL.revokeObjectURL(url);
+});
+
+document.getElementById('importFile').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.exercises || !data.schedule) throw new Error('Invalid file');
+      if (!confirm('This will replace all current data. Continue?')) return;
+      exercises = data.exercises;
+      schedule  = data.schedule;
+      weekOffset = data.weekOffset || 0;
+      renderAllDays();
+      renderBank();
+      updateTotal();
+      saveState();
+      alert('✓ Data imported successfully');
+    } catch(err) {
+      alert('Import failed — invalid file');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
 
 // ── Init ──────────────────────────────────────────────────────────────
 openDB().then(loadStateFromDB).then(saved => {
