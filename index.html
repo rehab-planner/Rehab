@@ -1376,7 +1376,14 @@ function openDaySummary(day) {
   } else {
     // Order: strength (alt), arm, leg
     ['alt','arm','leg'].forEach(cat => {
-      const catItems = items.filter(i => i.cat === cat);
+      const catItems = items.filter(i => {
+        if (i.cat !== cat) return false;
+        const p=i.planned||{}, d=i.done||{};
+        const ps=parseFloat(p.sets)||0, pr=parseFloat(p.reps)||0, pm=parseFloat(p.mins)||0;
+        const ds=parseFloat(d.sets)||0, dr=parseFloat(d.reps)||0, dm=parseFloat(d.mins)||0;
+        // has any done value > 0
+        return ds>0 || dr>0 || dm>0;
+      });
       if (catItems.length === 0) return;
       const catNames = { alt:'Strength', arm:'Arm', leg:'Leg' };
       const sec = document.createElement('div');
