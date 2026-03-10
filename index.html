@@ -1379,10 +1379,11 @@ function openDaySummary(day) {
       const catItems = items.filter(i => {
         if (i.cat !== cat) return false;
         const p=i.planned||{}, d=i.done||{};
-        const ps=parseFloat(p.sets)||0, pr=parseFloat(p.reps)||0, pm=parseFloat(p.mins)||0;
-        const ds=parseFloat(d.sets)||0, dr=parseFloat(d.reps)||0, dm=parseFloat(d.mins)||0;
-        // has any done value > 0
-        return ds>0 || dr>0 || dm>0;
+        const ps=parseFloat(p.sets)||0, pm=parseFloat(p.mins)||0, pr=parseFloat(p.reps)||0;
+        const ds=parseFloat(d.sets)||0, dm=parseFloat(d.mins)||0;
+        if (ps > 0) return ds > 0;        // sets-based: must have done at least 1 set
+        if (pm > 0) return dm > 0;        // time-only: must have done time
+        return false;                     // reps-only with no sets: skip (edge case)
       });
       if (catItems.length === 0) return;
       const catNames = { alt:'Strength', arm:'Arm', leg:'Leg' };
