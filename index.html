@@ -61,6 +61,7 @@
   .day-summary-item:last-child { border-bottom: none; }
   .day-summary-detail { font-family: 'DM Mono', monospace; font-size: 13px; color: #999; flex-shrink: 0; }
   .day-summary-stats { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); font-family: 'DM Mono', monospace; font-size: 12px; display: flex; flex-direction: column; gap: 5px; }
+  .day-summary-stats .stat-total { font-size: 14px; }
   .day-summary-stats span { color: var(--muted); }
   .day-summary-stats strong { color: #999; }
 
@@ -1426,7 +1427,7 @@ function openDaySummary(day) {
     const stats = document.createElement('div');
     stats.className = 'day-summary-stats';
     stats.innerHTML = `
-      <div><span>Total: </span><strong>${fmtMin(Math.round(total))}</strong></div>
+      <div class="stat-total"><span>Total: </span><strong>${fmtMin(Math.round(total))}</strong></div>
       ${planAlt>0?`<div><span style="color:var(--alt)">Strength: </span><strong>${fmtMin(Math.round(doneAlt))}</strong></div>`:''}
       ${planArm>0?`<div><span style="color:var(--arm)">Arm: </span><strong>${fmtMin(Math.round(doneArm))}</strong></div>`:''}
       ${planLeg>0?`<div><span style="color:var(--leg)">Leg: </span><strong>${fmtMin(Math.round(doneLeg))}</strong></div>`:''}
