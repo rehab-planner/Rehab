@@ -518,13 +518,15 @@ function updateWeekLabel() {
   document.getElementById('weekLabel').innerHTML =
     `<span>${MONTHS[mon.getMonth()]} ${ordinal(mon.getDate())}</span> &nbsp;to&nbsp; <span>${MONTHS[sun.getMonth()]} ${ordinal(sun.getDate())}</span>`;
   const MSHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-  const today = new Date(); today.setHours(0,0,0,0);
+  const today = new Date();
+  const todayLocal2 = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
   DAYS.forEach((day,i) => {
     const d = new Date(mon); d.setDate(d.getDate()+i);
+    const dLocal = d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
     const el = document.getElementById('date-'+day);
     if (el) {
       el.textContent = d.getDate() + ' ' + MSHORT[d.getMonth()];
-      const isToday = d.getTime() === today.getTime();
+      const isToday = dLocal === todayLocal2;
       el.style.color = isToday ? 'var(--accent)' : 'var(--muted)';
       el.style.fontWeight = isToday ? '700' : '400';
     }
@@ -1516,8 +1518,8 @@ function renderCalendar() {
   title.textContent = MNAMES[calMonth] + ' ' + calYear;
   grid.innerHTML = '';
 
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0,10);
+  const now = new Date();
+  const todayLocal = now.getFullYear()+'-'+(now.getMonth()+1)+'-'+now.getDate();
 
   // First day of month, adjust so week starts Monday (0=Mon..6=Sun)
   const first = new Date(calYear, calMonth, 1);
@@ -1534,7 +1536,8 @@ function renderCalendar() {
   for (let d=1; d<=daysInMonth; d++) {
     const date = new Date(calYear, calMonth, d);
     const dateStr = date.toISOString().slice(0,10);
-    const isToday = dateStr === todayStr;
+    const dateLocal = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
+    const isToday = dateLocal === todayLocal;
 
     // Find which weekOffset this date belongs to
     const base = new Date(2026, 2, 9); // app's Monday anchor
