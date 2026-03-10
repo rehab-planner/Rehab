@@ -65,13 +65,8 @@
   .day-summary-stats .stat-total { font-size: 14px; }
   .day-summary-stats span { color: var(--muted); }
   .day-summary-stats strong { color: #999; }
-  .ex-stat-row { display:flex; justify-content:space-between; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--border); }
-  .ex-stat-row:last-child { border-bottom:none; }
-  .ex-stat-label { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); padding-top:2px; }
-  .ex-stat-val { font-family:'DM Mono',monospace; font-size:13px; color:#f0f0f0; text-align:right; }
-  .ex-stat-sub { font-size:11px; color:#666; margin-top:2px; }
-  .day-badge { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); background:rgba(255,255,255,0.06); border-radius:4px; padding:2px 6px; cursor:pointer; flex-shrink:0; border:none; margin-left:4px; transition:color 0.15s; }
-  .day-badge:hover, .day-badge:active { color:var(--accent); }
+
+
 
   /* PLACED PILLS */
   .placed-pill { border-radius: 6px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: stretch; cursor: pointer; white-space: nowrap; touch-action: manipulation; position: relative; overflow: hidden; border: 1px solid rgba(120,120,120,0.3); background: rgba(120,120,120,0.12); color: #888; }
@@ -109,18 +104,15 @@
   .bank-col-title.leg { color: var(--leg); background: rgba(241,160,53,0.1); }
   .bank-col-title.alt { color: var(--alt); background: rgba(200,53,241,0.1); }
 
-  .bank-pill { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 8px; margin-bottom: 6px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; transition: border-color 0.15s; touch-action: pan-y; min-width: 0; overflow: hidden; }
+  .bank-pill { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s; touch-action: pan-y; }
   .bank-pill:hover { border-color: var(--accent); }
   .bank-pill.reorder-over { border-color: var(--accent); border-style: dashed; }
-  .bank-pill-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bank-pill-detail { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); font-weight: 400; margin-left: auto; flex-shrink: 0; }
-  .drag-handle { cursor: grab; flex-shrink: 0; touch-action: none; min-width: 16px; min-height: 24px; display: grid; grid-template-columns: repeat(3, 3px); grid-template-rows: repeat(3, 3px); gap: 2px; align-content: center; justify-content: center; padding: 2px; }
+  .drag-handle { cursor: grab; flex-shrink: 0; touch-action: none; min-width: 20px; min-height: 24px; display: grid; grid-template-columns: repeat(3, 3px); grid-template-rows: repeat(3, 3px); gap: 2px; align-content: center; justify-content: center; padding: 4px; }
   .drag-handle span { width: 3px; height: 3px; border-radius: 50%; background: var(--muted); display: block; pointer-events: none; }
   .drag-handle:active { cursor: grabbing; }
-  .pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-right: 1px; }
-  .bank-pill-edit { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; flex-shrink: 0; opacity: 0.4; transition: opacity 0.15s, color 0.15s; min-width: 18px; min-height: 24px; display: flex; align-items: center; justify-content: center; }
-  .bank-pill-edit:hover, .bank-pill-edit:active { opacity: 1; color: var(--accent); }
-  .bank-pill-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; flex-shrink: 0; opacity: 0.4; transition: opacity 0.15s, color 0.15s; min-width: 18px; min-height: 24px; display: flex; align-items: center; justify-content: center; }
+  .pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .bank-pill-detail { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); font-weight: 400; margin-left: auto; flex-shrink: 0; }
+  .bank-pill-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px; margin-left: 4px; flex-shrink: 0; opacity: 0.4; transition: opacity 0.15s, color 0.15s; min-width: 24px; min-height: 24px; display: flex; align-items: center; justify-content: center; }
   .bank-pill-del:hover, .bank-pill-del:active { opacity: 1; color: #f13570; }
 
 
@@ -424,16 +416,6 @@
   </div>
 </div>
 
-<div class="overlay hidden" id="exStatsModal">
-  <div class="day-summary-box">
-    <h2 id="exStatsName" style="margin-bottom:4px;"></h2>
-    <div id="exStatsCat" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:18px;"></div>
-    <div id="exStatsContent"></div>
-    <div class="modal-actions" style="margin-top:18px;">
-      <button class="btn-cancel" id="exStatsClose">Close</button>
-    </div>
-  </div>
-</div>
 
 <script>
 // ── IndexedDB Persistence ─────────────────────────────────────────────
@@ -808,11 +790,8 @@ function renderBankCol(cat) {
     dot.style.background=DOT_COLOR[cat];
 
     const name=document.createElement('span');
-    name.className='bank-pill-name';
+    name.style.flex='1';
     name.textContent=ex.name;
-    name.style.cursor='pointer';
-    name.addEventListener('pointerdown', e=>e.stopPropagation());
-    name.addEventListener('click', e=>{ e.stopPropagation(); openEditBankModal(cat,idx); });
 
     pill.appendChild(handle);
     pill.appendChild(dot);
@@ -826,18 +805,10 @@ function renderBankCol(cat) {
       pill.appendChild(d);
     }
 
-    const days = countExDays(ex.name);
-    if (days > 0) {
-      const badge = document.createElement('button');
-      badge.className = 'day-badge';
-      badge.textContent = days + 'd';
-      badge.addEventListener('pointerdown', e => e.stopPropagation());
-      badge.addEventListener('click', e => { e.stopPropagation(); openExStats(ex.name, cat); });
-      pill.appendChild(badge);
-    }
 
     const editBtn=document.createElement('button');
-    editBtn.className='bank-pill-edit';
+    editBtn.className='bank-pill-del';
+    editBtn.innerHTML='✎';
     editBtn.title='Edit defaults';
     editBtn.style.opacity='0.4';
     editBtn.addEventListener('pointerdown', e=>e.stopPropagation());
@@ -1618,97 +1589,6 @@ document.getElementById('calNext').addEventListener('click', () => {
 });
 
 // ── Exercise Statistics ───────────────────────────────────────────────
-function getExerciseStats(name) {
-  const now = new Date(); now.setHours(0,0,0,0);
-  let totalDays=0, totalReps=0, totalMins=0;
-  let days7=0, reps7=0, mins7=0;
-  let days30=0, reps30=0, mins30=0;
-
-  Object.entries(allSchedules).forEach(([weekKeyStr, weekData]) => {
-    // weekKeyStr is the Monday date "YYYY-MM-DD"
-    const mon = new Date(weekKeyStr + 'T00:00:00');
-    DAYS.forEach((day, i) => {
-      const items = weekData[day] || [];
-      const d = new Date(mon); d.setDate(d.getDate() + i);
-      const diffDays = Math.round((now - d) / 86400000);
-      if (diffDays < 0) return; // future
-
-      items.forEach(item => {
-        if (item.name !== name) return;
-        const p = item.planned||{}, done = item.done||{};
-        const pct = calcProgress(item);
-        if (pct <= 0) return; // not started
-
-        const dr = parseFloat(done.reps)||0;
-        const dm = parseFloat(done.mins)||0;
-        const ds = parseFloat(done.sets)||0;
-        const pr = parseFloat(p.reps)||0;
-        const pm = parseFloat(p.mins)||0;
-        const ps = parseFloat(p.sets)||0;
-
-        // count as 1 day done
-        totalDays++;
-        // accumulate reps or time
-        if (pr > 0) { const r = ds>0 ? ds*dr : dr; totalReps += r; }
-        else if (pm > 0) { const m = ps>0 ? ds*dm : dm; totalMins += m; }
-
-        if (diffDays <= 6)  { days7++;  if(pr>0){const r=ds>0?ds*dr:dr;reps7+=r;}  else if(pm>0){const m=ps>0?ds*dm:dm;mins7+=m;} }
-        if (diffDays <= 29) { days30++; if(pr>0){const r=ds>0?ds*dr:dr;reps30+=r;} else if(pm>0){const m=ps>0?ds*dm:dm;mins30+=m;} }
-      });
-    });
-  });
-
-  return { totalDays, totalReps, totalMins, days7, reps7, mins7, days30, reps30, mins30 };
-}
-
-function fmtStatVal(days, reps, mins) {
-  const parts = [days + (days===1?' day':' days')];
-  if (reps > 0) parts.push(reps + ' reps');
-  else if (mins > 0) parts.push(fmtMin(Math.round(mins)));
-  return parts.join(', ');
-}
-
-function openExStats(name, cat) {
-  document.getElementById('exStatsName').textContent = name;
-  const catLabel = {arm:'ARM', leg:'LEG', alt:'STRENGTH'};
-  const catColor = {arm:'var(--arm)', leg:'var(--leg)', alt:'var(--alt)'};
-  const catEl = document.getElementById('exStatsCat');
-  catEl.textContent = catLabel[cat]||'';
-  catEl.style.color = catColor[cat]||'var(--muted)';
-
-  const s = getExerciseStats(name);
-  const content = document.getElementById('exStatsContent');
-
-  const rows = [
-    { label: 'Last 7 days',  val: fmtStatVal(s.days7,  s.reps7,  s.mins7)  },
-    { label: 'Last 30 days', val: fmtStatVal(s.days30, s.reps30, s.mins30) },
-    { label: 'Since start',  val: fmtStatVal(s.totalDays, s.totalReps, s.totalMins) },
-  ];
-
-  content.innerHTML = rows.map(r => `
-    <div class="ex-stat-row">
-      <div class="ex-stat-label">${r.label}</div>
-      <div class="ex-stat-val">${r.val}</div>
-    </div>
-  `).join('');
-
-  document.getElementById('exStatsModal').classList.remove('hidden');
-}
-
-document.getElementById('exStatsClose').addEventListener('click', () => document.getElementById('exStatsModal').classList.add('hidden'));
-document.getElementById('exStatsModal').addEventListener('click', e => { if (e.target===document.getElementById('exStatsModal')) document.getElementById('exStatsModal').classList.add('hidden'); });
-
-function countExDays(name) {
-  let days = 0;
-  Object.values(allSchedules).forEach(weekData => {
-    DAYS.forEach(day => {
-      const items = weekData[day]||[];
-      if (items.some(i => i.name===name && calcProgress(i) > 0)) days++;
-    });
-  });
-  return days;
-}
-
 // ── Export / Import ───────────────────────────────────────────────────
 document.getElementById('exportBtn').addEventListener('click', () => {
   const data = { exercises, allSchedules, weekOffset, exportedAt: new Date().toISOString(), version: 2 };
