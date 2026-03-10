@@ -860,6 +860,22 @@ function calcProgress(item) {
   return 0;
 }
 
+function sortedDayItems(day) {
+  const catOrder = { alt:0, arm:1, leg:2 };
+  return schedule[day]
+    .map((item, idx) => ({ item, idx }))
+    .sort((a, b) => {
+      const catA = catOrder[a.item.cat] ?? 3;
+      const catB = catOrder[b.item.cat] ?? 3;
+      if (catA !== catB) return catA - catB;
+      const pA = calcProgress(a.item), pB = calcProgress(b.item);
+      // complete (1) first, then partial (>0), then planned (0)
+      const rankA = pA >= 1 ? 0 : pA > 0 ? 1 : 2;
+      const rankB = pB >= 1 ? 0 : pB > 0 ? 1 : 2;
+      return rankA - rankB;
+    });
+}
+
 function renderDay(day) {
   const body=document.getElementById('body-'+day);
   const cnt=document.getElementById('cnt-'+day);
@@ -869,7 +885,7 @@ function renderDay(day) {
     hint.className='drop-hint'; hint.textContent='+ drop here';
     body.appendChild(hint);
   } else {
-    schedule[day].forEach((item,idx) => {
+    sortedDayItems(day).forEach(({item, idx}) => {
       const pct = calcProgress(item);
       const done = pct >= 1;
 
