@@ -41,7 +41,7 @@
   .day-date { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-bottom: 2px; letter-spacing: 0.5px; }
   .day-date { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 1px; }
   .day-count { font-family: 'DM Mono', monospace; font-size: 11px; color: #aaa; margin-top: 7px; }
-  .day-body { flex: 1; padding: 6px 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-width: 0; }
+  .day-body { flex: 1; padding: 6px 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-start; align-content: flex-start; min-width: 0; position: relative; min-height: 36px; }
   .drop-hint { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); border: 1px dashed var(--border); border-radius: 6px; padding: 3px 8px; letter-spacing: 1px; pointer-events: none; white-space: nowrap; }
   .day-row.drop-active .drop-hint { border-color: var(--accent); color: var(--accent); }
   .day-actions { display: flex; flex-direction: column; align-items: center; padding: 6px 8px; border-left: 1px solid var(--border); flex-shrink: 0; gap: 5px; justify-content: center; }
@@ -49,6 +49,8 @@
   .clear-btn:hover, .clear-btn:active { border-color: #f13570; color: #f13570; }
   .text-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 1px; padding: 4px 6px; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.15s; min-height: 28px; width: 100%; }
   .text-btn:hover, .text-btn:active { border-color: var(--accent); color: var(--accent); }
+  .more-btn { position: absolute; bottom: 4px; right: 4px; width: auto; min-height: 20px; font-size: 8px; padding: 2px 6px; z-index: 2; border-radius: 3px; }
+  .more-btn.has-note { border-color: var(--accent); color: var(--accent); }
 
   /* DAY SUMMARY */
   .day-summary-box { background: var(--dark); border: 1px solid var(--border); border-radius: 14px; padding: 20px 16px; width: 100%; max-width: 100%; max-height: 85vh; overflow-y: auto; }
@@ -410,8 +412,13 @@
   <div class="day-summary-box">
     <h2 id="daySummaryTitle"></h2>
     <div id="daySummaryContent"></div>
-    <div class="modal-actions" style="margin-top:18px;">
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+      <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px;">Day Note</label>
+      <textarea id="daySummaryNote" rows="3" placeholder="How did it go? Pain levels, observations..." style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:10px;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;resize:none;outline:none;box-sizing:border-box;transition:border-color 0.15s;"></textarea>
+    </div>
+    <div class="modal-actions" style="margin-top:14px;">
       <button class="btn-cancel" id="daySummaryClose">Close</button>
+      <button class="btn-primary" id="daySummaryNoteSave">Save Note</button>
     </div>
   </div>
 </div>
@@ -471,7 +478,7 @@ function saveState() {
   if (!_db) return;
   const tx    = _db.transaction(STORE_NAME, 'readwrite');
   const store = tx.objectStore(STORE_NAME);
-  store.put({ exercises, allSchedules, weekOffset }, STATE_KEY);
+  store.put({ exercises, allSchedules, weekOffset, dayNotes }, STATE_KEY);
 }
 
 function loadStateFromDB() {
@@ -493,6 +500,7 @@ const DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 // ── Week navigation ───────────────────────────────────────────────────
 let weekOffset   = 0;
 let allSchedules = {};
+let dayNotes     = {}; // key: "YYYY-MM-DD-DAY" e.g. "2026-03-09-MON"
 
 function getMonday(offset) {
   const base = new Date(2026, 2, 9);
@@ -853,11 +861,6 @@ function buildWeek() {
       };
     });
     actions.appendChild(btn);
-    const txtBtn=document.createElement('button');
-    txtBtn.className='text-btn'; txtBtn.textContent='Text';
-    txtBtn.addEventListener('pointerdown',e=>e.stopPropagation());
-    txtBtn.addEventListener('click',()=>openDaySummary(day));
-    actions.appendChild(txtBtn);
     row.appendChild(label); row.appendChild(body); row.appendChild(actions);
     grid.appendChild(row);
   });
@@ -983,6 +986,20 @@ function renderDay(day) {
   } else {
     cnt.innerHTML = '';
   }
+  // More button — always recreate at bottom-right
+  const moreBtn = document.createElement('button');
+  moreBtn.className = 'text-btn more-btn';
+  moreBtn.id = 'note-btn-'+day;
+  moreBtn.textContent = 'More';
+  moreBtn.addEventListener('pointerdown', e => e.stopPropagation());
+  moreBtn.addEventListener('click', () => openDaySummary(day));
+  // apply has-note indicator
+  const mon2 = getMonday(weekOffset);
+  const di = ['MON','TUE','WED','THU','FRI','SAT','SUN'].indexOf(day);
+  const dd = new Date(mon2); dd.setDate(dd.getDate()+di);
+  const nk = dd.getFullYear()+'-'+(dd.getMonth()+1)+'-'+dd.getDate()+'-'+day;
+  moreBtn.classList.toggle('has-note', !!dayNotes[nk]);
+  body.appendChild(moreBtn);
 }
 
 function renderAllDays() { DAYS.forEach(renderDay); updateTotal(); saveState(); if(typeof renderCalendar==='function') renderCalendar(); }
@@ -1429,6 +1446,15 @@ document.getElementById('removeYes').addEventListener('click',()=>{
 document.getElementById('removeModal').addEventListener('click',e=>{ if(e.target===document.getElementById('removeModal')){ document.getElementById('removeModal').classList.add('hidden'); removeTarget=null; } });
 
 // ── Day Summary ───────────────────────────────────────────────────────
+function getDayNoteKey(day) {
+  const mon = getMonday(weekOffset);
+  const i = ['MON','TUE','WED','THU','FRI','SAT','SUN'].indexOf(day);
+  const d = new Date(mon); d.setDate(d.getDate()+i);
+  return d.toISOString().slice(0,10) + '-' + day;
+}
+
+let _currentNoteKey = null;
+
 function openDaySummary(day) {
   const items = schedule[day];
   document.getElementById('daySummaryTitle').textContent = day;
@@ -1506,10 +1532,24 @@ function openDaySummary(day) {
     `;
     content.appendChild(stats);
   }
+  _currentNoteKey = getDayNoteKey(day);
+  document.getElementById('daySummaryNote').value = dayNotes[_currentNoteKey] || '';
   document.getElementById('daySummaryModal').classList.remove('hidden');
 }
 document.getElementById('daySummaryClose').addEventListener('click',()=>{ document.getElementById('daySummaryModal').classList.add('hidden'); });
+document.getElementById('daySummaryNoteSave').addEventListener('click',()=>{
+  if (_currentNoteKey !== null) {
+    const val = document.getElementById('daySummaryNote').value.trim();
+    if (val) dayNotes[_currentNoteKey] = val;
+    else delete dayNotes[_currentNoteKey];
+    saveState();
+    updateWeekLabel();
+  }
+  document.getElementById('daySummaryModal').classList.add('hidden');
+});
 document.getElementById('daySummaryModal').addEventListener('click',e=>{ if(e.target===document.getElementById('daySummaryModal')) document.getElementById('daySummaryModal').classList.add('hidden'); });
+document.getElementById('daySummaryNote').addEventListener('focus', e => e.target.style.borderColor='var(--accent)');
+document.getElementById('daySummaryNote').addEventListener('blur',  e => e.target.style.borderColor='var(--border)');
 
 // ── Mini Calendar ─────────────────────────────────────────────────────
 let calYear, calMonth;
@@ -1591,7 +1631,7 @@ document.getElementById('calNext').addEventListener('click', () => {
 // ── Exercise Statistics ───────────────────────────────────────────────
 // ── Export / Import ───────────────────────────────────────────────────
 document.getElementById('exportBtn').addEventListener('click', () => {
-  const data = { exercises, allSchedules, weekOffset, exportedAt: new Date().toISOString(), version: 2 };
+  const data = { exercises, allSchedules, weekOffset, dayNotes, exportedAt: new Date().toISOString(), version: 2 };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1612,6 +1652,7 @@ document.getElementById('importFile').addEventListener('change', e => {
       if (!confirm('This will replace all current data. Continue?')) return;
       exercises    = data.exercises;
       allSchedules = data.allSchedules || {};
+      if (data.dayNotes) dayNotes = data.dayNotes;
       // v1 fallback: wrap single-week schedule into allSchedules
       if (!data.allSchedules && data.schedule) {
         const key = weekKey(data.weekOffset || 0);
@@ -1638,6 +1679,7 @@ openDB().then(loadStateFromDB).then(saved => {
     if (saved.exercises)    exercises    = saved.exercises;
     if (saved.allSchedules) allSchedules = saved.allSchedules;
     if (saved.weekOffset != null) weekOffset = saved.weekOffset;
+    if (saved.dayNotes)     dayNotes     = saved.dayNotes;
   }
   buildBank();
   buildWeek();
