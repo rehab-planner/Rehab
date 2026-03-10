@@ -37,7 +37,8 @@
   .day-row { background: var(--dark); border: 2px solid var(--border); border-radius: 10px; display: flex; flex-direction: row; align-items: stretch; min-height: 52px; transition: border-color 0.15s, background 0.15s; overflow: hidden; }
   .day-row.drop-active { border-color: var(--accent); background: rgba(200,241,53,0.04); }
   .day-label { width: 72px; flex-shrink: 0; padding: 6px 10px; border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; }
-  .day-name { font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .day-name { font-size: 18px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .day-date { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-bottom: 2px; letter-spacing: 0.5px; }
   .day-date { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 1px; }
   .day-count { font-family: 'DM Mono', monospace; font-size: 11px; color: #aaa; margin-top: 7px; }
   .day-body { flex: 1; padding: 6px 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-width: 0; }
@@ -205,7 +206,34 @@
   </div>
 </div>
 
-<div style="margin-top:18px;padding:16px;border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:10px;">
+
+<div style="margin-top:18px;padding:16px;border:1px solid var(--border);border-radius:12px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <button id="calPrev" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;">‹</button>
+    <div id="calTitle" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text);"></div>
+    <button id="calNext" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;">›</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:6px;">
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">M</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">T</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">W</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">T</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">F</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">S</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">S</div>
+  </div>
+  <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div>
+  <div style="display:flex;gap:12px;margin-top:10px;">
+    <div style="display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);">
+      <div style="width:7px;height:7px;border-radius:50%;background:var(--accent);opacity:0.5;"></div>has exercises
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);">
+      <div style="width:7px;height:7px;border-radius:50%;background:var(--accent);"></div>today
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:12px;padding:16px;border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:10px;">
   <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;">Data Backup</div>
   <button id="exportBtn" class="btn-primary" style="background:none;border:1px solid var(--accent);color:var(--accent);">↓ Export Data</button>
   <label id="importLabel" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);text-align:center;cursor:pointer;">↑ Import Data<input type="file" id="importFile" accept=".json" style="display:none;"></label>
@@ -489,10 +517,17 @@ function updateWeekLabel() {
   const sun = new Date(mon); sun.setDate(sun.getDate()+6);
   document.getElementById('weekLabel').innerHTML =
     `<span>${MONTHS[mon.getMonth()]} ${ordinal(mon.getDate())}</span> &nbsp;to&nbsp; <span>${MONTHS[sun.getMonth()]} ${ordinal(sun.getDate())}</span>`;
+  const MSHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const today = new Date(); today.setHours(0,0,0,0);
   DAYS.forEach((day,i) => {
     const d = new Date(mon); d.setDate(d.getDate()+i);
     const el = document.getElementById('date-'+day);
-    if (el) el.textContent = d.getDate()+'/'+(d.getMonth()+1);
+    if (el) {
+      el.textContent = d.getDate() + ' ' + MSHORT[d.getMonth()];
+      const isToday = d.getTime() === today.getTime();
+      el.style.color = isToday ? 'var(--accent)' : 'var(--muted)';
+      el.style.fontWeight = isToday ? '700' : '400';
+    }
   });
 }
 
@@ -800,7 +835,7 @@ function buildWeek() {
     row.className='day-row'; row.dataset.day=day;
     const label=document.createElement('div');
     label.className='day-label';
-    label.innerHTML=`<div class="day-name">${day}</div><div class="day-count" id="cnt-${day}"></div>`;
+    label.innerHTML=`<div class="day-date" id="date-${day}"></div><div class="day-name">${day}</div><div class="day-count" id="cnt-${day}"></div>`;
     const body=document.createElement('div');
     body.className='day-body'; body.id='body-'+day;
     const actions=document.createElement('div');
@@ -939,12 +974,17 @@ function renderDay(day) {
       body.appendChild(pill);
     });
   }
-  const n=schedule[day].length;
-  const done=calcDayDoneMinutes(day);
-  cnt.textContent = done > 0 ? fmtMin(done) : '';
+  const planned = calcDayMinutes(day);
+  const done = calcDayDoneMinutes(day);
+  if (done > 0 || planned > 0) {
+    cnt.innerHTML = (done > 0 ? `<div>${fmtMin(done)}</div>` : '<div style="color:transparent">—</div>') +
+      (planned > 0 ? `<div style="color:#555;font-size:10px;">${fmtMin(planned)}</div>` : '');
+  } else {
+    cnt.innerHTML = '';
+  }
 }
 
-function renderAllDays() { DAYS.forEach(renderDay); updateTotal(); saveState(); }
+function renderAllDays() { DAYS.forEach(renderDay); updateTotal(); saveState(); if(typeof renderCalendar==='function') renderCalendar(); }
 
 function calcItemDoneMinutes(item) {
   const p=item.planned||item, d=item.done||{};
@@ -1469,6 +1509,82 @@ function openDaySummary(day) {
 document.getElementById('daySummaryClose').addEventListener('click',()=>{ document.getElementById('daySummaryModal').classList.add('hidden'); });
 document.getElementById('daySummaryModal').addEventListener('click',e=>{ if(e.target===document.getElementById('daySummaryModal')) document.getElementById('daySummaryModal').classList.add('hidden'); });
 
+// ── Mini Calendar ─────────────────────────────────────────────────────
+let calYear, calMonth;
+(function() { const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth(); })();
+
+function renderCalendar() {
+  const title = document.getElementById('calTitle');
+  const grid  = document.getElementById('calGrid');
+  const MNAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  title.textContent = MNAMES[calMonth] + ' ' + calYear;
+  grid.innerHTML = '';
+
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0,10);
+
+  // First day of month, adjust so week starts Monday (0=Mon..6=Sun)
+  const first = new Date(calYear, calMonth, 1);
+  let startDow = first.getDay(); // 0=Sun
+  startDow = (startDow + 6) % 7; // shift: Mon=0, Sun=6
+
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+
+  // Blank cells before first day
+  for (let i=0; i<startDow; i++) {
+    grid.appendChild(Object.assign(document.createElement('div'), {style:''}));
+  }
+
+  for (let d=1; d<=daysInMonth; d++) {
+    const date = new Date(calYear, calMonth, d);
+    const dateStr = date.toISOString().slice(0,10);
+    const isToday = dateStr === todayStr;
+
+    // Find which weekOffset this date belongs to
+    const base = new Date(2026, 2, 9); // app's Monday anchor
+    const diffDays = Math.round((date - base) / 86400000);
+    const offset = Math.floor(diffDays / 7);
+    const dayOfWeek = ((date.getDay() + 6) % 7); // Mon=0
+
+    // Check if this week/day has any exercises
+    const wKey = weekKey(offset);
+    const dayName = ['MON','TUE','WED','THU','FRI','SAT','SUN'][dayOfWeek];
+    const hasEx = allSchedules[wKey] && allSchedules[wKey][dayName] && allSchedules[wKey][dayName].length > 0;
+
+    const cell = document.createElement('div');
+    cell.textContent = d;
+    cell.style.cssText = `
+      text-align:center; padding:5px 2px; font-size:12px; border-radius:50%;
+      cursor:pointer; position:relative; font-family:'DM Mono',monospace;
+      color:${isToday ? '#000' : hasEx ? 'var(--text)' : 'var(--muted)'};
+      background:${isToday ? 'var(--accent)' : 'none'};
+      font-weight:${isToday ? '800' : '400'};
+      aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+    `;
+    if (hasEx && !isToday) {
+      const dot = document.createElement('div');
+      dot.style.cssText = 'position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0.6;';
+      cell.style.position = 'relative';
+      cell.appendChild(dot);
+    }
+    cell.addEventListener('click', () => {
+      weekOffset = offset;
+      renderAllDays();
+      updateWeekLabel();
+      // scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    grid.appendChild(cell);
+  }
+}
+
+document.getElementById('calPrev').addEventListener('click', () => {
+  calMonth--; if (calMonth<0){calMonth=11;calYear--;} renderCalendar();
+});
+document.getElementById('calNext').addEventListener('click', () => {
+  calMonth++; if (calMonth>11){calMonth=0;calYear++;} renderCalendar();
+});
+
 // ── Export / Import ───────────────────────────────────────────────────
 document.getElementById('exportBtn').addEventListener('click', () => {
   const data = { exercises, allSchedules, weekOffset, exportedAt: new Date().toISOString(), version: 2 };
@@ -1502,6 +1618,7 @@ document.getElementById('importFile').addEventListener('change', e => {
       ['arm','leg','alt'].forEach(renderBankCol);
       updateTotal();
       saveState();
+      renderCalendar();
       alert('✓ Import successful');
     } catch(err) {
       alert('Import failed — ' + err.message);
@@ -1521,11 +1638,13 @@ openDB().then(loadStateFromDB).then(saved => {
   buildBank();
   buildWeek();
   updateCatBtns();
+  renderCalendar();
 }).catch(err => {
   console.warn('DB load failed, starting fresh:', err);
   buildBank();
   buildWeek();
   updateCatBtns();
+  renderCalendar();
 });
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
