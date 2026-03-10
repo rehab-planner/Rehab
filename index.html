@@ -1385,13 +1385,28 @@ function openDaySummary(day) {
       sec.appendChild(title);
       catItems.forEach(item => {
         const p = item.planned||{}, d = item.done||{};
-        const parts = [];
-        if (p.sets) parts.push((d.sets||'0')+'/'+p.sets+' sets');
-        if (p.reps) parts.push((d.reps||'0')+'/'+p.reps+' reps');
-        if (p.mins) parts.push(fmtMin(Math.round(calcItemDoneMinutes(item)))+'/'+fmtMin(parseFloat(p.mins)));
+        const ps=parseFloat(p.sets)||0, pr=parseFloat(p.reps)||0, pm=parseFloat(p.mins)||0;
+        const ds=parseFloat(d.sets)||0, dr=parseFloat(d.reps)||0, dm=parseFloat(d.mins)||0;
+        let detail = '';
+        if (ps > 0 && pm > 0) {
+          // sets × time: "1 × 8 min"
+          detail = `${ds} × ${fmtMin(dm||pm)}`;
+        } else if (ps > 0 && pr > 0) {
+          // sets × reps: "1 × 50 reps"
+          detail = `${ds} × ${dr||pr} reps`;
+        } else if (ps > 0) {
+          // sets only: "2 sets"
+          detail = `${ds} sets`;
+        } else if (pm > 0) {
+          // time only: "25 min"
+          detail = fmtMin(Math.round(dm||pm));
+        } else if (pr > 0) {
+          // reps only: "20 reps"
+          detail = `${dr||pr} reps`;
+        }
         const row = document.createElement('div');
         row.className = 'day-summary-item';
-        row.innerHTML = `<span>${item.name}</span><span style="color:var(--muted);font-size:11px">${parts.join(' · ')}</span>`;
+        row.innerHTML = `<span>${item.name}</span><span style="color:var(--muted);font-size:11px">${detail}</span>`;
         sec.appendChild(row);
       });
       content.appendChild(sec);
