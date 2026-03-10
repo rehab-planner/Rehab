@@ -50,7 +50,7 @@
   .text-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 1px; padding: 4px 6px; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.15s; min-height: 28px; width: 100%; }
   .text-btn:hover, .text-btn:active { border-color: var(--accent); color: var(--accent); }
   .more-btn { position: absolute; bottom: 4px; right: 4px; width: auto; min-height: 20px; font-size: 8px; padding: 2px 6px; z-index: 2; border-radius: 3px; }
-  .more-btn.has-note { border-color: var(--accent); color: var(--accent); }
+  .more-btn.has-note { border-color: #fff; color: #fff; }
 
   /* DAY SUMMARY */
   .day-summary-box { background: var(--dark); border: 1px solid var(--border); border-radius: 14px; padding: 20px 16px; width: 100%; max-width: 100%; max-height: 85vh; overflow-y: auto; }
@@ -414,7 +414,7 @@
     <div id="daySummaryContent"></div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
       <label style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px;">Day Note</label>
-      <textarea id="daySummaryNote" rows="3" placeholder="How did it go? Pain levels, observations..." style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:10px;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;resize:none;outline:none;box-sizing:border-box;transition:border-color 0.15s;"></textarea>
+      <textarea id="daySummaryNote" rows="3" placeholder="Write your notes here..." style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:10px;color:var(--text);font-family:'Syne',sans-serif;font-size:15px;resize:none;outline:none;box-sizing:border-box;transition:border-color 0.15s;"></textarea>
     </div>
     <div class="modal-actions" style="margin-top:14px;">
       <button class="btn-cancel" id="daySummaryClose">Close</button>
