@@ -255,12 +255,12 @@
   <button id="exportBtn" class="btn-primary" style="background:none;border:1px solid var(--accent);color:var(--accent);">↓ Export Data</button>
   <label id="importLabel" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);text-align:center;cursor:pointer;">↑ Import Data<input type="file" id="importFile" accept=".json" style="display:none;"></label>
 </div>
-<div class="overlay hidden" id="batchAddModal" style="touch-action:none;">
-  <div class="modal" style="max-width:400px;max-height:85vh;display:flex;flex-direction:column;">
+<div class="overlay hidden" id="batchAddModal">
+  <div class="modal" style="max-width:400px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">
     <div class="modal-title" id="batchAddTitle">Add to MON</div>
     <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:12px;">TAP TO SELECT</div>
-    <div id="batchAddList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;"></div>
-    <div class="modal-actions" style="margin-top:16px;">
+    <div id="batchAddList" style="overflow-y:scroll;flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;"></div>
+    <div class="modal-actions" style="margin-top:16px;flex-shrink:0;">
       <button class="btn-secondary" id="batchAddClose" style="flex:1;">Cancel</button>
       <button class="btn-primary" id="batchAddConfirm" style="flex:2;">Add Selected</button>
     </div>
@@ -1961,18 +1961,36 @@ function openBatchAddModal(day) {
   });
 
   document.getElementById('batchAddModal').classList.remove('hidden');
+  lockBodyScroll();
 }
 
 document.getElementById('batchAddClose').addEventListener('click', () => {
   document.getElementById('batchAddModal').classList.add('hidden');
+  unlockBodyScroll();
 });
 document.getElementById('batchAddModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('batchAddModal')) document.getElementById('batchAddModal').classList.add('hidden');
+  if (e.target === document.getElementById('batchAddModal')) {
+    document.getElementById('batchAddModal').classList.add('hidden');
+    unlockBodyScroll();
+  }
 });
-document.getElementById('batchAddModal').addEventListener('touchmove', e => {
-  // Allow scroll inside the list, block everything else
-  if (!document.getElementById('batchAddList').contains(e.target)) e.preventDefault();
-}, { passive: false });
+
+function lockBodyScroll() {
+  const y = window.scrollY;
+  document.body.style.position = 'fixed';
+  document.body.style.top = -y + 'px';
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.dataset.scrollY = y;
+}
+function unlockBodyScroll() {
+  const y = parseInt(document.body.dataset.scrollY || '0');
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  window.scrollTo(0, y);
+}
 // ── Batch Add Queue ───────────────────────────────────────────────────
 let batchQueue = [];
 
@@ -2001,8 +2019,9 @@ document.getElementById('batchAddConfirm').addEventListener('click', () => {
     const p = ex.planned || ex;
     selected.push({ name: ex.name, cat, day: batchAddDay, ex: p });
   });
-  if (!selected.length) { document.getElementById('batchAddModal').classList.add('hidden'); return; }
+  if (!selected.length) { document.getElementById('batchAddModal').classList.add('hidden'); unlockBodyScroll(); return; }
   document.getElementById('batchAddModal').classList.add('hidden');
+  unlockBodyScroll();
   batchQueue = selected;
   batchQueue._total = selected.length;
   processBatchQueue();
