@@ -146,8 +146,10 @@
   .seg-btn.active-leg { border-color: var(--leg); color: var(--leg); background: rgba(241,160,53,0.1); }
   .seg-btn.active-alt { border-color: var(--alt); color: var(--alt); background: rgba(200,53,241,0.1); }
   .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-  .btn-primary { flex: 1; background: var(--accent); color: var(--black); font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; border: none; border-radius: 7px; padding: 13px; cursor: pointer; transition: opacity 0.15s; min-height: 48px; }
+  .btn-primary { flex: 1; background: #5c7a12; color: #d8d8d8; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; border: none; border-radius: 7px; padding: 13px; cursor: pointer; transition: opacity 0.15s; min-height: 48px; }
   .btn-primary:hover, .btn-primary:active { opacity: 0.85; }
+  .btn-secondary { flex: 1; background: #1e1e1e; color: #888; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; border: 1px solid #333; border-radius: 7px; padding: 13px; cursor: pointer; transition: opacity 0.15s; min-height: 48px; }
+  .btn-secondary:hover, .btn-secondary:active { border-color: #555; color: #aaa; }
   .btn-cancel { flex: 1; background: none; color: var(--muted); font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600; border: 1px solid var(--border); border-radius: 7px; padding: 13px; cursor: pointer; transition: all 0.15s; min-height: 48px; }
   .btn-cancel:hover, .btn-cancel:active { border-color: var(--muted); color: var(--text); }
 
@@ -1822,7 +1824,7 @@ function renderCalendarModal() {
     const dow = date.getDay(); const dayIdx = dow===0?6:dow-1;
     const dayName = ['MON','TUE','WED','THU','FRI','SAT','SUN'][dayIdx];
     const mon = new Date(date); mon.setDate(mon.getDate()-dayIdx);
-    const wk = mon.getFullYear()+'-'+(mon.getMonth()+1)+'-'+mon.getDate();
+    const wk = mon.toISOString().slice(0,10);
     const sched = allSchedules[wk]||{};
     const hasEx = (sched[dayName]||[]).length>0;
     const cell = document.createElement('div');
@@ -1877,7 +1879,7 @@ function renderRepCal() {
     const dow = date.getDay(); const dayIdx = dow===0?6:dow-1;
     const dayName = ['MON','TUE','WED','THU','FRI','SAT','SUN'][dayIdx];
     const mon = new Date(date); mon.setDate(mon.getDate()-dayIdx);
-    const wk = dateKey(mon);
+    const wk = mon.toISOString().slice(0,10);
     const sched = allSchedules[wk]||{};
     const hasEx = (sched[dayName]||[]).length>0;
     const cell = document.createElement('div');
@@ -1932,7 +1934,7 @@ function generateReport() {
     const dow=cur.getDay(); const dayIdx=dow===0?6:dow-1;
     const dayName=dayNames[dayIdx];
     const mon=new Date(cur); mon.setDate(mon.getDate()-dayIdx);
-    const wk=dateKey(mon);
+    const wk=mon.toISOString().slice(0,10);
     const sched=allSchedules[wk]||{};
     const items=sched[dayName]||[];
     items.forEach(item=>{
@@ -1966,7 +1968,7 @@ function generateReport() {
   out.innerHTML='';
   // date range header
   const header=document.createElement('div');
-  header.style.cssText='font-family:"DM Mono",monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:14px;';
+  header.style.cssText='font-family:"DM Mono",monospace;font-size:13px;color:var(--text);letter-spacing:1px;margin-bottom:14px;';
   header.textContent=repRangeStart+' → '+repRangeEnd;
   out.appendChild(header);
   // per-category breakdown
