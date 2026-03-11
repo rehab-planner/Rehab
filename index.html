@@ -59,8 +59,9 @@
   .rep-cal-day.in-range { background:rgba(106,136,24,0.2); color:var(--accent); }
   .rep-cal-day.range-start, .rep-cal-day.range-end { background:var(--accent); color:#000; border-radius:4px; }
   .rep-cal-day.empty { pointer-events:none; }
-  .cat-color-swatch { width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent;flex-shrink:0;transition:border-color 0.15s; }
+  .cat-color-swatch { width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent;flex-shrink:0;flex-grow:0;display:inline-block;transition:border-color 0.15s; }
   .cat-color-swatch.selected { border-color: #fff; }
+  #catColorPicker { display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;gap:10px;align-items:center; }
 
   /* DAY SUMMARY */
   .day-summary-box { background: var(--dark); border: 1px solid var(--border); border-radius: 14px; padding: 20px 16px; width: 100%; max-width: 100%; max-height: 85vh; overflow-y: auto; }
@@ -541,6 +542,14 @@
       <button class="btn-cancel" id="addCatCancelBtn">Cancel</button>
       <button class="btn-primary" id="addCatSaveBtn">Create</button>
     </div>
+    <!-- inline delete confirm -->
+    <div id="addCatConfirmDelete" style="display:none;margin-top:14px;padding:14px;background:#1a1a1a;border:1px solid #f13570;border-radius:10px;">
+      <div style="font-size:13px;color:var(--text);margin-bottom:12px;line-height:1.5;">Delete <strong id="addCatConfirmName"></strong>? Exercises will move to <span style="color:#aaa;">Unassigned</span>.</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-cancel" id="addCatConfirmNo" style="flex:1;min-height:40px;font-size:13px;">Cancel</button>
+        <button class="btn-danger" id="addCatConfirmYes" style="flex:1;min-height:40px;font-size:13px;">Delete</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -940,7 +949,7 @@ function initReorder(e, cat, fromIdx) {
 // customCats: [{id, name, color}]  — stored alongside exercises
 let customCats = []; // loaded from DB
 
-function allCatIds() { return ['fav','alt','arm','leg',...customCats.map(c=>c.id),'unassigned']; }
+function allCatIds() { return ['fav','alt','arm','leg',...customCats.map(c=>c.id)]; }
 
 function renderBankSections() {
   const container = document.querySelector('.bank-cols');
@@ -976,6 +985,7 @@ function buildBank() {
   renderBankSections();
   ensureUnassignedSection();
   allCatIds().forEach(cat=>renderBankCol(cat));
+  if (exercises['unassigned']?.length) renderBankCol('unassigned');
 }
 
 function renderBankCol(cat) {
@@ -1434,10 +1444,11 @@ function openAddCatModal() {
   document.getElementById('addCatModalTitle').textContent = 'New Category';
   document.getElementById('addCatSaveBtn').textContent = 'Create';
   document.getElementById('addCatDeleteBtn').style.display = 'none';
+  document.getElementById('addCatConfirmDelete').style.display = 'none';
+  document.querySelector('#addCatModal .modal-actions').style.display = '';
   document.getElementById('catNameInput').value = '';
   updateSwatches();
   document.getElementById('addCatModal').classList.remove('hidden');
-  lockBodyScroll();
   setTimeout(()=>document.getElementById('catNameInput').focus(), 50);
 }
 
@@ -1456,9 +1467,10 @@ function openEditCatModal(id) {
   nameInput.disabled = (id === 'fav');
   // Color picker: hide for fav (no color to change)
   document.getElementById('catColorPicker').style.display = id === 'fav' ? 'none' : '';
+  document.getElementById('addCatConfirmDelete').style.display = 'none';
+  document.querySelector('#addCatModal .modal-actions').style.display = '';
   updateSwatches();
   document.getElementById('addCatModal').classList.remove('hidden');
-  lockBodyScroll();
 }
 
 function updateSwatches() {
@@ -1472,8 +1484,9 @@ document.querySelectorAll('.cat-color-swatch').forEach(sw => {
 });
 
 document.getElementById('addCatBtn').addEventListener('click', openAddCatModal);
-document.getElementById('addCatCancelBtn').addEventListener('click', ()=>{ document.getElementById('addCatModal').classList.add('hidden'); unlockBodyScroll(); });
-document.getElementById('addCatModal').addEventListener('click', e=>{ if(e.target===document.getElementById('addCatModal')){ document.getElementById('addCatModal').classList.add('hidden'); unlockBodyScroll(); } });
+document.getElementById('addCatCancelBtn').addEventListener('click', ()=>{ document.getElementById('addCatModal').classList.add('hidden'); });
+document.getElementById('addCatModal').addEventListener('click', e=>{ if(e.target===document.getElementById('addCatModal')){ document.getElementById('addCatModal').classList.add('hidden'); } });
+document.getElementById('addCatModal').addEventListener('touchmove', e=>{ if(e.target===document.getElementById('addCatModal')) e.preventDefault(); }, { passive: false });
 
 document.getElementById('addCatSaveBtn').addEventListener('click', () => {
   const nameInput = document.getElementById('catNameInput');
@@ -1518,44 +1531,52 @@ document.getElementById('addCatSaveBtn').addEventListener('click', () => {
   updateCatBtns();
   saveState();
   document.getElementById('addCatModal').classList.add('hidden');
-  unlockBodyScroll();
 });
 
 document.getElementById('addCatDeleteBtn').addEventListener('click', () => {
   if (!editCatTarget) return;
   const meta = getCatMeta(editCatTarget);
-  if (!confirm(`Delete "${meta?.name || editCatTarget}"? Its exercises will move to Unassigned.`)) return;
+  document.getElementById('addCatConfirmName').textContent = meta?.name || editCatTarget;
+  document.getElementById('addCatConfirmDelete').style.display = '';
+  // Hide main actions while confirming
+  document.querySelector('#addCatModal .modal-actions').style.display = 'none';
+});
+
+document.getElementById('addCatConfirmNo').addEventListener('click', () => {
+  document.getElementById('addCatConfirmDelete').style.display = 'none';
+  document.querySelector('#addCatModal .modal-actions').style.display = '';
+});
+
+document.getElementById('addCatConfirmYes').addEventListener('click', () => {
+  if (!editCatTarget) return;
   // Move exercises to unassigned
   const exToMove = exercises[editCatTarget] || [];
   if (!exercises['unassigned']) exercises['unassigned'] = [];
-  exToMove.forEach(ex => {
-    exercises['unassigned'].push({...ex, cat: 'unassigned'});
-  });
+  exToMove.forEach(ex => { exercises['unassigned'].push({...ex, cat: 'unassigned'}); });
   delete exercises[editCatTarget];
-  // Remove from customCats or builtInCatMeta
   customCats = customCats.filter(c=>c.id!==editCatTarget);
   if (builtInCatMeta[editCatTarget]) delete builtInCatMeta[editCatTarget];
-  // Remove DOM section
   const section = document.getElementById('bank-section-'+editCatTarget);
   if (section) section.remove();
-  // Ensure Unassigned section exists and is rendered
   ensureUnassignedSection();
   renderBankCol('unassigned');
   updateCatBtns();
   saveState();
+  document.getElementById('addCatConfirmDelete').style.display = 'none';
+  document.querySelector('#addCatModal .modal-actions').style.display = '';
   document.getElementById('addCatModal').classList.add('hidden');
-  unlockBodyScroll();
   editCatTarget = null;
 });
 
 function ensureUnassignedSection() {
   if (!exercises['unassigned']) exercises['unassigned'] = [];
-  // Show/hide based on whether there are exercises
   let section = document.getElementById('bank-section-unassigned');
+  // Hide if empty
   if (!exercises['unassigned'].length) {
     if (section) section.style.display = 'none';
     return;
   }
+  // Create section if it doesn't exist
   if (!section) {
     section = document.createElement('div');
     section.className = 'bank-section';
