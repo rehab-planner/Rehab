@@ -577,7 +577,17 @@ const DOT_COLOR = { arm: '#35c8f1', leg: '#f1a035', alt: '#c835f1' };
 const DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 
 // ── Week navigation ───────────────────────────────────────────────────
-let weekOffset   = 0;
+let weekOffset = 0;
+// Set to current week on every load
+(function(){
+  const base = new Date(2026, 2, 9);
+  const today = new Date();
+  const todayMon = new Date(today); const dow = todayMon.getDay();
+  todayMon.setDate(todayMon.getDate() - (dow===0?6:dow-1));
+  const diffMs = Date.UTC(todayMon.getFullYear(), todayMon.getMonth(), todayMon.getDate())
+               - Date.UTC(base.getFullYear(), base.getMonth(), base.getDate());
+  weekOffset = Math.round(diffMs / (7*86400000));
+})();
 let allSchedules = {};
 let dayNotes     = {}; // key: "YYYY-MM-DD-DAY" e.g. "2026-03-09-MON"
 
@@ -1781,7 +1791,7 @@ openDB().then(loadStateFromDB).then(saved => {
   if (saved) {
     if (saved.exercises)    exercises    = saved.exercises;
     if (saved.allSchedules) allSchedules = saved.allSchedules;
-    if (saved.weekOffset != null) weekOffset = saved.weekOffset;
+    if (saved.weekOffset != null) {} // always open on current week
     if (saved.dayNotes)     dayNotes     = saved.dayNotes;
   }
   buildBank();
