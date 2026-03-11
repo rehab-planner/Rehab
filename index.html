@@ -142,7 +142,7 @@
   .ghost { position: fixed; pointer-events: none; z-index: 9999; opacity: 0.92; transform: rotate(2deg) scale(1.07); box-shadow: 0 8px 28px rgba(0,0,0,0.6); background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 
   /* MODAL OVERLAY */
-  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; overscroll-behavior: contain; }
   .overlay.hidden { display: none; }
   .modal { background: var(--dark); border: 1px solid var(--border); border-radius: 14px; padding: 24px 20px; width: 100%; max-width: 500px; }
   .modal-title { font-size: 16px; font-weight: 800; margin-bottom: 4px; color: var(--accent); }
@@ -255,11 +255,11 @@
   <button id="exportBtn" class="btn-primary" style="background:none;border:1px solid var(--accent);color:var(--accent);">↓ Export Data</button>
   <label id="importLabel" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);text-align:center;cursor:pointer;">↑ Import Data<input type="file" id="importFile" accept=".json" style="display:none;"></label>
 </div>
-<div class="overlay hidden" id="batchAddModal">
+<div class="overlay hidden" id="batchAddModal" style="touch-action:none;">
   <div class="modal" style="max-width:400px;max-height:85vh;display:flex;flex-direction:column;">
     <div class="modal-title" id="batchAddTitle">Add to MON</div>
     <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:12px;">TAP TO SELECT</div>
-    <div id="batchAddList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px;"></div>
+    <div id="batchAddList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;"></div>
     <div class="modal-actions" style="margin-top:16px;">
       <button class="btn-secondary" id="batchAddClose" style="flex:1;">Cancel</button>
       <button class="btn-primary" id="batchAddConfirm" style="flex:2;">Add Selected</button>
@@ -1969,6 +1969,10 @@ document.getElementById('batchAddClose').addEventListener('click', () => {
 document.getElementById('batchAddModal').addEventListener('click', e => {
   if (e.target === document.getElementById('batchAddModal')) document.getElementById('batchAddModal').classList.add('hidden');
 });
+document.getElementById('batchAddModal').addEventListener('touchmove', e => {
+  // Allow scroll inside the list, block everything else
+  if (!document.getElementById('batchAddList').contains(e.target)) e.preventDefault();
+}, { passive: false });
 // ── Batch Add Queue ───────────────────────────────────────────────────
 let batchQueue = [];
 
