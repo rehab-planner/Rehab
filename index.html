@@ -29,7 +29,7 @@
   .week-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; background: var(--dark); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; gap: 8px; }
   .week-nav-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 6px 10px; border-radius: 6px; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; min-height: 36px; }
   .week-nav-btn:hover, .week-nav-btn:active { border-color: var(--accent); color: var(--accent); }
-  .week-nav-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text); font-weight: 500; text-align: center; letter-spacing: 0.3px; flex: 1; }
+  .week-nav-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); font-weight: 700; text-align: center; letter-spacing: 0.3px; flex: 1; }
   .week-nav-label span { color: var(--accent); font-weight: 700; }
 
   /* WEEK GRID */
@@ -182,7 +182,7 @@
     /* Category sections flow as a flat list with colored titles as dividers */
     .bank-col-title { display: block; margin-bottom: 6px; margin-top: 10px; }
     h1 { font-size: 20px; }
-    .week-nav-label { font-size: 9px; }
+    .week-nav-label { font-size: 11px; }
     .week-nav-btn { font-size: 9px; padding: 6px 8px; }
     .day-label { width: 60px; padding: 5px 8px; }
     .day-name { font-size: 10px; }
@@ -591,9 +591,10 @@ function ordinal(n) { const s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%
 function updateWeekLabel() {
   const mon = getMonday(weekOffset);
   const sun = new Date(mon); sun.setDate(sun.getDate()+6);
+  const MSHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   document.getElementById('weekLabel').innerHTML =
-    `<span>${MONTHS[mon.getMonth()]} ${ordinal(mon.getDate())}</span> &nbsp;to&nbsp; <span>${MONTHS[sun.getMonth()]} ${ordinal(sun.getDate())}</span>`;
-  const MSHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    `<span style="color:var(--accent);font-weight:700;">${mon.getDate()} ${MSHORT[mon.getMonth()]}</span> &nbsp;—&nbsp; <span style="color:var(--accent);font-weight:700;">${sun.getDate()} ${MSHORT[sun.getMonth()]}</span>`;
+  const MSHORT2 = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
   const today = new Date();
   const todayLocal2 = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
   DAYS.forEach((day,i) => {
@@ -601,7 +602,7 @@ function updateWeekLabel() {
     const dLocal = d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
     const el = document.getElementById('date-'+day);
     if (el) {
-      el.textContent = d.getDate() + ' ' + MSHORT[d.getMonth()];
+      el.textContent = d.getDate() + ' ' + MSHORT2[d.getMonth()];
       const isToday = dLocal === todayLocal2;
       el.style.color = isToday ? 'var(--accent)' : 'var(--muted)';
       el.style.fontWeight = isToday ? '700' : '400';
@@ -1109,7 +1110,7 @@ function renderDayView() {
   const todayBase = new Date(2026,2,9);
   const todayOff = Math.round((Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()) - Date.UTC(2026,2,9)) / 86400000);
   const isToday = currentDayOffset === todayOff;
-  label.innerHTML = `<span style="color:${isToday?'var(--accent)':'var(--text)'}">
+  label.innerHTML = `<span style="color:var(--accent);font-size:11px;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.3px;">
     ${date.getDate()} ${MSHORT2[date.getMonth()]} — ${dayName}
   </span>`;
   // Show only this day's row, hide others
