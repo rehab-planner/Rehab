@@ -256,11 +256,11 @@
   <label id="importLabel" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);text-align:center;cursor:pointer;">↑ Import Data<input type="file" id="importFile" accept=".json" style="display:none;"></label>
 </div>
 <div class="overlay hidden" id="batchAddModal">
-  <div class="modal" style="max-width:400px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">
+  <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px 20px;width:100%;max-width:400px;height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
     <div class="modal-title" id="batchAddTitle">Add to MON</div>
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:12px;">TAP TO SELECT</div>
-    <div id="batchAddList" style="overflow-y:scroll;flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;"></div>
-    <div class="modal-actions" style="margin-top:16px;flex-shrink:0;">
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:12px;flex-shrink:0;">TAP TO SELECT</div>
+    <div id="batchAddList" style="flex:1;min-height:0;overflow-y:auto;display:block;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;flex-shrink:0;">
       <button class="btn-secondary" id="batchAddClose" style="flex:1;">Cancel</button>
       <button class="btn-primary" id="batchAddConfirm" style="flex:2;">Add Selected</button>
     </div>
@@ -1878,7 +1878,7 @@ function openBatchAddModal(day) {
       chev.style.transform = '';
     });
     if (!isOpen) {
-      sections[cat].body.style.display = 'flex';
+      sections[cat].body.style.display = 'block';
       sections[cat].chev.style.transform = 'rotate(180deg)';
       openCat = cat;
     } else {
@@ -1893,7 +1893,7 @@ function openBatchAddModal(day) {
 
     // Accordion header
     const section = document.createElement('div');
-    section.style.cssText = `border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:4px;`;
+    section.style.cssText = `border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:6px;`;
 
     const header = document.createElement('div');
     header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;background:${catBg[cat]};`;
@@ -1908,14 +1908,14 @@ function openBatchAddModal(day) {
 
     // Body
     const body = document.createElement('div');
-    body.style.cssText = `display:none;flex-direction:column;gap:6px;padding:6px 8px 8px;`;
+    body.style.cssText = `display:block;padding:6px 8px 8px;`;
 
     // Register refs for toggle
     sections[cat] = { body, chev };
 
     exes.forEach((ex, idx) => {
       const row = document.createElement('div');
-      row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:#1a1a1a;transition:all 0.15s;`;
+      row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:#1a1a1a;transition:all 0.15s;margin-bottom:6px;`;
       row.dataset.selected = '0';
       row.dataset.cat = cat;
       row.dataset.idx = idx;
