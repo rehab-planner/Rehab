@@ -51,8 +51,9 @@
   .view-day-btn:hover, .view-day-btn:active { border-color: var(--accent) !important; color: var(--accent) !important; }
   .text-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 1px; padding: 4px 6px; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.15s; min-height: 28px; width: 100%; }
   .text-btn:hover, .text-btn:active { border-color: var(--accent); color: var(--accent); }
-  .more-btn { position: absolute; bottom: 4px; right: 4px; width: auto; min-height: 20px; font-size: 8px; padding: 2px 6px; z-index: 2; border-radius: 3px; }
+  .more-btn { width: auto; min-height: 20px; font-size: 8px; padding: 2px 6px; border-radius: 3px; margin-left: auto; }
   .more-btn.has-note { border-color: #666; color: #666; }
+  .note-btn-row { width: 100%; display: flex; justify-content: flex-end; margin-top: 2px; }
   .rep-cal-day { font-family:'DM Mono',monospace;font-size:11px;text-align:center;padding:5px 2px;border-radius:4px;cursor:pointer;color:var(--muted);position:relative; }
   .rep-cal-day.has-ex { color:var(--text); }
   .rep-cal-day.in-range { background:rgba(106,136,24,0.2); color:var(--accent); }
@@ -1084,7 +1085,10 @@ function renderDay(day) {
   const nkUtc = dd.toISOString().slice(0,10)+'-'+day;
   const hasNote = !!(dayNotes[nk] || dayNotes[nkUtc]);
   moreBtn.classList.toggle('has-note', hasNote);
-  body.appendChild(moreBtn);
+  const noteRow = document.createElement('div');
+  noteRow.className = 'note-btn-row';
+  noteRow.appendChild(moreBtn);
+  body.appendChild(noteRow);
 }
 
 function renderAllDays() { DAYS.forEach(renderDay); updateTotal(); saveState(); }
