@@ -109,11 +109,23 @@
 
   /* 3 columns default — collapses to 1 at narrow widths via @media below */
 
-  .bank-col-title { font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 10px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
-  .bank-col-title.arm { color: var(--arm); background: rgba(53,200,241,0.1); }
-  .bank-col-title.leg { color: var(--leg); background: rgba(241,160,53,0.1); }
-  .bank-col-title.alt { color: var(--alt); background: rgba(200,53,241,0.1); }
-
+  .bank-section { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 4px; }
+  .bank-section-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; cursor: pointer; user-select: none; }
+  .bank-section-header .bank-col-title { margin: 0; font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 1.5px; text-transform: uppercase; }
+  .bank-section-header.arm { background: rgba(53,200,241,0.07); }
+  .bank-section-header.leg { background: rgba(241,160,53,0.07); }
+  .bank-section-header.alt { background: rgba(200,53,241,0.07); }
+  .bank-col-title.arm { color: var(--arm); }
+  .bank-col-title.leg { color: var(--leg); }
+  .bank-col-title.alt { color: var(--alt); }
+  .bank-section-chevron { font-size: 10px; color: var(--muted); transition: transform 0.2s; }
+  .bank-section-body { display: none; padding: 6px 8px 8px; }
+  .bank-section-body.open { display: block; }
+  .bank-cols {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
   .bank-pill { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s; touch-action: pan-y; }
   .bank-pill:hover { border-color: var(--accent); }
   .bank-pill.reorder-over { border-color: var(--accent); border-style: dashed; }
@@ -164,13 +176,6 @@
 
   /* ── RESPONSIVE ── */
 
-  /* Bank columns: 3 if space allows, otherwise 1 — no awkward 2-col middle */
-  .bank-cols {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-  }
-
   /* Tablet tightening */
   @media (max-width: 680px) {
     body { padding: 10px; }
@@ -179,9 +184,9 @@
 
   /* Narrow: collapse to 1 column — each category stacks vertically */
   @media (max-width: 500px) {
-    .bank-cols { grid-template-columns: 1fr; gap: 4px; }
+    .bank-cols { gap: 4px; }
     /* Category sections flow as a flat list with colored titles as dividers */
-    .bank-col-title { display: block; margin-bottom: 6px; margin-top: 10px; }
+    .bank-section-header { padding: 10px 12px; }
     h1 { font-size: 20px; }
     .week-nav-label { font-size: 11px; }
     .week-nav-btn { font-size: 9px; padding: 6px 8px; }
@@ -220,9 +225,27 @@
     <button class="add-ex-btn" id="addExBtn">+ Add Exercise</button>
   </div>
   <div class="bank-cols">
-    <div><div class="bank-col-title arm">ARM</div><div id="bank-arm"></div></div>
-    <div><div class="bank-col-title leg">LEG</div><div id="bank-leg"></div></div>
-    <div><div class="bank-col-title alt">Physio</div><div id="bank-alt"></div></div>
+    <div class="bank-section" id="bank-section-alt">
+      <div class="bank-section-header alt" onclick="toggleBankSection('alt')">
+        <span class="bank-col-title alt">Physio</span>
+        <span class="bank-section-chevron" id="bank-chev-alt">▼</span>
+      </div>
+      <div class="bank-section-body" id="bank-body-alt"><div id="bank-alt"></div></div>
+    </div>
+    <div class="bank-section" id="bank-section-arm">
+      <div class="bank-section-header arm" onclick="toggleBankSection('arm')">
+        <span class="bank-col-title arm">Arm</span>
+        <span class="bank-section-chevron" id="bank-chev-arm">▼</span>
+      </div>
+      <div class="bank-section-body" id="bank-body-arm"><div id="bank-arm"></div></div>
+    </div>
+    <div class="bank-section" id="bank-section-leg">
+      <div class="bank-section-header leg" onclick="toggleBankSection('leg')">
+        <span class="bank-col-title leg">Leg</span>
+        <span class="bank-section-chevron" id="bank-chev-leg">▼</span>
+      </div>
+      <div class="bank-section-body" id="bank-body-leg"><div id="bank-leg"></div></div>
+    </div>
   </div>
 </div>
 
@@ -1813,6 +1836,23 @@ openDB().then(loadStateFromDB).then(saved => {
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 
 // ── Top Toolbar Buttons ───────────────────────────────────────────────
+// ── Exercise Bank Accordion ───────────────────────────────────────────
+let openBankSection = null;
+function toggleBankSection(cat) {
+  const isOpen = openBankSection === cat;
+  ['alt','arm','leg'].forEach(c => {
+    document.getElementById('bank-body-'+c).classList.remove('open');
+    document.getElementById('bank-chev-'+c).style.transform = '';
+  });
+  if (!isOpen) {
+    document.getElementById('bank-body-'+cat).classList.add('open');
+    document.getElementById('bank-chev-'+cat).style.transform = 'rotate(180deg)';
+    openBankSection = cat;
+  } else {
+    openBankSection = null;
+  }
+}
+
 // Change View handled by setViewMode above
 
 // ── Batch Add Modal ───────────────────────────────────────────────────
