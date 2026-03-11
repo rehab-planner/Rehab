@@ -1938,7 +1938,7 @@ function generateReport() {
     const sched=allSchedules[wk]||{};
     const items=sched[dayName]||[];
     items.forEach(item=>{
-      const pm=calcItemPlannedMinutes(item);
+      const pm=calcItemDoneMinutes(item);
       if(item.cat==='arm') totalArm+=pm;
       else if(item.cat==='leg') totalLeg+=pm;
       else totalAlt+=pm;
@@ -1973,7 +1973,7 @@ function generateReport() {
   out.appendChild(header);
   // per-category breakdown
   ['alt','arm','leg'].forEach(cat=>{
-    const catExes=Object.entries(exerciseTotals).filter(([,v])=>v.cat===cat);
+    const catExes=Object.entries(exerciseTotals).filter(([,v])=>v.cat===cat && v.mins>0);
     if(!catExes.length) return;
     const catNames={alt:'Strength',arm:'Arm',leg:'Leg'};
     const sec=document.createElement('div'); sec.style.marginBottom='14px';
