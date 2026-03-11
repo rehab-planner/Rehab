@@ -918,6 +918,7 @@ function renderBankCol(cat) {
 // ── Build week ────────────────────────────────────────────────────────
 function buildWeek() {
   const grid=document.getElementById('weekGrid');
+  grid.innerHTML = '';
   DAYS.forEach(day => {
     const row=document.createElement('div');
     row.className='day-row'; row.dataset.day=day;
@@ -1834,14 +1835,15 @@ function renderCalendarModal() {
     cell.textContent = d;
     if(hasEx && !isToday){const dot=document.createElement('div');dot.style.cssText='width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0.6;margin:1px auto 0;';cell.appendChild(dot);}
     cell.addEventListener('click', ()=>{
-      // jump to that week
-      const targetMon = new Date(date); targetMon.setDate(targetMon.getDate()-dayIdx);
-      const curMon = getMonday(0);
-      const diff = Math.round((targetMon-curMon)/(7*86400000));
-      weekOffset += diff; // adjust relative
-      // recalculate from absolute
-      const baseMs = targetMon.getTime(); const curMs = curMon.getTime();
-      weekOffset = Math.round((baseMs-curMs)/(7*86400000));
+      // Find the Monday of the clicked date
+      const clickedMon = new Date(calModalYear, calModalMonth, d);
+      clickedMon.setDate(clickedMon.getDate() - dayIdx);
+      // Find offset by comparing toISOString dates (same as weekKey uses)
+      const clickedKey = clickedMon.toISOString().slice(0,10);
+      // Binary search / brute force from current offset
+      for(let o = -200; o <= 200; o++) {
+        if(weekKey(o) === clickedKey) { weekOffset = o; break; }
+      }
       buildWeek(); window.scrollTo({top:0,behavior:'smooth'});
       document.getElementById('calendarModal').classList.add('hidden');
     });
