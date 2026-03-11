@@ -1396,17 +1396,16 @@ function openEditModal(day,idx) {
   const repsField = document.getElementById('editRepsField');
   repsField.style.display = hasReps ? '' : 'none';
   if (hasReps) {
-    const val = p.reps;
+    const val = d.reps || p.reps;
     document.getElementById('editReps').value = val;
     document.getElementById('editRepsRatio').textContent = val+'/'+p.reps;
   }
 
   const timeField = document.getElementById('editTimeField');
-  // Show time if: only time planned, OR sets+time planned. Hide if sets+reps (reps are per-set, time N/A)
   const showTime = hasTime;
   timeField.style.display = showTime ? '' : 'none';
   if (showTime) {
-    const val = p.mins;
+    const val = d.mins || p.mins;
     document.getElementById('editTime').value = val;
     document.getElementById('editTimeRatio').textContent = val+'/'+p.mins;
   }
