@@ -232,6 +232,18 @@
   <button id="exportBtn" class="btn-primary" style="background:none;border:1px solid var(--accent);color:var(--accent);">↓ Export Data</button>
   <label id="importLabel" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);text-align:center;cursor:pointer;">↑ Import Data<input type="file" id="importFile" accept=".json" style="display:none;"></label>
 </div>
+<div class="overlay hidden" id="batchAddModal">
+  <div class="modal" style="max-width:400px;max-height:85vh;display:flex;flex-direction:column;">
+    <div class="modal-title" id="batchAddTitle">Add to MON</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:12px;">TAP TO SELECT</div>
+    <div id="batchAddList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px;"></div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn-secondary" id="batchAddClose" style="flex:1;">Cancel</button>
+      <button class="btn-primary" id="batchAddConfirm" style="flex:2;">Add Selected</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay hidden" id="calendarModal">
   <div class="modal" style="max-width:360px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -355,7 +367,7 @@
         <label class="form-label" style="margin-bottom:6px;display:block;">SETS</label>
         <div style="display:flex;align-items:center;gap:8px;">
           <button class="stepper-btn" id="planSetsMinus">−</button>
-          <input class="form-input stepper-input" id="planSets" placeholder="0" autocomplete="off" inputmode="numeric" readonly>
+          <input class="form-input stepper-input" id="planSets" placeholder="0" autocomplete="off" inputmode="numeric">
           <button class="stepper-btn" id="planSetsPlus">+</button>
         </div>
       </div>
@@ -363,7 +375,7 @@
         <label class="form-label" style="margin-bottom:6px;display:block;">REPS</label>
         <div style="display:flex;align-items:center;gap:8px;">
           <button class="stepper-btn" id="planRepsMinus">−</button>
-          <input class="form-input stepper-input" id="planReps" placeholder="0" autocomplete="off" inputmode="numeric" readonly>
+          <input class="form-input stepper-input" id="planReps" placeholder="0" autocomplete="off" inputmode="numeric">
           <button class="stepper-btn" id="planRepsPlus">+</button>
         </div>
       </div>
@@ -371,7 +383,7 @@
         <label class="form-label" style="margin-bottom:6px;display:block;">MINUTES</label>
         <div style="display:flex;align-items:center;gap:8px;">
           <button class="stepper-btn" id="planTimeMinus">−</button>
-          <input class="form-input stepper-input" id="planTime" placeholder="0" autocomplete="off" inputmode="decimal" readonly>
+          <input class="form-input stepper-input" id="planTime" placeholder="0" autocomplete="off" inputmode="decimal">
           <button class="stepper-btn" id="planTimePlus">+</button>
         </div>
       </div>
@@ -931,6 +943,11 @@ function buildWeek() {
     viewBtn.addEventListener('pointerdown',e=>e.stopPropagation());
     viewBtn.addEventListener('click',()=>openDaySummary(day, false));
     actions.appendChild(viewBtn);
+    const addDayBtn=document.createElement('button');
+    addDayBtn.className='clear-btn view-day-btn'; addDayBtn.textContent='Add';
+    addDayBtn.addEventListener('pointerdown',e=>e.stopPropagation());
+    addDayBtn.addEventListener('click',()=>openBatchAddModal(day));
+    actions.appendChild(addDayBtn);
     row.appendChild(label); row.appendChild(body); row.appendChild(actions);
     grid.appendChild(row);
   });
@@ -1352,6 +1369,12 @@ addScrollStepper('planTime', null, false);
 document.getElementById('planCancelBtn').addEventListener('click',()=>{
   document.getElementById('planModal').classList.add('hidden');
   planTarget=null;
+  // skip this item, advance queue
+  if (batchQueue.length) {
+    batchQueue.shift();
+    if (batchQueue.length) { processBatchQueue(); }
+    else { batchQueue._total = 0; }
+  }
 });
 document.getElementById('planSaveBtn').addEventListener('click',()=>{
   if (!planTarget) return;
@@ -1368,6 +1391,12 @@ document.getElementById('planSaveBtn').addEventListener('click',()=>{
   renderDay(day);
   updateTotal();
   saveState();
+  // advance batch queue
+  if (batchQueue.length) {
+    batchQueue.shift();
+    if (batchQueue.length) { processBatchQueue(); }
+    else { batchQueue._total = 0; }
+  }
 });
 // ── Edit Placed Modal ─────────────────────────────────────────────────
 let editTarget=null;
@@ -1785,6 +1814,121 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').ca
 
 // ── Top Toolbar Buttons ───────────────────────────────────────────────
 // Change View handled by setViewMode above
+
+// ── Batch Add Modal ───────────────────────────────────────────────────
+let batchAddDay = null;
+
+function openBatchAddModal(day) {
+  batchAddDay = day;
+  document.getElementById('batchAddTitle').textContent = 'Add to ' + day;
+  const list = document.getElementById('batchAddList');
+  list.innerHTML = '';
+
+  const catNames = { arm:'ARM', leg:'LEG', alt:'Strength' };
+  const catOrder = ['alt','arm','leg'];
+
+  catOrder.forEach(cat => {
+    const exes = exercises[cat];
+    if (!exes || !exes.length) return;
+
+    // Category header
+    const header = document.createElement('div');
+    header.style.cssText = `font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:${cat==='arm'?'#35c8f1':cat==='leg'?'#f1a035':'#c835f1'};text-transform:uppercase;padding:10px 4px 4px;`;
+    header.textContent = catNames[cat];
+    list.appendChild(header);
+
+    exes.forEach((ex, idx) => {
+      const alreadyAdded = schedule[day].some(i => i.name === ex.name && i.cat === cat);
+      const dotColor = cat === 'arm' ? '#35c8f1' : cat === 'leg' ? '#f1a035' : '#c835f1';
+      const row = document.createElement('div');
+      row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid ${alreadyAdded ? 'var(--accent)' : 'var(--border)'};background:${alreadyAdded ? 'rgba(106,136,24,0.12)' : '#1a1a1a'};transition:all 0.15s;`;
+      row.dataset.selected = alreadyAdded ? '1' : '0';
+      row.dataset.cat = cat;
+      row.dataset.idx = idx;
+
+      const dot = document.createElement('div');
+      dot.style.cssText = `width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;`;
+
+      const name = document.createElement('div');
+      name.style.cssText = 'font-size:14px;color:var(--text);flex:1;';
+      name.textContent = ex.name;
+
+      const detail = document.createElement('div');
+      detail.style.cssText = 'font-family:"DM Mono",monospace;font-size:10px;color:var(--muted);flex-shrink:0;';
+      const p = ex.planned || ex;
+      const ps=parseFloat(p.sets)||0, pm=parseFloat(p.mins)||0, pr=parseFloat(p.reps)||0;
+      let det = '';
+      if(ps&&pm) det=`${ps} × ${fmtMin(pm)}`;
+      else if(ps&&pr) det=`${ps} × ${pr} reps`;
+      else if(pm) det=fmtMin(pm);
+      else if(pr) det=`${pr} reps`;
+      detail.textContent = det;
+
+      const check = document.createElement('div');
+      check.style.cssText = `width:18px;height:18px;border-radius:4px;border:1px solid ${alreadyAdded ? 'var(--accent)' : '#444'};background:${alreadyAdded ? 'var(--accent)' : 'none'};flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#000;font-weight:bold;`;
+      check.textContent = alreadyAdded ? '✓' : '';
+
+      row.appendChild(check); row.appendChild(dot); row.appendChild(name); row.appendChild(detail);
+
+      row.addEventListener('click', () => {
+        const sel = row.dataset.selected === '1';
+        row.dataset.selected = sel ? '0' : '1';
+        row.style.borderColor = !sel ? 'var(--accent)' : 'var(--border)';
+        row.style.background = !sel ? 'rgba(106,136,24,0.12)' : '#1a1a1a';
+        check.style.borderColor = !sel ? 'var(--accent)' : '#444';
+        check.style.background = !sel ? 'var(--accent)' : 'none';
+        check.textContent = !sel ? '✓' : '';
+      });
+
+      list.appendChild(row);
+    });
+  });
+
+  document.getElementById('batchAddModal').classList.remove('hidden');
+}
+
+document.getElementById('batchAddClose').addEventListener('click', () => {
+  document.getElementById('batchAddModal').classList.add('hidden');
+});
+document.getElementById('batchAddModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('batchAddModal')) document.getElementById('batchAddModal').classList.add('hidden');
+});
+// ── Batch Add Queue ───────────────────────────────────────────────────
+let batchQueue = [];
+
+function processBatchQueue() {
+  if (!batchQueue.length) return;
+  const {name, cat, day, ex} = batchQueue[0];
+  openPlanModal(name, cat, day, ex);
+  // show counter in title
+  const total = batchQueue._total || batchQueue.length;
+  batchQueue._total = total;
+  const remaining = batchQueue.length;
+  const num = total - remaining + 1;
+  document.getElementById('planModalTitle').textContent = `(${num}/${total}) ${name}`;
+}
+
+document.getElementById('batchAddConfirm').addEventListener('click', () => {
+  if (!batchAddDay) return;
+  const rows = document.getElementById('batchAddList').querySelectorAll('[data-cat]');
+  const selected = [];
+  rows.forEach(row => {
+    if (row.dataset.selected !== '1') return;
+    const cat = row.dataset.cat;
+    const idx = parseInt(row.dataset.idx);
+    const ex = exercises[cat][idx];
+    if (!ex) return;
+    if (schedule[batchAddDay].some(i => i.name === ex.name && i.cat === cat)) return;
+    const p = ex.planned || ex;
+    selected.push({ name: ex.name, cat, day: batchAddDay, ex: p });
+  });
+  if (!selected.length) { document.getElementById('batchAddModal').classList.add('hidden'); return; }
+  document.getElementById('batchAddModal').classList.add('hidden');
+  batchQueue = selected;
+  batchQueue._total = selected.length;
+  processBatchQueue();
+});
+
 
 // ── Calendar Modal ────────────────────────────────────────────────────
 let calModalYear, calModalMonth;
