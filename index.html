@@ -59,6 +59,8 @@
   .rep-cal-day.in-range { background:rgba(106,136,24,0.2); color:var(--accent); }
   .rep-cal-day.range-start, .rep-cal-day.range-end { background:var(--accent); color:#000; border-radius:4px; }
   .rep-cal-day.empty { pointer-events:none; }
+  .cat-color-swatch { width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent;flex-shrink:0;transition:border-color 0.15s; }
+  .cat-color-swatch.selected { border-color: #fff; }
 
   /* DAY SUMMARY */
   .day-summary-box { background: var(--dark); border: 1px solid var(--border); border-radius: 14px; padding: 20px 16px; width: 100%; max-width: 100%; max-height: 85vh; overflow-y: auto; }
@@ -221,35 +223,47 @@
 
 <div class="bank">
   <div class="bank-header">
-    <div class="bank-title">Exercise Bank — drag to any day above</div>
     <button class="add-ex-btn" id="addExBtn">+ Add Exercise</button>
+    <button class="add-ex-btn" id="addCatBtn" style="background:none;border:1px solid var(--accent);color:var(--accent);">+ Add Category</button>
   </div>
   <div class="bank-cols">
     <div class="bank-section" id="bank-section-fav">
       <div class="bank-section-header" style="background:rgba(255,200,0,0.07);" onclick="toggleBankSection('fav')">
         <span class="bank-col-title" style="color:#f5c518;">⭐ Favorites</span>
-        <span class="bank-section-chevron" id="bank-chev-fav">▼</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="event.stopPropagation();openEditCatModal('fav')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+          <span class="bank-section-chevron" id="bank-chev-fav">▼</span>
+        </div>
       </div>
       <div class="bank-section-body" id="bank-body-fav"><div id="bank-fav"></div></div>
     </div>
     <div class="bank-section" id="bank-section-alt">
       <div class="bank-section-header alt" onclick="toggleBankSection('alt')">
         <span class="bank-col-title alt">Physio</span>
-        <span class="bank-section-chevron" id="bank-chev-alt">▼</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="event.stopPropagation();openEditCatModal('alt')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+          <span class="bank-section-chevron" id="bank-chev-alt">▼</span>
+        </div>
       </div>
       <div class="bank-section-body" id="bank-body-alt"><div id="bank-alt"></div></div>
     </div>
     <div class="bank-section" id="bank-section-arm">
       <div class="bank-section-header arm" onclick="toggleBankSection('arm')">
         <span class="bank-col-title arm">Arm</span>
-        <span class="bank-section-chevron" id="bank-chev-arm">▼</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="event.stopPropagation();openEditCatModal('arm')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+          <span class="bank-section-chevron" id="bank-chev-arm">▼</span>
+        </div>
       </div>
       <div class="bank-section-body" id="bank-body-arm"><div id="bank-arm"></div></div>
     </div>
     <div class="bank-section" id="bank-section-leg">
       <div class="bank-section-header leg" onclick="toggleBankSection('leg')">
         <span class="bank-col-title leg">Leg</span>
-        <span class="bank-section-chevron" id="bank-chev-leg">▼</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="event.stopPropagation();openEditCatModal('leg')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+          <span class="bank-section-chevron" id="bank-chev-leg">▼</span>
+        </div>
       </div>
       <div class="bank-section-body" id="bank-body-leg"><div id="bank-leg"></div></div>
     </div>
@@ -500,6 +514,36 @@
   </div>
 </div>
 
+<!-- ADD / EDIT CATEGORY MODAL -->
+<div class="overlay hidden" id="addCatModal">
+  <div class="modal" style="max-width:380px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="modal-title" id="addCatModalTitle">New Category</div>
+      <button id="addCatDeleteBtn" style="display:none;background:none;border:none;color:#a01030;font-family:'DM Mono',monospace;font-size:14px;letter-spacing:0.5px;cursor:pointer;padding:0;text-decoration:underline;text-transform:lowercase;">delete</button>
+    </div>
+    <div class="modal-sub">Custom exercise group</div>
+    <div class="form-row" style="margin-bottom:16px;">
+      <label class="form-label">Name</label>
+      <input class="form-input" id="catNameInput" placeholder="e.g. Core, Cardio…" autocomplete="off" style="font-size:15px;padding:11px;">
+    </div>
+    <div class="form-row" style="margin-bottom:16px;">
+      <label class="form-label">Colour</label>
+      <div id="catColorPicker" style="display:flex;flex-direction:row;gap:10px;flex-wrap:nowrap;align-items:center;">
+        <div class="cat-color-swatch" data-color="#35f1a0" style="background:#35f1a0;flex-shrink:0;"></div>
+        <div class="cat-color-swatch" data-color="#f15535" style="background:#f15535;flex-shrink:0;"></div>
+        <div class="cat-color-swatch" data-color="#f1d535" style="background:#f1d535;flex-shrink:0;"></div>
+        <div class="cat-color-swatch" data-color="#358bf1" style="background:#358bf1;flex-shrink:0;"></div>
+        <div class="cat-color-swatch" data-color="#f135b8" style="background:#f135b8;flex-shrink:0;"></div>
+        <div class="cat-color-swatch" data-color="#a0a0a0" style="background:#a0a0a0;flex-shrink:0;"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="addCatCancelBtn">Cancel</button>
+      <button class="btn-primary" id="addCatSaveBtn">Create</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay hidden" id="removeModal">
   <div class="confirm-box">
     <p>Remove <strong id="removeName"></strong> from this day?</p>
@@ -581,7 +625,7 @@ function saveState() {
   if (!_db) return;
   const tx    = _db.transaction(STORE_NAME, 'readwrite');
   const store = tx.objectStore(STORE_NAME);
-  store.put({ exercises, allSchedules, weekOffset, dayNotes }, STATE_KEY);
+  store.put({ exercises, allSchedules, weekOffset, dayNotes, customCats, builtInCatMeta }, STATE_KEY);
 }
 
 function loadStateFromDB() {
@@ -598,6 +642,12 @@ function loadStateFromDB() {
 let exercises    = JSON.parse(JSON.stringify(DEFAULT_EXERCISES));
 
 const DOT_COLOR = { arm: '#35c8f1', leg: '#f1a035', alt: '#c835f1', fav: '#ffc800' };
+function getDotColor(cat) {
+  if (builtInCatMeta[cat]?.color) return builtInCatMeta[cat].color;
+  if (DOT_COLOR[cat]) return DOT_COLOR[cat];
+  const cc = customCats.find(c=>c.id===cat);
+  return cc ? cc.color : '#888';
+}
 const DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 
 // ── Week navigation ───────────────────────────────────────────────────
@@ -743,7 +793,7 @@ function initDrag(e, data, fromDay, fromIdx, onTap) {
       started=true;
       ghost=document.createElement('div');
       ghost.className='ghost';
-      ghost.innerHTML='<span class="pill-dot" style="background:'+DOT_COLOR[data.cat]+'"></span>'+data.name;
+      ghost.innerHTML='<span class="pill-dot" style="background:'+getDotColor(data.cat)+'"></span>'+data.name;
       ghost.style.left=(me.clientX+14)+'px';
       ghost.style.top=(me.clientY-20)+'px';
       document.body.appendChild(ghost);
@@ -822,7 +872,7 @@ function initReorder(e, cat, fromIdx) {
       const ex=exercises[cat][fromIdx];
       ghost=document.createElement('div');
       ghost.className='ghost';
-      ghost.innerHTML='<span class="pill-dot" style="background:'+DOT_COLOR[cat]+'"></span>'+ex.name;
+      ghost.innerHTML='<span class="pill-dot" style="background:'+getDotColor(cat)+'"></span>'+ex.name;
       ghost.style.left=(me.clientX+14)+'px';
       ghost.style.top=(me.clientY-20)+'px';
       document.body.appendChild(ghost);
@@ -886,8 +936,47 @@ function initReorder(e, cat, fromIdx) {
   document.addEventListener('pointercancel', onUp);
 }
 
+// ── Custom categories ─────────────────────────────────────────────────
+// customCats: [{id, name, color}]  — stored alongside exercises
+let customCats = []; // loaded from DB
+
+function allCatIds() { return ['fav','alt','arm','leg',...customCats.map(c=>c.id),'unassigned']; }
+
+function renderBankSections() {
+  const container = document.querySelector('.bank-cols');
+  // Remove any existing custom sections
+  container.querySelectorAll('.bank-section[data-custom]').forEach(el=>el.remove());
+  customCats.forEach(cc => {
+    if (document.getElementById('bank-section-'+cc.id)) return; // already rendered
+    const section = document.createElement('div');
+    section.className = 'bank-section';
+    section.id = 'bank-section-'+cc.id;
+    section.dataset.custom = '1';
+    const colorRgb = hexToRgb(cc.color);
+    section.innerHTML = `
+      <div class="bank-section-header" style="background:rgba(${colorRgb},0.07);" onclick="toggleBankSection('${cc.id}')">
+        <span class="bank-col-title" style="color:${cc.color};">${cc.name}</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="event.stopPropagation();openEditCatModal('${cc.id}')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+          <span class="bank-section-chevron" id="bank-chev-${cc.id}">▼</span>
+        </div>
+      </div>
+      <div class="bank-section-body" id="bank-body-${cc.id}"><div id="bank-${cc.id}"></div></div>`;
+    container.appendChild(section);
+  });
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
 // ── Build bank ────────────────────────────────────────────────────────
-function buildBank() { ['fav','alt','arm','leg'].forEach(cat=>renderBankCol(cat)); }
+function buildBank() {
+  renderBankSections();
+  ensureUnassignedSection();
+  allCatIds().forEach(cat=>renderBankCol(cat));
+}
 
 function renderBankCol(cat) {
   const container=document.getElementById('bank-'+cat);
@@ -897,7 +986,7 @@ function renderBankCol(cat) {
   let items;
   if (cat === 'fav') {
     items = [];
-    ['alt','arm','leg'].forEach(c => {
+    ['alt','arm','leg',...customCats.map(c=>c.id)].forEach(c => {
       (exercises[c]||[]).forEach((ex,i) => { if (ex.fav) items.push({ex, cat:c, idx:i}); });
     });
     items.sort((a,b)=>a.ex.name.localeCompare(b.ex.name));
@@ -918,7 +1007,7 @@ function renderBankCol(cat) {
 
     const dot=document.createElement('span');
     dot.className='pill-dot';
-    dot.style.background=DOT_COLOR[itemCat]||DOT_COLOR[cat];
+    dot.style.background=getDotColor(itemCat)||getDotColor(cat);
 
     const name=document.createElement('span');
     name.style.flex='1';
@@ -1079,9 +1168,14 @@ function renderDay(day) {
       pill.className='placed-pill '+item.cat+(pct>0?' has-progress':'')+(done?' completed':'');
 
       // Set progress as background gradient directly on pill
-      const fillColor = item.cat==='arm' ? 'rgba(53,200,241,0.35)'
+      let fillColor = item.cat==='arm' ? 'rgba(53,200,241,0.35)'
         : item.cat==='leg' ? 'rgba(241,160,53,0.35)'
-        : 'rgba(200,53,241,0.35)';
+        : item.cat==='alt' ? 'rgba(200,53,241,0.35)' : null;
+      if (!fillColor) {
+        const cc = customCats.find(c=>c.id===item.cat);
+        if (cc) { const rgb = hexToRgb(cc.color); fillColor = `rgba(${rgb},0.35)`; }
+        else fillColor = 'rgba(120,120,120,0.35)';
+      }
       if (pct > 0) {
         const p = Math.round(pct * 100);
         pill.style.background = `linear-gradient(to right, ${fillColor} ${p}%, rgba(120,120,120,0.12) ${p}%)`;
@@ -1312,6 +1406,170 @@ document.getElementById('editBankDeleteBtn').addEventListener('click', () => {
   openConfirmDelete(cat, idx, ex.name);
 });
 document.getElementById('addExBtn').addEventListener('click', openAddModal);
+
+// ── Add / Edit Category Modal ─────────────────────────────────────────
+let editCatTarget = null; // cat id when editing
+let selectedCatColor = '#35f1a0';
+
+// Built-in category metadata (mutable name/color stored in builtInCatMeta, persisted)
+const BUILTIN_DEFAULTS = {
+  fav: { name: '⭐ Favorites', color: '#f5c518', canDelete: false },
+  alt: { name: 'Physio',      color: '#c835f1', canDelete: true  },
+  arm: { name: 'Arm',         color: '#35c8f1', canDelete: true  },
+  leg: { name: 'Leg',         color: '#f1a035', canDelete: true  },
+};
+let builtInCatMeta = {}; // overrides for built-in cat name/color
+
+function getCatMeta(id) {
+  if (BUILTIN_DEFAULTS[id]) {
+    const def = BUILTIN_DEFAULTS[id];
+    return { ...def, ...(builtInCatMeta[id]||{}) };
+  }
+  return customCats.find(c=>c.id===id) || null;
+}
+
+function openAddCatModal() {
+  editCatTarget = null;
+  selectedCatColor = '#35f1a0';
+  document.getElementById('addCatModalTitle').textContent = 'New Category';
+  document.getElementById('addCatSaveBtn').textContent = 'Create';
+  document.getElementById('addCatDeleteBtn').style.display = 'none';
+  document.getElementById('catNameInput').value = '';
+  updateSwatches();
+  document.getElementById('addCatModal').classList.remove('hidden');
+  lockBodyScroll();
+  setTimeout(()=>document.getElementById('catNameInput').focus(), 50);
+}
+
+function openEditCatModal(id) {
+  const meta = getCatMeta(id);
+  if (!meta) return;
+  editCatTarget = id;
+  selectedCatColor = meta.color;
+  document.getElementById('addCatModalTitle').textContent = 'Edit Category';
+  document.getElementById('addCatSaveBtn').textContent = 'Save';
+  // Show delete only if deletable (not fav)
+  document.getElementById('addCatDeleteBtn').style.display = meta.canDelete === false ? 'none' : '';
+  // For fav, name is not editable (it's a special virtual category)
+  const nameInput = document.getElementById('catNameInput');
+  nameInput.value = id === 'fav' ? (builtInCatMeta.fav?.name || '⭐ Favorites') : meta.name;
+  nameInput.disabled = (id === 'fav');
+  // Color picker: hide for fav (no color to change)
+  document.getElementById('catColorPicker').style.display = id === 'fav' ? 'none' : '';
+  updateSwatches();
+  document.getElementById('addCatModal').classList.remove('hidden');
+  lockBodyScroll();
+}
+
+function updateSwatches() {
+  document.querySelectorAll('.cat-color-swatch').forEach(sw => {
+    sw.classList.toggle('selected', sw.dataset.color === selectedCatColor);
+  });
+}
+
+document.querySelectorAll('.cat-color-swatch').forEach(sw => {
+  sw.addEventListener('click', () => { selectedCatColor = sw.dataset.color; updateSwatches(); });
+});
+
+document.getElementById('addCatBtn').addEventListener('click', openAddCatModal);
+document.getElementById('addCatCancelBtn').addEventListener('click', ()=>{ document.getElementById('addCatModal').classList.add('hidden'); unlockBodyScroll(); });
+document.getElementById('addCatModal').addEventListener('click', e=>{ if(e.target===document.getElementById('addCatModal')){ document.getElementById('addCatModal').classList.add('hidden'); unlockBodyScroll(); } });
+
+document.getElementById('addCatSaveBtn').addEventListener('click', () => {
+  const nameInput = document.getElementById('catNameInput');
+  const name = nameInput.value.trim();
+  if (!name && !nameInput.disabled) { nameInput.focus(); return; }
+  if (editCatTarget) {
+    const isBuiltIn = !!BUILTIN_DEFAULTS[editCatTarget];
+    if (isBuiltIn) {
+      if (!builtInCatMeta[editCatTarget]) builtInCatMeta[editCatTarget] = {};
+      if (!nameInput.disabled) builtInCatMeta[editCatTarget].name = name;
+      builtInCatMeta[editCatTarget].color = selectedCatColor;
+      // Update the DOM header
+      const section = document.getElementById('bank-section-'+editCatTarget);
+      if (section) {
+        const def = BUILTIN_DEFAULTS[editCatTarget];
+        const colorRgb = hexToRgb(selectedCatColor);
+        const header = section.querySelector('.bank-section-header');
+        if (!['fav'].includes(editCatTarget)) {
+          header.style.background = `rgba(${colorRgb},0.07)`;
+          section.querySelector('.bank-col-title').style.color = selectedCatColor;
+        }
+        if (!nameInput.disabled) section.querySelector('.bank-col-title').textContent = name;
+      }
+    } else {
+      const cc = customCats.find(c=>c.id===editCatTarget);
+      if (cc) { cc.name = name; cc.color = selectedCatColor; }
+      const section = document.getElementById('bank-section-'+editCatTarget);
+      if (section) {
+        const colorRgb = hexToRgb(selectedCatColor);
+        section.querySelector('.bank-section-header').style.background = `rgba(${colorRgb},0.07)`;
+        section.querySelector('.bank-col-title').style.color = selectedCatColor;
+        section.querySelector('.bank-col-title').textContent = name;
+      }
+    }
+  } else {
+    const id = 'custom_'+Date.now();
+    customCats.push({ id, name, color: selectedCatColor });
+    exercises[id] = [];
+    renderBankSections();
+    renderBankCol(id);
+  }
+  updateCatBtns();
+  saveState();
+  document.getElementById('addCatModal').classList.add('hidden');
+  unlockBodyScroll();
+});
+
+document.getElementById('addCatDeleteBtn').addEventListener('click', () => {
+  if (!editCatTarget) return;
+  const meta = getCatMeta(editCatTarget);
+  if (!confirm(`Delete "${meta?.name || editCatTarget}"? Its exercises will move to Unassigned.`)) return;
+  // Move exercises to unassigned
+  const exToMove = exercises[editCatTarget] || [];
+  if (!exercises['unassigned']) exercises['unassigned'] = [];
+  exToMove.forEach(ex => {
+    exercises['unassigned'].push({...ex, cat: 'unassigned'});
+  });
+  delete exercises[editCatTarget];
+  // Remove from customCats or builtInCatMeta
+  customCats = customCats.filter(c=>c.id!==editCatTarget);
+  if (builtInCatMeta[editCatTarget]) delete builtInCatMeta[editCatTarget];
+  // Remove DOM section
+  const section = document.getElementById('bank-section-'+editCatTarget);
+  if (section) section.remove();
+  // Ensure Unassigned section exists and is rendered
+  ensureUnassignedSection();
+  renderBankCol('unassigned');
+  updateCatBtns();
+  saveState();
+  document.getElementById('addCatModal').classList.add('hidden');
+  unlockBodyScroll();
+  editCatTarget = null;
+});
+
+function ensureUnassignedSection() {
+  if (!exercises['unassigned']) exercises['unassigned'] = [];
+  // Show/hide based on whether there are exercises
+  let section = document.getElementById('bank-section-unassigned');
+  if (!exercises['unassigned'].length) {
+    if (section) section.style.display = 'none';
+    return;
+  }
+  if (!section) {
+    section = document.createElement('div');
+    section.className = 'bank-section';
+    section.id = 'bank-section-unassigned';
+    section.innerHTML = `
+      <div class="bank-section-header" style="background:rgba(160,160,160,0.07);" onclick="toggleBankSection('unassigned')">
+        <span class="bank-col-title" style="color:#888;">Unassigned</span>
+        <span class="bank-section-chevron" id="bank-chev-unassigned">▼</span>
+      </div>
+      <div class="bank-section-body" id="bank-body-unassigned"><div id="bank-unassigned"></div></div>`;
+    document.querySelector('.bank-cols').appendChild(section);
+  }
+  section.style.display = '';
+}
 document.getElementById('addCancelBtn').addEventListener('click',()=>{ document.getElementById('addModal').classList.add('hidden'); editBankTarget=null; });
 
 document.getElementById('addModal').addEventListener('click',e=>{ if(e.target===document.getElementById('addModal')){ document.getElementById('addModal').classList.add('hidden'); editBankTarget=null; }});
@@ -1322,12 +1580,27 @@ addHoldStepper('newRepsPlus', 'newReps',+1);
 addHoldStepper('newTimeMinus','newTime',-1);
 addHoldStepper('newTimePlus', 'newTime',+1);
 
-document.querySelectorAll('#catBtns .seg-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{ selectedCat=btn.dataset.cat; updateCatBtns(); });
-});
 function updateCatBtns() {
-  document.querySelectorAll('#catBtns .seg-btn').forEach(b=>{
-    b.className='seg-btn'+(b.dataset.cat===selectedCat?' active-'+selectedCat:'');
+  const container = document.getElementById('catBtns');
+  // Rebuild buttons if custom cats exist
+  const builtIn = [{cat:'arm',label:'ARM'},{cat:'leg',label:'LEG'},{cat:'alt',label:'Physio'}];
+  const all = [...builtIn, ...customCats.map(cc=>({cat:cc.id, label:cc.name}))];
+  container.innerHTML = '';
+  all.forEach(({cat, label}) => {
+    const btn = document.createElement('div');
+    btn.className = 'seg-btn' + (cat===selectedCat ? ' active-'+cat : '');
+    btn.dataset.cat = cat;
+    btn.textContent = label;
+    // For custom cats, apply inline active style
+    const cc = customCats.find(c=>c.id===cat);
+    if (cc && cat===selectedCat) {
+      const rgb = hexToRgb(cc.color);
+      btn.style.borderColor = cc.color;
+      btn.style.color = cc.color;
+      btn.style.background = `rgba(${rgb},0.1)`;
+    }
+    btn.addEventListener('click',()=>{ selectedCat=cat; updateCatBtns(); });
+    container.appendChild(btn);
   });
 }
 document.getElementById('favStarBtn').addEventListener('click', () => {
@@ -1819,7 +2092,7 @@ document.getElementById('daySummaryNote').addEventListener('blur',  e => e.targe
 // ── Mini Calendar ─────────────────────────────────────────────────────
 // ── Export / Import ───────────────────────────────────────────────────
 document.getElementById('exportBtn').addEventListener('click', () => {
-  const data = { exercises, allSchedules, weekOffset, dayNotes, exportedAt: new Date().toISOString(), version: 2 };
+  const data = { exercises, allSchedules, weekOffset, dayNotes, customCats, builtInCatMeta, exportedAt: new Date().toISOString(), version: 2 };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1841,6 +2114,8 @@ document.getElementById('importFile').addEventListener('change', e => {
       exercises    = data.exercises;
       allSchedules = data.allSchedules || {};
       if (data.dayNotes) dayNotes = data.dayNotes;
+      if (data.customCats) { customCats = data.customCats; customCats.forEach(cc=>{ if(!exercises[cc.id]) exercises[cc.id]=[]; }); }
+      if (data.builtInCatMeta) builtInCatMeta = data.builtInCatMeta;
       // v1 fallback: wrap single-week schedule into allSchedules
       if (!data.allSchedules && data.schedule) {
         const key = weekKey(data.weekOffset || 0);
@@ -1848,7 +2123,7 @@ document.getElementById('importFile').addEventListener('change', e => {
       }
       weekOffset = data.weekOffset || 0;
       renderAllDays();
-      ['fav','arm','leg','alt'].forEach(renderBankCol);
+      buildBank();
       updateTotal();
       saveState();
       
@@ -1869,6 +2144,10 @@ openDB().then(loadStateFromDB).then(saved => {
     if (saved.allSchedules) allSchedules = saved.allSchedules;
     if (saved.weekOffset != null) {} // always open on current week
     if (saved.dayNotes)     dayNotes     = saved.dayNotes;
+    if (saved.customCats)     customCats     = saved.customCats;
+    if (saved.builtInCatMeta) builtInCatMeta = saved.builtInCatMeta;
+    // Ensure exercises arrays exist for all custom cats
+    customCats.forEach(cc => { if (!exercises[cc.id]) exercises[cc.id] = []; });
   }
   buildBank();
   buildWeek();
@@ -1889,13 +2168,17 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').ca
 let openBankSection = null;
 function toggleBankSection(cat) {
   const isOpen = openBankSection === cat;
-  ['fav','alt','arm','leg'].forEach(c => {
-    document.getElementById('bank-body-'+c).classList.remove('open');
-    document.getElementById('bank-chev-'+c).style.transform = '';
+  allCatIds().forEach(c => {
+    const body = document.getElementById('bank-body-'+c);
+    const chev = document.getElementById('bank-chev-'+c);
+    if (body) body.classList.remove('open');
+    if (chev) chev.style.transform = '';
   });
   if (!isOpen) {
-    document.getElementById('bank-body-'+cat).classList.add('open');
-    document.getElementById('bank-chev-'+cat).style.transform = 'rotate(180deg)';
+    const body = document.getElementById('bank-body-'+cat);
+    const chev = document.getElementById('bank-chev-'+cat);
+    if (body) body.classList.add('open');
+    if (chev) chev.style.transform = 'rotate(180deg)';
     openBankSection = cat;
   } else {
     openBankSection = null;
@@ -1916,7 +2199,11 @@ function openBatchAddModal(day) {
   const catNames = { fav:'Favourites', alt:'Physio', arm:'Arm', leg:'Leg' };
   const catColors = { fav:'#ffc800', alt:'#c835f1', arm:'#35c8f1', leg:'#f1a035' };
   const catBg = { fav:'rgba(255,200,0,0.07)', alt:'rgba(200,53,241,0.07)', arm:'rgba(53,200,241,0.07)', leg:'rgba(241,160,53,0.07)' };
-  const catOrder = ['fav','alt','arm','leg'];
+  customCats.forEach(cc => {
+    catNames[cc.id] = cc.name; catColors[cc.id] = cc.color;
+    const rgb = hexToRgb(cc.color); catBg[cc.id] = `rgba(${rgb},0.07)`;
+  });
+  const catOrder = ['fav','alt','arm','leg',...customCats.map(c=>c.id)];
   const sections = {}; // cat -> { body, chev }
   let openCat = null;
 
@@ -1940,12 +2227,12 @@ function openBatchAddModal(day) {
     let exItems;
     if (cat === 'fav') {
       exItems = [];
-      ['alt','arm','leg'].forEach(c => {
-        exercises[c].forEach((ex,i) => { if (ex.fav) exItems.push({ex, realCat:c, idx:i}); });
+      ['alt','arm','leg',...customCats.map(c=>c.id)].forEach(c => {
+        (exercises[c]||[]).forEach((ex,i) => { if (ex.fav) exItems.push({ex, realCat:c, idx:i}); });
       });
       exItems.sort((a,b)=>a.ex.name.localeCompare(b.ex.name));
     } else {
-      exItems = exercises[cat].map((ex,i)=>({ex, realCat:cat, idx:i}));
+      exItems = (exercises[cat]||[]).map((ex,i)=>({ex, realCat:cat, idx:i}));
     }
     const color = catColors[cat];
 
