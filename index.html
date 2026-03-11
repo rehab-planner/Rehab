@@ -222,7 +222,7 @@
   <div class="bank-cols">
     <div><div class="bank-col-title arm">ARM</div><div id="bank-arm"></div></div>
     <div><div class="bank-col-title leg">LEG</div><div id="bank-leg"></div></div>
-    <div><div class="bank-col-title alt">Strength</div><div id="bank-alt"></div></div>
+    <div><div class="bank-col-title alt">Physio</div><div id="bank-alt"></div></div>
   </div>
 </div>
 
@@ -321,7 +321,7 @@
       <div class="seg-btns" id="catBtns">
         <div class="seg-btn" data-cat="arm">ARM</div>
         <div class="seg-btn" data-cat="leg">LEG</div>
-        <div class="seg-btn" data-cat="alt">Strength</div>
+        <div class="seg-btn" data-cat="alt">Physio</div>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;margin-top:12px;">
@@ -1209,7 +1209,7 @@ function updateTotal() {
   }
   bar.innerHTML=`
     <div class="total-item">Total: ${timePair(doneMins,totalMins)}</div>
-    <div class="total-item" style="color:var(--alt)">Strength: ${timePair(doneAlt,planAlt)}</div>
+    <div class="total-item" style="color:var(--alt)">Physio: ${timePair(doneAlt,planAlt)}</div>
     <div class="total-item" style="color:var(--arm)">Arm: ${timePair(doneArm,planArm)}</div>
     <div class="total-item" style="color:var(--leg)">Leg: ${timePair(doneLeg,planLeg)}</div>
   `;
@@ -1667,7 +1667,7 @@ function openDaySummary(day, noteOnly=false) {
         return false;                     // reps-only with no sets: skip (edge case)
       });
       if (catItems.length === 0) return;
-      const catNames = { alt:'Strength', arm:'Arm', leg:'Leg' };
+      const catNames = { alt:'Physio', arm:'Arm', leg:'Leg' };
       const sec = document.createElement('div');
       sec.className = 'day-summary-cat';
       const title = document.createElement('div');
@@ -1717,7 +1717,7 @@ function openDaySummary(day, noteOnly=false) {
     stats.className = 'day-summary-stats';
     stats.innerHTML = `
       <div class="stat-total"><span>Total: </span><strong>${fmtMin(Math.round(total))}</strong></div>
-      ${planAlt>0?`<div><span style="color:var(--alt)">Strength: </span><strong>${fmtMin(Math.round(doneAlt))}</strong></div>`:''}
+      ${planAlt>0?`<div><span style="color:var(--alt)">Physio: </span><strong>${fmtMin(Math.round(doneAlt))}</strong></div>`:''}
       ${planArm>0?`<div><span style="color:var(--arm)">Arm: </span><strong>${fmtMin(Math.round(doneArm))}</strong></div>`:''}
       ${planLeg>0?`<div><span style="color:var(--leg)">Leg: </span><strong>${fmtMin(Math.round(doneLeg))}</strong></div>`:''}
     `;
@@ -1824,7 +1824,7 @@ function openBatchAddModal(day) {
   const list = document.getElementById('batchAddList');
   list.innerHTML = '';
 
-  const catNames = { arm:'ARM', leg:'LEG', alt:'Strength' };
+  const catNames = { arm:'ARM', leg:'LEG', alt:'Physio' };
   const catOrder = ['alt','arm','leg'];
 
   catOrder.forEach(cat => {
@@ -2108,7 +2108,7 @@ function generateReport() {
   ['alt','arm','leg'].forEach(cat=>{
     const catExes=Object.entries(exerciseTotals).filter(([,v])=>v.cat===cat && v.mins>0);
     if(!catExes.length) return;
-    const catNames={alt:'Strength',arm:'Arm',leg:'Leg'};
+    const catNames={alt:'Physio',arm:'Arm',leg:'Leg'};
     const sec=document.createElement('div'); sec.style.marginBottom='14px';
     const t=document.createElement('div');
     t.className=`day-summary-cat-title ${cat}`;
@@ -2126,7 +2126,7 @@ function generateReport() {
   const stats=document.createElement('div'); stats.className='day-summary-stats';
   stats.innerHTML=`
     <div class="stat-total"><span>Total: </span><strong>${fmtMin(Math.round(grandTotal))}</strong></div>
-    ${totalAlt>0?`<div><span style="color:var(--alt)">Strength: </span><strong>${fmtMin(Math.round(totalAlt))}</strong></div>`:''}
+    ${totalAlt>0?`<div><span style="color:var(--alt)">Physio: </span><strong>${fmtMin(Math.round(totalAlt))}</strong></div>`:''}
     ${totalArm>0?`<div><span style="color:var(--arm)">Arm: </span><strong>${fmtMin(Math.round(totalArm))}</strong></div>`:''}
     ${totalLeg>0?`<div><span style="color:var(--leg)">Leg: </span><strong>${fmtMin(Math.round(totalLeg))}</strong></div>`:''}
   `;
