@@ -225,6 +225,13 @@
     <button class="add-ex-btn" id="addExBtn">+ Add Exercise</button>
   </div>
   <div class="bank-cols">
+    <div class="bank-section" id="bank-section-fav">
+      <div class="bank-section-header" style="background:rgba(255,200,0,0.07);" onclick="toggleBankSection('fav')">
+        <span class="bank-col-title" style="color:#f5c518;">⭐ Favorites</span>
+        <span class="bank-section-chevron" id="bank-chev-fav">▼</span>
+      </div>
+      <div class="bank-section-body" id="bank-body-fav"><div id="bank-fav"></div></div>
+    </div>
     <div class="bank-section" id="bank-section-alt">
       <div class="bank-section-header alt" onclick="toggleBankSection('alt')">
         <span class="bank-col-title alt">Physio</span>
@@ -333,7 +340,10 @@
 
 <div class="overlay hidden" id="addModal">
   <div class="modal">
-    <div class="modal-title" id="addModalTitle">New Exercise</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="modal-title" id="addModalTitle">New Exercise</div>
+      <button id="favStarBtn" style="display:none;background:none;border:none;font-size:22px;cursor:pointer;padding:0 4px;line-height:1;">⭐</button>
+    </div>
     <div class="modal-sub" id="addModalSub">Add to exercise bank</div>
     <div class="form-row">
       <label class="form-label">Name</label>
@@ -521,6 +531,7 @@ const STORE_NAME = 'appState';
 const STATE_KEY  = 'state';
 
 const DEFAULT_EXERCISES = {
+  fav: [],
   arm: [
     { name: 'EMS',            sets:'', reps:'', mins:'40' },
     { name: 'Weight Bearing', sets:'', reps:'', mins:'16' },
@@ -583,7 +594,7 @@ function loadStateFromDB() {
 // ── Exercise data ─────────────────────────────────────────────────────
 let exercises    = JSON.parse(JSON.stringify(DEFAULT_EXERCISES));
 
-const DOT_COLOR = { arm: '#35c8f1', leg: '#f1a035', alt: '#c835f1' };
+const DOT_COLOR = { arm: '#35c8f1', leg: '#f1a035', alt: '#c835f1', fav: '#ffc800' };
 const DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 
 // ── Week navigation ───────────────────────────────────────────────────
@@ -873,15 +884,25 @@ function initReorder(e, cat, fromIdx) {
 }
 
 // ── Build bank ────────────────────────────────────────────────────────
-function buildBank() { ['arm','leg','alt'].forEach(cat=>renderBankCol(cat)); }
+function buildBank() { ['fav','alt','arm','leg'].forEach(cat=>renderBankCol(cat)); }
 
 function renderBankCol(cat) {
   const container=document.getElementById('bank-'+cat);
+  if (!container) return;
   container.innerHTML='';
-  // Sort a display copy alphabetically — original array order is preserved
-  const sorted=[...exercises[cat]].sort((a,b)=>a.name.localeCompare(b.name));
-  sorted.forEach((ex) => {
-    const idx=exercises[cat].indexOf(ex);
+  // fav category: show all exercises with ex.fav===true across all cats
+  let items;
+  if (cat === 'fav') {
+    items = [];
+    ['alt','arm','leg'].forEach(c => {
+      (exercises[c]||[]).forEach((ex,i) => { if (ex.fav) items.push({ex, cat:c, idx:i}); });
+    });
+    items.sort((a,b)=>a.ex.name.localeCompare(b.ex.name));
+  } else {
+    const sorted=[...exercises[cat]].sort((a,b)=>a.name.localeCompare(b.name));
+    items = sorted.map(ex=>({ ex, cat, idx: exercises[cat].indexOf(ex) }));
+  }
+  items.forEach(({ex, cat: itemCat, idx}) => {
     const pill=document.createElement('div');
     pill.className='bank-pill';
     const detail=detailStr(ex.sets,ex.reps,ex.mins);
@@ -890,11 +911,11 @@ function renderBankCol(cat) {
     handle.className='drag-handle';
     handle.innerHTML='<span></span>'.repeat(9);
     handle.title='Drag to day';
-    handle.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); initReorder(e,cat,idx); });
+    handle.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); initReorder(e,itemCat,idx); });
 
     const dot=document.createElement('span');
     dot.className='pill-dot';
-    dot.style.background=DOT_COLOR[cat];
+    dot.style.background=DOT_COLOR[itemCat]||DOT_COLOR[cat];
 
     const name=document.createElement('span');
     name.style.flex='1';
@@ -912,24 +933,21 @@ function renderBankCol(cat) {
       pill.appendChild(d);
     }
 
-
     const editBtn=document.createElement('button');
     editBtn.className='bank-pill-del';
     editBtn.innerHTML='✎';
     editBtn.title='Edit defaults';
     editBtn.style.opacity='0.4';
     editBtn.addEventListener('pointerdown', e=>e.stopPropagation());
-    editBtn.addEventListener('click', e=>{ e.stopPropagation(); openEditBankModal(cat,idx); });
+    editBtn.addEventListener('click', e=>{ e.stopPropagation(); openEditBankModal(itemCat,idx); });
     pill.appendChild(editBtn);
 
     const del=document.createElement('button');
     del.className='bank-pill-del';
     del.textContent='×';
     del.addEventListener('pointerdown', e=>e.stopPropagation());
-    del.addEventListener('click', e=>{ e.stopPropagation(); openConfirmDelete(cat,idx,ex.name); });
+    del.addEventListener('click', e=>{ e.stopPropagation(); openConfirmDelete(itemCat,idx,ex.name); });
     pill.appendChild(del);
-
-    // Drag pill to a day — handle only
 
     container.appendChild(pill);
   });
@@ -1253,6 +1271,7 @@ function openAddModal() {
   document.getElementById('newReps').value='0';
   document.getElementById('newTime').value='0';
   selectedCat='arm'; updateCatBtns();
+  document.getElementById('favStarBtn').style.display='none';
   document.getElementById('addModal').classList.remove('hidden');
   setTimeout(()=>document.getElementById('newName').focus(),50);
 }
@@ -1262,13 +1281,18 @@ function openEditBankModal(cat, idx) {
   const ex=exercises[cat][idx];
   document.getElementById('addModalTitle').textContent='Edit Exercise';
   document.getElementById('addModalSub').textContent='Update default values';
-  document.getElementById('addCatRow').style.display=''; // show category selector
+  document.getElementById('addCatRow').style.display='';
   document.getElementById('addSaveBtn').textContent='Save Changes';
   document.getElementById('newName').value=ex.name;
   document.getElementById('newSets').value=ex.sets||'0';
   document.getElementById('newReps').value=ex.reps||'0';
   document.getElementById('newTime').value=ex.mins||'0';
   selectedCat=cat; updateCatBtns();
+  // Show star
+  const starBtn = document.getElementById('favStarBtn');
+  starBtn.style.display = '';
+  starBtn.textContent = ex.fav ? '⭐' : '☆';
+  starBtn.dataset.fav = ex.fav ? '1' : '0';
   document.getElementById('addModal').classList.remove('hidden');
 }
 
@@ -1292,22 +1316,32 @@ function updateCatBtns() {
     b.className='seg-btn'+(b.dataset.cat===selectedCat?' active-'+selectedCat:'');
   });
 }
+document.getElementById('favStarBtn').addEventListener('click', () => {
+  const btn = document.getElementById('favStarBtn');
+  const isFav = btn.dataset.fav === '1';
+  btn.dataset.fav = isFav ? '0' : '1';
+  btn.textContent = isFav ? '☆' : '⭐';
+});
+
 document.getElementById('addSaveBtn').addEventListener('click',()=>{
   const name=document.getElementById('newName').value.trim();
   if (!name) { document.getElementById('newName').focus(); return; }
   const sets=document.getElementById('newSets').value;
   const reps=document.getElementById('newReps').value;
   const mins=document.getElementById('newTime').value;
+  const fav = document.getElementById('favStarBtn').dataset.fav === '1';
   if (editBankTarget) {
     const oldCat=editBankTarget.cat;
     exercises[oldCat].splice(editBankTarget.idx,1);
-    exercises[selectedCat].push({ name, sets:sets==='0'?'':sets, reps:reps==='0'?'':reps, mins:mins==='0'?'':mins });
+    exercises[selectedCat].push({ name, sets:sets==='0'?'':sets, reps:reps==='0'?'':reps, mins:mins==='0'?'':mins, fav });
     if (oldCat!==selectedCat) renderBankCol(oldCat);
     renderBankCol(selectedCat);
+    renderBankCol('fav');
     editBankTarget=null;
   } else {
-    exercises[selectedCat].push({ name, sets:sets==='0'?'':sets, reps:reps==='0'?'':reps, mins:mins==='0'?'':mins });
+    exercises[selectedCat].push({ name, sets:sets==='0'?'':sets, reps:reps==='0'?'':reps, mins:mins==='0'?'':mins, fav });
     renderBankCol(selectedCat);
+    renderBankCol('fav');
   }
   document.getElementById('addModal').classList.add('hidden');
   saveState();
@@ -1622,7 +1656,7 @@ document.getElementById('confirmYes').addEventListener('click',()=>{
   const {cat,idx,name}=deleteTarget;
   exercises[cat].splice(idx,1);
   DAYS.forEach(d=>{ schedule[d]=schedule[d].filter(i=>!(i.name===name&&i.cat===cat)); renderDay(d); });
-  renderBankCol(cat); updateTotal(); saveState();
+  renderBankCol(cat); renderBankCol('fav'); updateTotal(); saveState();
   document.getElementById('confirmModal').classList.add('hidden');
   deleteTarget=null;
 });
@@ -1800,7 +1834,7 @@ document.getElementById('importFile').addEventListener('change', e => {
       }
       weekOffset = data.weekOffset || 0;
       renderAllDays();
-      ['arm','leg','alt'].forEach(renderBankCol);
+      ['fav','arm','leg','alt'].forEach(renderBankCol);
       updateTotal();
       saveState();
       
@@ -1817,6 +1851,7 @@ document.getElementById('importFile').addEventListener('change', e => {
 openDB().then(loadStateFromDB).then(saved => {
   if (saved) {
     if (saved.exercises)    exercises    = saved.exercises;
+    if (!exercises.fav) exercises.fav = [];
     if (saved.allSchedules) allSchedules = saved.allSchedules;
     if (saved.weekOffset != null) {} // always open on current week
     if (saved.dayNotes)     dayNotes     = saved.dayNotes;
@@ -1840,7 +1875,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').ca
 let openBankSection = null;
 function toggleBankSection(cat) {
   const isOpen = openBankSection === cat;
-  ['alt','arm','leg'].forEach(c => {
+  ['fav','alt','arm','leg'].forEach(c => {
     document.getElementById('bank-body-'+c).classList.remove('open');
     document.getElementById('bank-chev-'+c).style.transform = '';
   });
@@ -1864,10 +1899,10 @@ function openBatchAddModal(day) {
   const list = document.getElementById('batchAddList');
   list.innerHTML = '';
 
-  const catNames = { alt:'Physio', arm:'Arm', leg:'Leg' };
-  const catColors = { alt:'#c835f1', arm:'#35c8f1', leg:'#f1a035' };
-  const catBg = { alt:'rgba(200,53,241,0.07)', arm:'rgba(53,200,241,0.07)', leg:'rgba(241,160,53,0.07)' };
-  const catOrder = ['alt','arm','leg'];
+  const catNames = { fav:'Favourites', alt:'Physio', arm:'Arm', leg:'Leg' };
+  const catColors = { fav:'#ffc800', alt:'#c835f1', arm:'#35c8f1', leg:'#f1a035' };
+  const catBg = { fav:'rgba(255,200,0,0.07)', alt:'rgba(200,53,241,0.07)', arm:'rgba(53,200,241,0.07)', leg:'rgba(241,160,53,0.07)' };
+  const catOrder = ['fav','alt','arm','leg'];
   const sections = {}; // cat -> { body, chev }
   let openCat = null;
 
@@ -1887,8 +1922,17 @@ function openBatchAddModal(day) {
   }
 
   catOrder.forEach(cat => {
-    const exes = exercises[cat];
-    if (!exes || !exes.length) return;
+    // Get exercises for this cat
+    let exItems;
+    if (cat === 'fav') {
+      exItems = [];
+      ['alt','arm','leg'].forEach(c => {
+        exercises[c].forEach((ex,i) => { if (ex.fav) exItems.push({ex, realCat:c, idx:i}); });
+      });
+      exItems.sort((a,b)=>a.ex.name.localeCompare(b.ex.name));
+    } else {
+      exItems = exercises[cat].map((ex,i)=>({ex, realCat:cat, idx:i}));
+    }
     const color = catColors[cat];
 
     // Accordion header
@@ -1913,18 +1957,18 @@ function openBatchAddModal(day) {
     // Register refs for toggle
     sections[cat] = { body, chev };
 
-    exes.forEach((ex, idx) => {
+    exItems.forEach(({ex, realCat, idx}) => {
       const row = document.createElement('div');
       row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:#1a1a1a;transition:all 0.15s;margin-bottom:6px;`;
       row.dataset.selected = '0';
-      row.dataset.cat = cat;
+      row.dataset.cat = realCat;
       row.dataset.idx = idx;
 
       const check = document.createElement('div');
       check.style.cssText = `width:18px;height:18px;border-radius:4px;border:1px solid #444;background:none;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#000;font-weight:bold;`;
 
       const dot = document.createElement('div');
-      dot.style.cssText = `width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;`;
+      dot.style.cssText = `width:8px;height:8px;border-radius:50%;background:${DOT_COLOR[realCat]||color};flex-shrink:0;`;
 
       const name = document.createElement('div');
       name.style.cssText = 'font-size:14px;color:var(--text);flex:1;';
