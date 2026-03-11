@@ -342,12 +342,15 @@
   <div class="modal">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <div class="modal-title" id="addModalTitle">New Exercise</div>
-      <button id="favStarBtn" style="display:none;background:none;border:none;font-size:22px;cursor:pointer;padding:0 4px;line-height:1;">⭐</button>
+      <button id="editBankDeleteBtn" style="display:none;background:none;border:none;color:#a01030;font-family:'DM Mono',monospace;font-size:14px;letter-spacing:0.5px;cursor:pointer;padding:0;text-decoration:underline;text-transform:lowercase;">delete</button>
     </div>
     <div class="modal-sub" id="addModalSub">Add to exercise bank</div>
     <div class="form-row">
       <label class="form-label">Name</label>
-      <input class="form-input" id="newName" placeholder="Exercise name" autocomplete="off">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input class="form-input" id="newName" placeholder="Exercise name" autocomplete="off" style="flex:1;font-size:13px;padding:10px;">
+        <button id="favStarBtn" style="display:none;background:none;border:none;font-size:38px;cursor:pointer;padding:0 4px;line-height:1;color:#c8f135;-webkit-text-fill-color:#c8f135;opacity:0.35;flex-shrink:0;">☆</button>
+      </div>
     </div>
     <div class="form-row" id="addCatRow">
       <label class="form-label">Category</label>
@@ -479,7 +482,7 @@
 <!-- CONFIRM DELETE MODAL -->
 <div class="overlay hidden" id="confirmModal">
   <div class="confirm-box">
-    <p>Delete <strong id="confirmName"></strong> from the bank?<br><span style="font-size:12px;color:var(--muted)">It will also be removed from any days it was assigned to.</span></p>
+    <p>Delete <strong id="confirmName"></strong> from the bank?<br><span style="font-size:12px;color:var(--muted)">It will stay on any days it was assigned to.</span></p>
     <div class="confirm-actions">
       <button class="btn-cancel" id="confirmNo">Cancel</button>
       <button class="btn-danger" id="confirmYes">Delete</button>
@@ -1263,6 +1266,7 @@ let editBankTarget=null; // {cat, idx} when editing existing
 function openAddModal() {
   editBankTarget=null;
   document.getElementById('addModalTitle').textContent='New Exercise';
+  document.getElementById('editBankDeleteBtn').style.display='none';
   document.getElementById('addModalSub').textContent='Add to exercise bank';
   document.getElementById('addCatRow').style.display='';
   document.getElementById('addSaveBtn').textContent='Add Exercise';
@@ -1271,7 +1275,8 @@ function openAddModal() {
   document.getElementById('newReps').value='0';
   document.getElementById('newTime').value='0';
   selectedCat='arm'; updateCatBtns();
-  document.getElementById('favStarBtn').style.display='none';
+  const sb = document.getElementById('favStarBtn');
+  sb.style.display='none'; sb.textContent='☆'; sb.style.opacity='0.3'; sb.dataset.fav='0';
   document.getElementById('addModal').classList.remove('hidden');
   setTimeout(()=>document.getElementById('newName').focus(),50);
 }
@@ -1280,6 +1285,7 @@ function openEditBankModal(cat, idx) {
   editBankTarget={cat,idx};
   const ex=exercises[cat][idx];
   document.getElementById('addModalTitle').textContent='Edit Exercise';
+  document.getElementById('editBankDeleteBtn').style.display='';
   document.getElementById('addModalSub').textContent='Update default values';
   document.getElementById('addCatRow').style.display='';
   document.getElementById('addSaveBtn').textContent='Save Changes';
@@ -1291,16 +1297,24 @@ function openEditBankModal(cat, idx) {
   // Show star
   const starBtn = document.getElementById('favStarBtn');
   starBtn.style.display = '';
-  starBtn.textContent = ex.fav ? '⭐' : '☆';
+  starBtn.textContent = ex.fav ? '★' : '☆';
+  starBtn.style.opacity = ex.fav ? '1' : '0.3';
   starBtn.dataset.fav = ex.fav ? '1' : '0';
   document.getElementById('addModal').classList.remove('hidden');
 }
 
+document.getElementById('editBankDeleteBtn').addEventListener('click', () => {
+  if (!editBankTarget) return;
+  const {cat, idx} = editBankTarget;
+  const ex = exercises[cat][idx];
+  document.getElementById('addModal').classList.add('hidden');
+  editBankTarget = null;
+  openConfirmDelete(cat, idx, ex.name);
+});
 document.getElementById('addExBtn').addEventListener('click', openAddModal);
 document.getElementById('addCancelBtn').addEventListener('click',()=>{ document.getElementById('addModal').classList.add('hidden'); editBankTarget=null; });
-document.getElementById('addModal').addEventListener('click',e=>{ if(e.target===document.getElementById('addModal')){ document.getElementById('addModal').classList.add('hidden'); editBankTarget=null; }});
 
-// Add modal steppers
+document.getElementById('addModal').addEventListener('click',e=>{ if(e.target===document.getElementById('addModal')){ document.getElementById('addModal').classList.add('hidden'); editBankTarget=null; }});
 addHoldStepper('newSetsMinus','newSets',-1);
 addHoldStepper('newSetsPlus', 'newSets',+1);
 addHoldStepper('newRepsMinus','newReps',-1);
@@ -1320,7 +1334,8 @@ document.getElementById('favStarBtn').addEventListener('click', () => {
   const btn = document.getElementById('favStarBtn');
   const isFav = btn.dataset.fav === '1';
   btn.dataset.fav = isFav ? '0' : '1';
-  btn.textContent = isFav ? '☆' : '⭐';
+  btn.textContent = isFav ? '☆' : '★';
+  btn.style.opacity = isFav ? '0.3' : '1';
 });
 
 document.getElementById('addSaveBtn').addEventListener('click',()=>{
@@ -1655,7 +1670,6 @@ document.getElementById('confirmYes').addEventListener('click',()=>{
   if (!deleteTarget) return;
   const {cat,idx,name}=deleteTarget;
   exercises[cat].splice(idx,1);
-  DAYS.forEach(d=>{ schedule[d]=schedule[d].filter(i=>!(i.name===name&&i.cat===cat)); renderDay(d); });
   renderBankCol(cat); renderBankCol('fav'); updateTotal(); saveState();
   document.getElementById('confirmModal').classList.add('hidden');
   deleteTarget=null;
@@ -2006,6 +2020,9 @@ function openBatchAddModal(day) {
 
   document.getElementById('batchAddModal').classList.remove('hidden');
   lockBodyScroll();
+  // Auto-expand favourites if non-empty
+  const favItems = ['alt','arm','leg'].some(c => exercises[c].some(ex => ex.fav));
+  if (favItems) setTimeout(() => toggleCat('fav'), 0);
 }
 
 document.getElementById('batchAddClose').addEventListener('click', () => {
