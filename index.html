@@ -53,6 +53,11 @@
   .text-btn:hover, .text-btn:active { border-color: var(--accent); color: var(--accent); }
   .more-btn { position: absolute; bottom: 4px; right: 4px; width: auto; min-height: 20px; font-size: 8px; padding: 2px 6px; z-index: 2; border-radius: 3px; }
   .more-btn.has-note { border-color: #666; color: #666; }
+  .rep-cal-day { font-family:'DM Mono',monospace;font-size:11px;text-align:center;padding:5px 2px;border-radius:4px;cursor:pointer;color:var(--muted);position:relative; }
+  .rep-cal-day.has-ex { color:var(--text); }
+  .rep-cal-day.in-range { background:rgba(106,136,24,0.2); color:var(--accent); }
+  .rep-cal-day.range-start, .rep-cal-day.range-end { background:var(--accent); color:#000; border-radius:4px; }
+  .rep-cal-day.empty { pointer-events:none; }
 
   /* DAY SUMMARY */
   .day-summary-box { background: var(--dark); border: 1px solid var(--border); border-radius: 14px; padding: 20px 16px; width: 100%; max-width: 100%; max-height: 85vh; overflow-y: auto; }
@@ -191,7 +196,13 @@
 <body>
 
 <h1>REHAB&nbsp;&nbsp;&nbsp;PLANNER</h1>
-<div style="height:16px"></div>
+<div style="height:10px"></div>
+<div style="display:flex;gap:8px;margin-bottom:10px;">
+  <button class="week-nav-btn" id="changeViewBtn" style="flex:1;">Change View</button>
+  <button class="week-nav-btn" id="calendarBtn" style="flex:1;">Calendar</button>
+  <button class="week-nav-btn" id="reportBtn" style="flex:1;">Report</button>
+</div>
+<div style="height:6px"></div>
 <div class="week-nav">
   <button class="week-nav-btn" id="prevWeekBtn">← Prev</button>
   <div class="week-nav-label" id="weekLabel"></div>
@@ -244,6 +255,70 @@
   <button id="exportBtn" class="btn-primary" style="background:none;border:1px solid var(--accent);color:var(--accent);">↓ Export Data</button>
   <label id="importLabel" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);text-align:center;cursor:pointer;">↑ Import Data<input type="file" id="importFile" accept=".json" style="display:none;"></label>
 </div>
+<div class="overlay hidden" id="calendarModal">
+  <div class="modal" style="max-width:360px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <button id="calModalPrev" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 10px;">‹</button>
+      <div id="calModalTitle" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text);"></div>
+      <button id="calModalNext" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 10px;">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:6px;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">M</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">T</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">W</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">T</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">F</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">S</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">S</div>
+    </div>
+    <div id="calModalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div>
+    <div style="display:flex;gap:12px;margin-top:10px;">
+      <div style="display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);"><div style="width:7px;height:7px;border-radius:50%;background:var(--accent);opacity:0.5;"></div>has exercises</div>
+      <div style="display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);"><div style="width:7px;height:7px;border-radius:50%;background:var(--accent);"></div>today</div>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn-secondary" id="calModalClose" style="flex:1;">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="reportModal">
+  <div class="modal" style="max-width:400px;max-height:85vh;overflow-y:auto;">
+    <div class="modal-title">Report</div>
+    <div id="reportPickerSection">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px;">SELECT RANGE</div>
+      <!-- Report calendar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <button id="repCalPrev" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 10px;">‹</button>
+        <div id="repCalTitle" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text);"></div>
+        <button id="repCalNext" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 10px;">›</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">M</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">T</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">W</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">T</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">F</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">S</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;">S</div>
+      </div>
+      <div id="repCalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div>
+      <div id="repRangeLabel" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);text-align:center;margin-top:10px;min-height:16px;"></div>
+      <div class="modal-actions" style="margin-top:12px;">
+        <button class="btn-secondary" id="reportClose" style="flex:1;">Close</button>
+        <button class="btn-primary" id="generateReportBtn" style="flex:2;opacity:0.4;" disabled>Generate Report</button>
+      </div>
+    </div>
+    <div id="reportOutputSection" style="display:none;">
+      <div id="reportOutput"></div>
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="btn-secondary" id="reportBackBtn" style="flex:1;">← Back</button>
+        <button class="btn-secondary" id="reportCloseOutput" style="flex:1;">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="overlay hidden" id="addModal">
   <div class="modal">
     <div class="modal-title" id="addModalTitle">New Exercise</div>
@@ -1719,6 +1794,220 @@ openDB().then(loadStateFromDB).then(saved => {
 });
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+// ── Top Toolbar Buttons ───────────────────────────────────────────────
+document.getElementById('changeViewBtn').addEventListener('click', () => {
+  // placeholder — will be defined later
+});
+
+// ── Calendar Modal ────────────────────────────────────────────────────
+let calModalYear, calModalMonth;
+(function(){ const n=new Date(); calModalYear=n.getFullYear(); calModalMonth=n.getMonth(); })();
+
+function renderCalendarModal() {
+  const MNAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calModalTitle').textContent = MNAMES[calModalMonth] + ' ' + calModalYear;
+  const grid = document.getElementById('calModalGrid');
+  grid.innerHTML = '';
+  const today = new Date(); const todayStr = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+  const first = new Date(calModalYear, calModalMonth, 1);
+  let startDow = first.getDay(); startDow = startDow===0?6:startDow-1;
+  for(let i=0;i<startDow;i++){const e=document.createElement('div');grid.appendChild(e);}
+  const daysInMonth = new Date(calModalYear, calModalMonth+1, 0).getDate();
+  for(let d=1;d<=daysInMonth;d++){
+    const date = new Date(calModalYear, calModalMonth, d);
+    const ds = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
+    const isToday = ds===todayStr;
+    // check if any schedule has exercises this day
+    const dow = date.getDay(); const dayIdx = dow===0?6:dow-1;
+    const dayName = ['MON','TUE','WED','THU','FRI','SAT','SUN'][dayIdx];
+    const mon = new Date(date); mon.setDate(mon.getDate()-dayIdx);
+    const wk = mon.getFullYear()+'-'+(mon.getMonth()+1)+'-'+mon.getDate();
+    const sched = allSchedules[wk]||{};
+    const hasEx = (sched[dayName]||[]).length>0;
+    const cell = document.createElement('div');
+    cell.style.cssText='font-family:"DM Mono",monospace;font-size:11px;text-align:center;padding:6px 2px;border-radius:4px;cursor:pointer;position:relative;';
+    cell.style.color = isToday ? '#000' : hasEx ? 'var(--text)' : 'var(--muted)';
+    cell.style.background = isToday ? 'var(--accent)' : '';
+    cell.textContent = d;
+    if(hasEx && !isToday){const dot=document.createElement('div');dot.style.cssText='width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0.6;margin:1px auto 0;';cell.appendChild(dot);}
+    cell.addEventListener('click', ()=>{
+      // jump to that week
+      const targetMon = new Date(date); targetMon.setDate(targetMon.getDate()-dayIdx);
+      const curMon = getMonday(0);
+      const diff = Math.round((targetMon-curMon)/(7*86400000));
+      weekOffset += diff; // adjust relative
+      // recalculate from absolute
+      const baseMs = targetMon.getTime(); const curMs = curMon.getTime();
+      weekOffset = Math.round((baseMs-curMs)/(7*86400000));
+      buildWeek(); window.scrollTo({top:0,behavior:'smooth'});
+      document.getElementById('calendarModal').classList.add('hidden');
+    });
+    grid.appendChild(cell);
+  }
+}
+
+document.getElementById('calendarBtn').addEventListener('click', ()=>{
+  renderCalendarModal();
+  document.getElementById('calendarModal').classList.remove('hidden');
+});
+document.getElementById('calModalClose').addEventListener('click', ()=> document.getElementById('calendarModal').classList.add('hidden'));
+document.getElementById('calendarModal').addEventListener('click', e=>{ if(e.target===document.getElementById('calendarModal')) document.getElementById('calendarModal').classList.add('hidden'); });
+document.getElementById('calModalPrev').addEventListener('click', ()=>{ calModalMonth--; if(calModalMonth<0){calModalMonth=11;calModalYear--;} renderCalendarModal(); });
+document.getElementById('calModalNext').addEventListener('click', ()=>{ calModalMonth++; if(calModalMonth>11){calModalMonth=0;calModalYear++;} renderCalendarModal(); });
+
+// ── Report Modal ──────────────────────────────────────────────────────
+let repCalYear, repCalMonth, repRangeStart=null, repRangeEnd=null;
+(function(){ const n=new Date(); repCalYear=n.getFullYear(); repCalMonth=n.getMonth(); })();
+
+function dateKey(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function parseDateKey(k){ const [y,m,d]=k.split('-').map(Number); return new Date(y,m-1,d); }
+
+function renderRepCal() {
+  const MNAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('repCalTitle').textContent = MNAMES[repCalMonth] + ' ' + repCalYear;
+  const grid = document.getElementById('repCalGrid'); grid.innerHTML='';
+  const first = new Date(repCalYear, repCalMonth, 1);
+  let startDow = first.getDay(); startDow = startDow===0?6:startDow-1;
+  for(let i=0;i<startDow;i++){const e=document.createElement('div');e.className='rep-cal-day empty';grid.appendChild(e);}
+  const daysInMonth = new Date(repCalYear, repCalMonth+1, 0).getDate();
+  for(let d=1;d<=daysInMonth;d++){
+    const date = new Date(repCalYear, repCalMonth, d);
+    const dk = dateKey(date);
+    const dow = date.getDay(); const dayIdx = dow===0?6:dow-1;
+    const dayName = ['MON','TUE','WED','THU','FRI','SAT','SUN'][dayIdx];
+    const mon = new Date(date); mon.setDate(mon.getDate()-dayIdx);
+    const wk = dateKey(mon);
+    const sched = allSchedules[wk]||{};
+    const hasEx = (sched[dayName]||[]).length>0;
+    const cell = document.createElement('div');
+    cell.className = 'rep-cal-day' + (hasEx?' has-ex':'');
+    cell.textContent = d;
+    cell.dataset.dk = dk;
+    // highlight range
+    const startD = repRangeStart ? parseDateKey(repRangeStart) : null;
+    const endD   = repRangeEnd   ? parseDateKey(repRangeEnd)   : null;
+    if(repRangeStart && dk===repRangeStart) cell.classList.add('range-start');
+    if(repRangeEnd   && dk===repRangeEnd)   cell.classList.add('range-end');
+    if(startD && endD && date>startD && date<endD) cell.classList.add('in-range');
+    cell.addEventListener('click', ()=>{
+      if(!repRangeStart || (repRangeStart && repRangeEnd)){
+        repRangeStart=dk; repRangeEnd=null;
+      } else {
+        const clickedDate = parseDateKey(dk);
+        const startDate = parseDateKey(repRangeStart);
+        if(clickedDate<startDate){ repRangeEnd=repRangeStart; repRangeStart=dk; }
+        else { repRangeEnd=dk; }
+      }
+      updateRepRangeLabel();
+      renderRepCal();
+    });
+    grid.appendChild(cell);
+  }
+}
+
+function updateRepRangeLabel() {
+  const lbl = document.getElementById('repRangeLabel');
+  const btn = document.getElementById('generateReportBtn');
+  if(repRangeStart && repRangeEnd){
+    lbl.textContent = repRangeStart + '  →  ' + repRangeEnd;
+    btn.disabled=false; btn.style.opacity='1';
+  } else if(repRangeStart){
+    lbl.textContent = repRangeStart + '  →  pick end date';
+    btn.disabled=true; btn.style.opacity='0.4';
+  } else {
+    lbl.textContent=''; btn.disabled=true; btn.style.opacity='0.4';
+  }
+}
+
+function generateReport() {
+  const start = parseDateKey(repRangeStart);
+  const end   = parseDateKey(repRangeEnd);
+  // collect all days in range
+  const dayNames = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  let totalArm=0,totalLeg=0,totalAlt=0,planArm=0,planLeg=0,planAlt=0;
+  let exerciseTotals = {}; // name -> {done, planned, cat}
+  const cur = new Date(start);
+  while(cur<=end){
+    const dow=cur.getDay(); const dayIdx=dow===0?6:dow-1;
+    const dayName=dayNames[dayIdx];
+    const mon=new Date(cur); mon.setDate(mon.getDate()-dayIdx);
+    const wk=dateKey(mon);
+    const sched=allSchedules[wk]||{};
+    const items=sched[dayName]||[];
+    items.forEach(item=>{
+      const dm=calcItemDoneMinutes(item), pm=calcItemPlannedMinutes(item);
+      if(item.cat==='arm'){totalArm+=dm;planArm+=pm;}
+      else if(item.cat==='leg'){totalLeg+=dm;planLeg+=pm;}
+      else{totalAlt+=dm;planAlt+=pm;}
+      if(!exerciseTotals[item.name]) exerciseTotals[item.name]={done:0,planned:0,cat:item.cat,sessions:0};
+      exerciseTotals[item.name].done+=dm;
+      exerciseTotals[item.name].planned+=pm;
+      exerciseTotals[item.name].sessions+=1;
+    });
+    cur.setDate(cur.getDate()+1);
+  }
+  const grandDone=totalArm+totalLeg+totalAlt;
+  const grandPlan=planArm+planLeg+planAlt;
+  // render
+  const out = document.getElementById('reportOutput');
+  out.innerHTML='';
+  const header=document.createElement('div');
+  header.style.cssText='font-family:"DM Mono",monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:12px;';
+  header.textContent=repRangeStart+' → '+repRangeEnd;
+  out.appendChild(header);
+  // per-category exercise breakdown
+  ['alt','arm','leg'].forEach(cat=>{
+    const catExes=Object.entries(exerciseTotals).filter(([,v])=>v.cat===cat);
+    if(!catExes.length) return;
+    const catNames={alt:'Strength',arm:'Arm',leg:'Leg'};
+    const sec=document.createElement('div'); sec.style.marginBottom='14px';
+    const t=document.createElement('div');
+    t.className=`day-summary-cat-title ${cat}`;
+    t.style.marginBottom='8px';
+    t.textContent=catNames[cat];
+    sec.appendChild(t);
+    catExes.forEach(([name,v])=>{
+      const row=document.createElement('div');
+      row.className='day-summary-item';
+      row.innerHTML=`<span>${name} <span style="color:var(--muted);font-size:10px;">(×${v.sessions})</span></span><span class="day-summary-detail">${fmtMin(Math.round(v.done))}</span>`;
+      sec.appendChild(row);
+    });
+    out.appendChild(sec);
+  });
+  // totals
+  const stats=document.createElement('div'); stats.className='day-summary-stats';
+  stats.innerHTML=`
+    <div class="stat-total"><span>Total Done: </span><strong>${fmtMin(Math.round(grandDone))}</strong></div>
+    <div><span style="color:var(--muted);font-size:11px;">Planned: </span><span style="font-size:11px;">${fmtMin(Math.round(grandPlan))}</span></div>
+    ${planAlt>0?`<div><span style="color:var(--alt)">Strength: </span><strong>${fmtMin(Math.round(totalAlt))}</strong></div>`:''}
+    ${planArm>0?`<div><span style="color:var(--arm)">Arm: </span><strong>${fmtMin(Math.round(totalArm))}</strong></div>`:''}
+    ${planLeg>0?`<div><span style="color:var(--leg)">Leg: </span><strong>${fmtMin(Math.round(totalLeg))}</strong></div>`:''}
+  `;
+  out.appendChild(stats);
+  document.getElementById('reportPickerSection').style.display='none';
+  document.getElementById('reportOutputSection').style.display='';
+}
+
+document.getElementById('reportBtn').addEventListener('click', ()=>{
+  repRangeStart=null; repRangeEnd=null;
+  updateRepRangeLabel();
+  renderRepCal();
+  document.getElementById('reportPickerSection').style.display='';
+  document.getElementById('reportOutputSection').style.display='none';
+  document.getElementById('reportModal').classList.remove('hidden');
+});
+document.getElementById('reportClose').addEventListener('click', ()=> document.getElementById('reportModal').classList.add('hidden'));
+document.getElementById('reportCloseOutput').addEventListener('click', ()=> document.getElementById('reportModal').classList.add('hidden'));
+document.getElementById('reportBackBtn').addEventListener('click', ()=>{
+  document.getElementById('reportPickerSection').style.display='';
+  document.getElementById('reportOutputSection').style.display='none';
+});
+document.getElementById('reportModal').addEventListener('click', e=>{ if(e.target===document.getElementById('reportModal')) document.getElementById('reportModal').classList.add('hidden'); });
+document.getElementById('repCalPrev').addEventListener('click', ()=>{ repCalMonth--; if(repCalMonth<0){repCalMonth=11;repCalYear--;} renderRepCal(); });
+document.getElementById('repCalNext').addEventListener('click', ()=>{ repCalMonth++; if(repCalMonth>11){repCalMonth=0;repCalYear++;} renderRepCal(); });
+document.getElementById('generateReportBtn').addEventListener('click', generateReport);
+
 </script>
 </body>
 </html>
