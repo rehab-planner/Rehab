@@ -200,7 +200,7 @@
 <h1>REHAB&nbsp;&nbsp;&nbsp;PLANNER</h1>
 <div style="height:10px"></div>
 <div style="display:flex;gap:8px;margin-bottom:10px;">
-  <button class="week-nav-btn" id="changeViewBtn" style="flex:1;">Change View</button>
+  <button class="week-nav-btn" id="changeViewBtn" style="flex:1;border-color:var(--accent);color:var(--accent);">Week View</button>
   <button class="week-nav-btn" id="calendarBtn" style="flex:1;">Calendar</button>
   <button class="week-nav-btn" id="reportBtn" style="flex:1;">Report</button>
 </div>
@@ -225,32 +225,6 @@
   </div>
 </div>
 
-
-<div style="margin-top:18px;padding:16px;border:1px solid var(--border);border-radius:12px;">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-    <button id="calPrev" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;">‹</button>
-    <div id="calTitle" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text);"></div>
-    <button id="calNext" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;">›</button>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:6px;">
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">M</div>
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">T</div>
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">W</div>
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">T</div>
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">F</div>
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">S</div>
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;padding:2px;">S</div>
-  </div>
-  <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div>
-  <div style="display:flex;gap:12px;margin-top:10px;">
-    <div style="display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);">
-      <div style="width:7px;height:7px;border-radius:50%;background:var(--accent);opacity:0.5;"></div>has exercises
-    </div>
-    <div style="display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);">
-      <div style="width:7px;height:7px;border-radius:50%;background:var(--accent);"></div>today
-    </div>
-  </div>
-</div>
 
 <div style="margin-top:12px;padding:16px;border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:10px;">
   <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;">Data Backup</div>
@@ -578,6 +552,8 @@ const DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 
 // ── Week navigation ───────────────────────────────────────────────────
 let weekOffset = 0;
+let viewMode = 'week'; // 'week' or 'day'
+let currentDayOffset = 0; // days from base date (2026-03-09 = Mon)
 // Set to current week on every load
 (function(){
   const base = new Date(2026, 2, 9);
@@ -963,7 +939,17 @@ function buildWeek() {
   renderAllDays();
 }
 
-function switchWeek(delta) { weekOffset+=delta; updateWeekLabel(); renderAllDays(); saveState(); }
+function switchWeek(delta) {
+  if (viewMode === 'day') {
+    currentDayOffset += delta;
+    renderDayView();
+  } else {
+    weekOffset += delta;
+    updateWeekLabel();
+    renderAllDays();
+    saveState();
+  }
+}
 document.getElementById('prevWeekBtn').addEventListener('click',()=>switchWeek(-1));
 document.getElementById('nextWeekBtn').addEventListener('click',()=>switchWeek(1));
 
@@ -1100,7 +1086,71 @@ function renderDay(day) {
   body.appendChild(moreBtn);
 }
 
-function renderAllDays() { DAYS.forEach(renderDay); updateTotal(); saveState(); if(typeof renderCalendar==='function') renderCalendar(); }
+function renderAllDays() { DAYS.forEach(renderDay); updateTotal(); saveState(); }
+
+function getDayFromOffset(dayOff) {
+  // dayOff is days since 2026-03-09 (Monday)
+  const base = new Date(2026, 2, 9);
+  const d = new Date(base); d.setDate(d.getDate() + dayOff);
+  const dayIdx = ((d.getDay() + 6) % 7); // 0=Mon
+  const dayName = DAYS[dayIdx];
+  // weekOffset for this day
+  const wOff = Math.floor(dayOff / 7);
+  return { date: d, dayName, wOff, dayIdx };
+}
+
+function renderDayView() {
+  const { date, dayName, wOff } = getDayFromOffset(currentDayOffset);
+  // Update weekOffset so schedule/data lookups work
+  weekOffset = wOff;
+  // Update nav label
+  const MSHORT2=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const label = document.getElementById('weekLabel');
+  const todayBase = new Date(2026,2,9);
+  const todayOff = Math.round((Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()) - Date.UTC(2026,2,9)) / 86400000);
+  const isToday = currentDayOffset === todayOff;
+  label.innerHTML = `<span style="color:${isToday?'var(--accent)':'var(--text)'}">
+    ${date.getDate()} ${MSHORT2[date.getMonth()]} — ${dayName}
+  </span>`;
+  // Show only this day's row, hide others
+  const grid = document.getElementById('weekGrid');
+  DAYS.forEach(d => {
+    const row = grid.querySelector(`.day-row[data-day="${d}"]`);
+    if (row) row.style.display = d === dayName ? '' : 'none';
+  });
+  renderDay(dayName);
+  updateTotal();
+  saveState();
+}
+
+function setViewMode(mode) {
+  viewMode = mode;
+  const btn = document.getElementById('changeViewBtn');
+  if (mode === 'week') {
+    btn.textContent = 'Week View';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+    const grid = document.getElementById('weekGrid');
+    DAYS.forEach(d => {
+      const row = grid.querySelector(`.day-row[data-day="${d}"]`);
+      if (row) row.style.display = '';
+    });
+    updateWeekLabel();
+    renderAllDays();
+  } else {
+    btn.textContent = 'Day View';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+    const todayOff = Math.round((Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()) - Date.UTC(2026,2,9)) / 86400000);
+    currentDayOffset = todayOff;
+    renderDayView();
+  }
+}
+
+document.getElementById('changeViewBtn').addEventListener('click', () => {
+  setViewMode(viewMode === 'week' ? 'day' : 'week');
+});
+
 
 function calcItemDoneMinutes(item) {
   const p=item.planned||item, d=item.done||{};
@@ -1124,7 +1174,8 @@ function updateTotal() {
   let totalMins=0, doneMins=0;
   let doneArm=0, doneLeg=0, doneAlt=0;
   let planArm=0, planLeg=0, planAlt=0;
-  DAYS.forEach(d => {
+  const daysToCount = viewMode==='day' ? [getDayFromOffset(currentDayOffset).dayName] : DAYS;
+  daysToCount.forEach(d => {
     schedule[d].forEach(i => {
       const dm=calcItemDoneMinutes(i), pm=calcItemPlannedMinutes(i);
       doneMins+=dm; totalMins+=pm;
@@ -1665,83 +1716,6 @@ document.getElementById('daySummaryNote').addEventListener('focus', e => e.targe
 document.getElementById('daySummaryNote').addEventListener('blur',  e => e.target.style.borderColor='var(--border)');
 
 // ── Mini Calendar ─────────────────────────────────────────────────────
-let calYear, calMonth;
-(function() { const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth(); })();
-
-function renderCalendar() {
-  const title = document.getElementById('calTitle');
-  const grid  = document.getElementById('calGrid');
-  const MNAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  title.textContent = MNAMES[calMonth] + ' ' + calYear;
-  grid.innerHTML = '';
-
-  const now = new Date();
-  const todayLocal = now.getFullYear()+'-'+(now.getMonth()+1)+'-'+now.getDate();
-
-  // First day of month, adjust so week starts Monday (0=Mon..6=Sun)
-  const first = new Date(calYear, calMonth, 1);
-  let startDow = first.getDay(); // 0=Sun
-  startDow = (startDow + 6) % 7; // shift: Mon=0, Sun=6
-
-  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
-
-  // Blank cells before first day
-  for (let i=0; i<startDow; i++) {
-    grid.appendChild(Object.assign(document.createElement('div'), {style:''}));
-  }
-
-  for (let d=1; d<=daysInMonth; d++) {
-    const date = new Date(calYear, calMonth, d);
-    const dateStr = date.toISOString().slice(0,10);
-    const dateLocal = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
-    const isToday = dateLocal === todayLocal;
-
-    // Find which weekOffset this date belongs to
-    const base = new Date(2026, 2, 9); // app's Monday anchor
-    const diffDays = Math.round((date - base) / 86400000);
-    const offset = Math.floor(diffDays / 7);
-    const dayOfWeek = ((date.getDay() + 6) % 7); // Mon=0
-
-    // Check if this week/day has any exercises
-    const wKey = weekKey(offset);
-    const dayName = ['MON','TUE','WED','THU','FRI','SAT','SUN'][dayOfWeek];
-    const hasEx = allSchedules[wKey] && allSchedules[wKey][dayName] && allSchedules[wKey][dayName].length > 0;
-
-    const cell = document.createElement('div');
-    cell.textContent = d;
-    cell.style.cssText = `
-      text-align:center; padding:5px 2px; font-size:12px; border-radius:50%;
-      cursor:pointer; position:relative; font-family:'DM Mono',monospace;
-      color:${isToday ? '#000' : hasEx ? 'var(--text)' : 'var(--muted)'};
-      background:${isToday ? 'var(--accent)' : 'none'};
-      font-weight:${isToday ? '800' : '400'};
-      aspect-ratio:1; display:flex; align-items:center; justify-content:center;
-    `;
-    if (hasEx && !isToday) {
-      const dot = document.createElement('div');
-      dot.style.cssText = 'position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0.6;';
-      cell.style.position = 'relative';
-      cell.appendChild(dot);
-    }
-    cell.addEventListener('click', () => {
-      weekOffset = offset;
-      renderAllDays();
-      updateWeekLabel();
-      // scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    grid.appendChild(cell);
-  }
-}
-
-document.getElementById('calPrev').addEventListener('click', () => {
-  calMonth--; if (calMonth<0){calMonth=11;calYear--;} renderCalendar();
-});
-document.getElementById('calNext').addEventListener('click', () => {
-  calMonth++; if (calMonth>11){calMonth=0;calYear++;} renderCalendar();
-});
-
-// ── Exercise Statistics ───────────────────────────────────────────────
 // ── Export / Import ───────────────────────────────────────────────────
 document.getElementById('exportBtn').addEventListener('click', () => {
   const data = { exercises, allSchedules, weekOffset, dayNotes, exportedAt: new Date().toISOString(), version: 2 };
@@ -1776,7 +1750,7 @@ document.getElementById('importFile').addEventListener('change', e => {
       ['arm','leg','alt'].forEach(renderBankCol);
       updateTotal();
       saveState();
-      renderCalendar();
+      
       alert('✓ Import successful');
     } catch(err) {
       alert('Import failed — ' + err.message);
@@ -1797,21 +1771,19 @@ openDB().then(loadStateFromDB).then(saved => {
   buildBank();
   buildWeek();
   updateCatBtns();
-  renderCalendar();
+  
 }).catch(err => {
   console.warn('DB load failed, starting fresh:', err);
   buildBank();
   buildWeek();
   updateCatBtns();
-  renderCalendar();
+  
 });
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 
 // ── Top Toolbar Buttons ───────────────────────────────────────────────
-document.getElementById('changeViewBtn').addEventListener('click', () => {
-  // placeholder — will be defined later
-});
+// Change View handled by setViewMode above
 
 // ── Calendar Modal ────────────────────────────────────────────────────
 let calModalYear, calModalMonth;
@@ -1845,16 +1817,22 @@ function renderCalendarModal() {
     cell.textContent = d;
     if(hasEx && !isToday){const dot=document.createElement('div');dot.style.cssText='width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0.6;margin:1px auto 0;';cell.appendChild(dot);}
     cell.addEventListener('click', ()=>{
-      // Find the Monday of the clicked date
-      const clickedMon = new Date(calModalYear, calModalMonth, d);
-      clickedMon.setDate(clickedMon.getDate() - dayIdx);
-      // Find offset by comparing toISOString dates (same as weekKey uses)
-      const clickedKey = clickedMon.toISOString().slice(0,10);
-      // Binary search / brute force from current offset
-      for(let o = -200; o <= 200; o++) {
-        if(weekKey(o) === clickedKey) { weekOffset = o; break; }
+      const baseMon = new Date(2026, 2, 9);
+      const diffDays = Math.round((Date.UTC(calModalYear, calModalMonth, d) - Date.UTC(2026,2,9)) / 86400000);
+      if (viewMode === 'day') {
+        currentDayOffset = diffDays;
+        renderDayView();
+      } else {
+        // find Monday of clicked date
+        const clickedDate = new Date(calModalYear, calModalMonth, d);
+        const dow = clickedDate.getDay();
+        const dayIdx = dow===0?6:dow-1;
+        const clickedMon = new Date(clickedDate); clickedMon.setDate(clickedDate.getDate()-dayIdx);
+        const clickedKey = clickedMon.toISOString().slice(0,10);
+        for(let o=-200;o<=200;o++){ if(weekKey(o)===clickedKey){ weekOffset=o; break; } }
+        buildWeek();
       }
-      buildWeek(); window.scrollTo({top:0,behavior:'smooth'});
+      window.scrollTo({top:0,behavior:'smooth'});
       document.getElementById('calendarModal').classList.add('hidden');
     });
     grid.appendChild(cell);
