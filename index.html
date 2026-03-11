@@ -1989,7 +1989,7 @@ function openBatchAddModal(day) {
       name.textContent = ex.name;
 
       const detail = document.createElement('div');
-      detail.style.cssText = 'font-family:"DM Mono",monospace;font-size:10px;color:var(--muted);flex-shrink:0;';
+      detail.style.cssText = 'font-family:"DM Mono",monospace;font-size:10px;color:var(--muted);flex-shrink:0;padding:6px 4px;border-radius:4px;min-width:24px;text-align:right;cursor:pointer;';
       const p = ex.planned || ex;
       const ps=parseFloat(p.sets)||0, pm=parseFloat(p.mins)||0, pr=parseFloat(p.reps)||0;
       let det = '';
@@ -1997,7 +1997,28 @@ function openBatchAddModal(day) {
       else if(ps&&pr) det=`${ps} × ${pr} reps`;
       else if(pm) det=fmtMin(pm);
       else if(pr) det=`${pr} reps`;
-      detail.textContent = det;
+      if (det) {
+        detail.textContent = det;
+        detail.style.fontSize = '10px';
+      } else {
+        detail.textContent = '✎';
+        detail.style.fontSize = '16px';
+      }
+      detail.addEventListener('click', e => {
+        e.stopPropagation();
+        // Close batch modal temporarily, open edit, reopen after save
+        document.getElementById('batchAddModal').classList.add('hidden');
+        unlockBodyScroll();
+        openEditBankModal(realCat, idx);
+        // After save/cancel, reopen batch modal
+        const origSave = document.getElementById('addSaveBtn').onclick;
+        const origCancel = document.getElementById('addCancelBtn').onclick;
+        function reopenBatch() {
+          openBatchAddModal(batchAddDay);
+        }
+        document.getElementById('addSaveBtn').addEventListener('click', reopenBatch, {once:true});
+        document.getElementById('addCancelBtn').addEventListener('click', reopenBatch, {once:true});
+      });
 
       row.appendChild(check); row.appendChild(dot); row.appendChild(name); row.appendChild(detail);
 
