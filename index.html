@@ -1864,29 +1864,67 @@ function openBatchAddModal(day) {
   const list = document.getElementById('batchAddList');
   list.innerHTML = '';
 
-  const catNames = { arm:'ARM', leg:'LEG', alt:'Physio' };
+  const catNames = { alt:'Physio', arm:'Arm', leg:'Leg' };
+  const catColors = { alt:'#c835f1', arm:'#35c8f1', leg:'#f1a035' };
+  const catBg = { alt:'rgba(200,53,241,0.07)', arm:'rgba(53,200,241,0.07)', leg:'rgba(241,160,53,0.07)' };
   const catOrder = ['alt','arm','leg'];
+  const sections = {}; // cat -> { body, chev }
+  let openCat = null;
+
+  function toggleCat(cat) {
+    const isOpen = openCat === cat;
+    Object.entries(sections).forEach(([c, {body, chev}]) => {
+      body.style.display = 'none';
+      chev.style.transform = '';
+    });
+    if (!isOpen) {
+      sections[cat].body.style.display = 'flex';
+      sections[cat].chev.style.transform = 'rotate(180deg)';
+      openCat = cat;
+    } else {
+      openCat = null;
+    }
+  }
 
   catOrder.forEach(cat => {
     const exes = exercises[cat];
     if (!exes || !exes.length) return;
+    const color = catColors[cat];
 
-    // Category header
+    // Accordion header
+    const section = document.createElement('div');
+    section.style.cssText = `border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:4px;`;
+
     const header = document.createElement('div');
-    header.style.cssText = `font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:${cat==='arm'?'#35c8f1':cat==='leg'?'#f1a035':'#c835f1'};text-transform:uppercase;padding:10px 4px 4px;`;
-    header.textContent = catNames[cat];
-    list.appendChild(header);
+    header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;background:${catBg[cat]};`;
+    const headerLabel = document.createElement('span');
+    headerLabel.style.cssText = `font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${color};`;
+    headerLabel.textContent = catNames[cat];
+    const chev = document.createElement('span');
+    chev.style.cssText = `font-size:10px;color:var(--muted);transition:transform 0.2s;`;
+    chev.textContent = '▼';
+    header.appendChild(headerLabel); header.appendChild(chev);
+    header.addEventListener('click', () => toggleCat(cat));
+
+    // Body
+    const body = document.createElement('div');
+    body.style.cssText = `display:none;flex-direction:column;gap:6px;padding:6px 8px 8px;`;
+
+    // Register refs for toggle
+    sections[cat] = { body, chev };
 
     exes.forEach((ex, idx) => {
-      const dotColor = cat === 'arm' ? '#35c8f1' : cat === 'leg' ? '#f1a035' : '#c835f1';
       const row = document.createElement('div');
       row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:#1a1a1a;transition:all 0.15s;`;
       row.dataset.selected = '0';
       row.dataset.cat = cat;
       row.dataset.idx = idx;
 
+      const check = document.createElement('div');
+      check.style.cssText = `width:18px;height:18px;border-radius:4px;border:1px solid #444;background:none;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#000;font-weight:bold;`;
+
       const dot = document.createElement('div');
-      dot.style.cssText = `width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;`;
+      dot.style.cssText = `width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;`;
 
       const name = document.createElement('div');
       name.style.cssText = 'font-size:14px;color:var(--text);flex:1;';
@@ -1903,10 +1941,6 @@ function openBatchAddModal(day) {
       else if(pr) det=`${pr} reps`;
       detail.textContent = det;
 
-      const check = document.createElement('div');
-      check.style.cssText = `width:18px;height:18px;border-radius:4px;border:1px solid #444;background:none;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#000;font-weight:bold;`;
-      check.textContent = '';
-
       row.appendChild(check); row.appendChild(dot); row.appendChild(name); row.appendChild(detail);
 
       row.addEventListener('click', () => {
@@ -1919,8 +1953,11 @@ function openBatchAddModal(day) {
         check.textContent = !sel ? '✓' : '';
       });
 
-      list.appendChild(row);
+      body.appendChild(row);
     });
+
+    section.appendChild(header); section.appendChild(body);
+    list.appendChild(section);
   });
 
   document.getElementById('batchAddModal').classList.remove('hidden');
