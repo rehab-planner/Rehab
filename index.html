@@ -1923,10 +1923,10 @@ function updateRepRangeLabel() {
 function generateReport() {
   const start = parseDateKey(repRangeStart);
   const end   = parseDateKey(repRangeEnd);
-  // collect all days in range
   const dayNames = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
-  let totalArm=0,totalLeg=0,totalAlt=0,planArm=0,planLeg=0,planAlt=0;
-  let exerciseTotals = {}; // name -> {done, planned, cat}
+  let totalArm=0,totalLeg=0,totalAlt=0;
+  let exerciseTotals = {}; // name -> {mins, cat, sessions, detail}
+  let collectedNotes = []; // {date, note}
   const cur = new Date(start);
   while(cur<=end){
     const dow=cur.getDay(); const dayIdx=dow===0?6:dow-1;
@@ -1936,27 +1936,40 @@ function generateReport() {
     const sched=allSchedules[wk]||{};
     const items=sched[dayName]||[];
     items.forEach(item=>{
-      const dm=calcItemDoneMinutes(item), pm=calcItemPlannedMinutes(item);
-      if(item.cat==='arm'){totalArm+=dm;planArm+=pm;}
-      else if(item.cat==='leg'){totalLeg+=dm;planLeg+=pm;}
-      else{totalAlt+=dm;planAlt+=pm;}
-      if(!exerciseTotals[item.name]) exerciseTotals[item.name]={done:0,planned:0,cat:item.cat,sessions:0};
-      exerciseTotals[item.name].done+=dm;
-      exerciseTotals[item.name].planned+=pm;
+      const pm=calcItemPlannedMinutes(item);
+      if(item.cat==='arm') totalArm+=pm;
+      else if(item.cat==='leg') totalLeg+=pm;
+      else totalAlt+=pm;
+      if(!exerciseTotals[item.name]) exerciseTotals[item.name]={mins:0,cat:item.cat,sessions:0,lastDetail:''};
+      exerciseTotals[item.name].mins+=pm;
       exerciseTotals[item.name].sessions+=1;
+      // build detail string like View does
+      const p=item.planned||{};
+      const ps=parseFloat(p.sets)||0,pr=parseFloat(p.reps)||0,pm2=parseFloat(p.mins)||0;
+      let det='';
+      if(ps>0&&pm2>0) det=`${ps}×${fmtMin(pm2)}`;
+      else if(ps>0&&pr>0) det=`${ps}×${pr}reps`;
+      else if(pm2>0) det=fmtMin(Math.round(pm2));
+      else if(pr>0) det=`${pr}reps`;
+      exerciseTotals[item.name].lastDetail=det;
     });
+    // collect note
+    const dk=dateKey(cur);
+    const noteKey=cur.getFullYear()+'-'+(cur.getMonth()+1)+'-'+cur.getDate()+'-'+dayName;
+    const oldKey=dk+'-'+dayName;
+    const note=dayNotes[noteKey]||dayNotes[oldKey]||'';
+    if(note) collectedNotes.push({date:dk, day:dayName, note});
     cur.setDate(cur.getDate()+1);
   }
-  const grandDone=totalArm+totalLeg+totalAlt;
-  const grandPlan=planArm+planLeg+planAlt;
-  // render
-  const out = document.getElementById('reportOutput');
+  const grandTotal=totalArm+totalLeg+totalAlt;
+  const out=document.getElementById('reportOutput');
   out.innerHTML='';
+  // date range header
   const header=document.createElement('div');
-  header.style.cssText='font-family:"DM Mono",monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:12px;';
+  header.style.cssText='font-family:"DM Mono",monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:14px;';
   header.textContent=repRangeStart+' → '+repRangeEnd;
   out.appendChild(header);
-  // per-category exercise breakdown
+  // per-category breakdown
   ['alt','arm','leg'].forEach(cat=>{
     const catExes=Object.entries(exerciseTotals).filter(([,v])=>v.cat===cat);
     if(!catExes.length) return;
@@ -1964,13 +1977,12 @@ function generateReport() {
     const sec=document.createElement('div'); sec.style.marginBottom='14px';
     const t=document.createElement('div');
     t.className=`day-summary-cat-title ${cat}`;
-    t.style.marginBottom='8px';
-    t.textContent=catNames[cat];
+    t.style.marginBottom='8px'; t.textContent=catNames[cat];
     sec.appendChild(t);
     catExes.forEach(([name,v])=>{
-      const row=document.createElement('div');
-      row.className='day-summary-item';
-      row.innerHTML=`<span>${name} <span style="color:var(--muted);font-size:10px;">(×${v.sessions})</span></span><span class="day-summary-detail">${fmtMin(Math.round(v.done))}</span>`;
+      const row=document.createElement('div'); row.className='day-summary-item';
+      const sessLabel=v.sessions>1?` <span style="color:var(--muted);font-size:10px;">×${v.sessions}</span>`:'';
+      row.innerHTML=`<span>${name}${sessLabel}</span><span class="day-summary-detail">${fmtMin(Math.round(v.mins))}</span>`;
       sec.appendChild(row);
     });
     out.appendChild(sec);
@@ -1978,13 +1990,32 @@ function generateReport() {
   // totals
   const stats=document.createElement('div'); stats.className='day-summary-stats';
   stats.innerHTML=`
-    <div class="stat-total"><span>Total Done: </span><strong>${fmtMin(Math.round(grandDone))}</strong></div>
-    <div><span style="color:var(--muted);font-size:11px;">Planned: </span><span style="font-size:11px;">${fmtMin(Math.round(grandPlan))}</span></div>
-    ${planAlt>0?`<div><span style="color:var(--alt)">Strength: </span><strong>${fmtMin(Math.round(totalAlt))}</strong></div>`:''}
-    ${planArm>0?`<div><span style="color:var(--arm)">Arm: </span><strong>${fmtMin(Math.round(totalArm))}</strong></div>`:''}
-    ${planLeg>0?`<div><span style="color:var(--leg)">Leg: </span><strong>${fmtMin(Math.round(totalLeg))}</strong></div>`:''}
+    <div class="stat-total"><span>Total: </span><strong>${fmtMin(Math.round(grandTotal))}</strong></div>
+    ${totalAlt>0?`<div><span style="color:var(--alt)">Strength: </span><strong>${fmtMin(Math.round(totalAlt))}</strong></div>`:''}
+    ${totalArm>0?`<div><span style="color:var(--arm)">Arm: </span><strong>${fmtMin(Math.round(totalArm))}</strong></div>`:''}
+    ${totalLeg>0?`<div><span style="color:var(--leg)">Leg: </span><strong>${fmtMin(Math.round(totalLeg))}</strong></div>`:''}
   `;
   out.appendChild(stats);
+  // day notes
+  if(collectedNotes.length>0){
+    const hr=document.createElement('hr'); hr.style.cssText='border:none;border-top:1px solid var(--border);margin:14px 0;';
+    out.appendChild(hr);
+    const notesTitle=document.createElement('div');
+    notesTitle.style.cssText='font-family:"DM Mono",monospace;font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;';
+    notesTitle.textContent='Day Notes';
+    out.appendChild(notesTitle);
+    collectedNotes.forEach(({date,day,note})=>{
+      const block=document.createElement('div'); block.style.marginBottom='10px';
+      const lbl=document.createElement('div');
+      lbl.style.cssText='font-family:"DM Mono",monospace;font-size:9px;color:var(--accent);margin-bottom:3px;';
+      lbl.textContent=date+' '+day;
+      const txt=document.createElement('div');
+      txt.style.cssText='font-size:13px;color:var(--text);line-height:1.5;';
+      txt.textContent=note;
+      block.appendChild(lbl); block.appendChild(txt);
+      out.appendChild(block);
+    });
+  }
   document.getElementById('reportPickerSection').style.display='none';
   document.getElementById('reportOutputSection').style.display='';
 }
