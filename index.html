@@ -2265,12 +2265,46 @@ function openBatchAddModal(day) {
     const header = document.createElement('div');
     header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;background:${catBg[cat]};`;
     const headerLabel = document.createElement('span');
-    headerLabel.style.cssText = `font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${color};`;
+    headerLabel.style.cssText = `font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${color};flex:1;`;
     headerLabel.textContent = catNames[cat];
+
+    const headerRight = document.createElement('div');
+    headerRight.style.cssText = 'display:flex;align-items:center;gap:6px;';
+
+    // Pencil — only for editable cats (not fav)
+    if (cat !== 'fav') {
+      const pencil = document.createElement('button');
+      pencil.textContent = '✎';
+      pencil.style.cssText = 'background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:"DM Mono",monospace;line-height:1;';
+      pencil.addEventListener('click', e => {
+        e.stopPropagation();
+        // Close batch modal, open cat edit, reopen batch after
+        document.getElementById('batchAddModal').classList.add('hidden');
+        unlockBodyScroll();
+        openEditCatModal(cat);
+        // After cat modal closes (save or cancel), reopen batch modal
+        function onCatModalClose() {
+          if (!document.getElementById('addCatModal').classList.contains('hidden')) return;
+          document.removeEventListener('click', onCatModalClose, true);
+          openBatchAddModal(batchAddDay);
+        }
+        // Poll for cat modal close
+        const poll = setInterval(() => {
+          if (document.getElementById('addCatModal').classList.contains('hidden')) {
+            clearInterval(poll);
+            openBatchAddModal(batchAddDay);
+          }
+        }, 200);
+      });
+      headerRight.appendChild(pencil);
+    }
+
     const chev = document.createElement('span');
     chev.style.cssText = `font-size:10px;color:var(--muted);transition:transform 0.2s;`;
     chev.textContent = '▼';
-    header.appendChild(headerLabel); header.appendChild(chev);
+    headerRight.appendChild(chev);
+
+    header.appendChild(headerLabel); header.appendChild(headerRight);
     header.addEventListener('click', () => toggleCat(cat));
 
     // Body
@@ -2291,7 +2325,7 @@ function openBatchAddModal(day) {
       check.style.cssText = `width:18px;height:18px;border-radius:4px;border:1px solid #444;background:none;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#000;font-weight:bold;`;
 
       const dot = document.createElement('div');
-      dot.style.cssText = `width:8px;height:8px;border-radius:50%;background:${DOT_COLOR[realCat]||color};flex-shrink:0;`;
+      dot.style.cssText = `width:8px;height:8px;border-radius:50%;background:${getDotColor(realCat)||color};flex-shrink:0;`;
 
       const name = document.createElement('div');
       name.style.cssText = 'font-size:14px;color:var(--text);flex:1;';
