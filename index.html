@@ -2170,6 +2170,21 @@ openDB().then(loadStateFromDB).then(saved => {
     if (saved.builtInCatMeta) builtInCatMeta = saved.builtInCatMeta;
     // Ensure exercises arrays exist for all custom cats
     customCats.forEach(cc => { if (!exercises[cc.id]) exercises[cc.id] = []; });
+    // Apply built-in name overrides directly to static HTML headers
+    ['alt','arm','leg'].forEach(id => {
+      const meta = builtInCatMeta[id];
+      if (!meta) return;
+      const titleEl = document.querySelector(`#bank-section-${id} .bank-col-title`);
+      if (titleEl) {
+        if (meta.name) titleEl.textContent = meta.name;
+        if (meta.color) titleEl.style.color = meta.color;
+      }
+      const headerEl = document.querySelector(`#bank-section-${id} .bank-section-header`);
+      if (headerEl && meta.color) {
+        const rgb = hexToRgb(meta.color);
+        headerEl.style.background = `rgba(${rgb},0.07)`;
+      }
+    });
   }
   buildBank();
   buildWeek();
