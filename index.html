@@ -632,7 +632,7 @@ function saveState() {
   if (!_db) return;
   const tx    = _db.transaction(STORE_NAME, 'readwrite');
   const store = tx.objectStore(STORE_NAME);
-  store.put({ exercises, allSchedules, weekOffset, dayNotes, customCats, builtInCatMeta }, STATE_KEY);
+  store.put({ exercises, allSchedules, weekOffset, dayNotes, customCats, builtInCatMeta, deletedCats }, STATE_KEY);
 }
 
 function loadStateFromDB() {
@@ -653,7 +653,9 @@ function getDotColor(cat) {
   if (builtInCatMeta[cat]?.color) return builtInCatMeta[cat].color;
   if (DOT_COLOR[cat]) return DOT_COLOR[cat];
   const cc = customCats.find(c=>c.id===cat);
-  return cc ? cc.color : '#888';
+  if (cc) return cc.color;
+  if (deletedCats[cat]) return deletedCats[cat].color;
+  return '#888';
 }
 const DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 
@@ -946,6 +948,7 @@ function initReorder(e, cat, fromIdx) {
 // ── Custom categories ─────────────────────────────────────────────────
 // customCats: [{id, name, color}]  — stored alongside exercises
 let customCats = []; // loaded from DB
+let deletedCats = {}; // {id: {name, color}} — kept for orphan display after deletion
 
 function allCatIds() { return ['fav','alt','arm','leg',...customCats.map(c=>c.id)]; }
 
@@ -1360,7 +1363,10 @@ function updateTotal() {
     return planByCat[cc.id]>0 ? `<div class="total-item" style="color:${cc.color}">${cc.name}: ${timePair(doneByCat[cc.id],planByCat[cc.id])}</div>` : '';
   }).join('');
   const orphanItems = orphanIds.map(id=>{
-    return planByCat[id]>0 ? `<div class="total-item" style="color:#888">${id}: ${timePair(doneByCat[id],planByCat[id])}</div>` : '';
+    const dc = deletedCats[id];
+    const color = dc ? dc.color : '#888';
+    const label = dc ? dc.name : id;
+    return planByCat[id]>0 ? `<div class="total-item" style="color:${color}">${label}: ${timePair(doneByCat[id],planByCat[id])}</div>` : '';
   }).join('');
   bar.innerHTML=`
     <div class="total-item">Total: ${timePair(doneMins,totalMins)}</div>
@@ -1554,6 +1560,9 @@ document.getElementById('addCatConfirmNo').addEventListener('click', () => {
 
 document.getElementById('addCatConfirmYes').addEventListener('click', () => {
   if (!editCatTarget) return;
+  // Save metadata for orphan display
+  const deletingCat = customCats.find(c=>c.id===editCatTarget);
+  if (deletingCat) deletedCats[editCatTarget] = {name: deletingCat.name, color: deletingCat.color};
   // Move exercises to unassigned
   const exToMove = exercises[editCatTarget] || [];
   if (!exercises['unassigned']) exercises['unassigned'] = [];
@@ -2093,7 +2102,10 @@ function openDaySummary(day, noteOnly=false) {
       return planByCat2[cc.id]>0?`<div><span style="color:${cc.color}">${cc.name}: </span><strong>${fmtMin(Math.round(doneByCat2[cc.id]))}</strong></div>`:'';
     }).join('');
     const orphanStats2 = orphanIds2.map(id=>{
-      return planByCat2[id]>0?`<div><span style="color:#888">${id}: </span><strong>${fmtMin(Math.round(doneByCat2[id]))}</strong></div>`:'';
+      const dc = deletedCats[id];
+      const color = dc ? dc.color : '#888';
+      const label = dc ? dc.name : id;
+      return planByCat2[id]>0?`<div><span style="color:${color}">${label}: </span><strong>${fmtMin(Math.round(doneByCat2[id]))}</strong></div>`:'';
     }).join('');
     stats.innerHTML = `
       <div class="stat-total"><span>Total: </span><strong>${fmtMin(Math.round(total))}</strong></div>
@@ -2180,6 +2192,7 @@ openDB().then(loadStateFromDB).then(saved => {
     if (saved.dayNotes)     dayNotes     = saved.dayNotes;
     if (saved.customCats)     customCats     = saved.customCats;
     if (saved.builtInCatMeta) builtInCatMeta = saved.builtInCatMeta;
+    if (saved.deletedCats)    deletedCats    = saved.deletedCats;
     // Ensure exercises arrays exist for all custom cats
     customCats.forEach(cc => { if (!exercises[cc.id]) exercises[cc.id] = []; });
     // Apply built-in name overrides directly to static HTML headers
@@ -2671,8 +2684,9 @@ function generateReport() {
     const catExes=Object.entries(exerciseTotals).filter(([,v])=>v.cat===cat && (v.mins>0||v.reps>0));
     if(!catExes.length) return;
     const isOrphan = !knownReportIds.has(cat);
-    const catColor = isOrphan ? '#888' : getDotColor(cat);
-    const catLabel = isOrphan ? cat : (customCats.find(c=>c.id===cat)?.name || getCatMeta(cat)?.name || cat);
+    const dc = isOrphan ? deletedCats[cat] : null;
+    const catColor = dc ? dc.color : getDotColor(cat);
+    const catLabel = dc ? dc.name : (customCats.find(c=>c.id===cat)?.name || getCatMeta(cat)?.name || cat);
     const sec=document.createElement('div'); sec.style.marginBottom='14px';
     const t=document.createElement('div');
     t.className='day-summary-cat-title';
@@ -2698,7 +2712,10 @@ function generateReport() {
     return totalByCat[cc.id]>0?`<div><span style="color:${cc.color}">${cc.name}: </span><strong>${fmtMin(Math.round(totalByCat[cc.id]))}</strong></div>`:'';
   }).join('');
   const orphanTotals = orphanReportIds.map(id=>{
-    return totalByCat[id]>0?`<div><span style="color:#888">${id}: </span><strong>${fmtMin(Math.round(totalByCat[id]))}</strong></div>`:'';
+    const dc = deletedCats[id];
+    const color = dc ? dc.color : '#888';
+    const label = dc ? dc.name : id;
+    return totalByCat[id]>0?`<div><span style="color:${color}">${label}: </span><strong>${fmtMin(Math.round(totalByCat[id]))}</strong></div>`:'';
   }).join('');
   stats.innerHTML=`
     <div class="stat-total"><span>Total: </span><strong>${fmtMin(Math.round(grandTotal))}</strong></div>
