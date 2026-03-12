@@ -1180,15 +1180,12 @@ function renderDay(day) {
       const dotColor = getDotColor(item.cat);
       const rgb = hexToRgb(dotColor);
       const fillColor = `rgba(${rgb},0.35)`;
+      // Always apply border and text color
+      pill.style.borderColor = `rgba(${rgb},0.55)`;
+      pill.style.color = dotColor;
       if (pct > 0) {
         const p = Math.round(pct * 100);
         pill.style.background = `linear-gradient(to right, ${fillColor} ${p}%, rgba(120,120,120,0.12) ${p}%)`;
-        const dotColor = getDotColor(item.cat);
-        if (dotColor) {
-          const rgb = hexToRgb(dotColor);
-          pill.style.borderColor = `rgba(${rgb},0.55)`;
-          pill.style.color = dotColor;
-        }
       }
 
       // Content wrapper (sits above fill via z-index)
