@@ -2601,18 +2601,21 @@ function generateReport() {
       if(item.cat==='arm') totalArm+=pm;
       else if(item.cat==='leg') totalLeg+=pm;
       else totalAlt+=pm;
-      if(!exerciseTotals[item.name]) exerciseTotals[item.name]={mins:0,cat:item.cat,sessions:0,lastDetail:''};
+      if(!exerciseTotals[item.name]) exerciseTotals[item.name]={mins:0,reps:0,cat:item.cat,sessions:0,isRepsOnly:false};
       exerciseTotals[item.name].mins+=pm;
       exerciseTotals[item.name].sessions+=1;
-      // build detail string like View does
+      // Determine if this item is reps-only (has reps, no mins)
       const p=item.planned||{};
+      const d=item.done||{};
       const ps=parseFloat(p.sets)||0,pr=parseFloat(p.reps)||0,pm2=parseFloat(p.mins)||0;
-      let det='';
-      if(ps>0&&pm2>0) det=`${ps}×${fmtMin(pm2)}`;
-      else if(ps>0&&pr>0) det=`${ps}×${pr}reps`;
-      else if(pm2>0) det=fmtMin(Math.round(pm2));
-      else if(pr>0) det=`${pr}reps`;
-      exerciseTotals[item.name].lastDetail=det;
+      const dr=parseFloat(d.reps)||0, ds=parseFloat(d.sets)||0;
+      const isRepsOnly = pr>0 && pm2===0;
+      if(isRepsOnly) {
+        exerciseTotals[item.name].isRepsOnly = true;
+        // accumulate done reps: sets × reps
+        const doneReps = ps>0 ? (ds||ps)*pr : (dr||pr);
+        exerciseTotals[item.name].reps += doneReps;
+      }
     });
     // collect note
     const dk=dateKey(cur);
@@ -2632,7 +2635,7 @@ function generateReport() {
   out.appendChild(header);
   // per-category breakdown
   ['alt','arm','leg'].forEach(cat=>{
-    const catExes=Object.entries(exerciseTotals).filter(([,v])=>v.cat===cat && v.mins>0);
+    const catExes=Object.entries(exerciseTotals).filter(([,v])=>v.cat===cat && (v.mins>0||v.reps>0));
     if(!catExes.length) return;
     const catNames={alt:'Physio',arm:'Arm',leg:'Leg'};
     const sec=document.createElement('div'); sec.style.marginBottom='14px';
@@ -2643,7 +2646,8 @@ function generateReport() {
     catExes.forEach(([name,v])=>{
       const row=document.createElement('div'); row.className='day-summary-item';
       const sessLabel=v.sessions>1?` <span style="color:var(--muted);font-size:10px;">×${v.sessions}</span>`:'';
-      row.innerHTML=`<span>${name}${sessLabel}</span><span class="day-summary-detail">${fmtMin(Math.round(v.mins))}</span>`;
+      const valueStr = v.isRepsOnly ? `${Math.round(v.reps)} reps` : fmtMin(Math.round(v.mins));
+      row.innerHTML=`<span>${name}${sessLabel}</span><span class="day-summary-detail">${valueStr}</span>`;
       sec.appendChild(row);
     });
     out.appendChild(sec);
