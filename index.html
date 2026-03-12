@@ -1087,7 +1087,8 @@ function buildWeek() {
     viewBtn.addEventListener('click',()=>openDaySummary(day, false));
     actions.appendChild(viewBtn);
     const addDayBtn=document.createElement('button');
-    addDayBtn.className='clear-btn view-day-btn'; addDayBtn.textContent='Add';
+    addDayBtn.className='clear-btn'; addDayBtn.textContent='Add';
+    addDayBtn.style.cssText='border-color:var(--accent);color:var(--accent);';
     addDayBtn.addEventListener('pointerdown',e=>e.stopPropagation());
     addDayBtn.addEventListener('click',()=>openBatchAddModal(day));
     actions.appendChild(addDayBtn);
