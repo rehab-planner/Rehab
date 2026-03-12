@@ -984,9 +984,7 @@ function hexToRgb(hex) {
 // ── Build bank ────────────────────────────────────────────────────────
 function buildBank() {
   renderBankSections();
-  ensureUnassignedSection();
   allCatIds().forEach(cat=>renderBankCol(cat));
-  if (exercises['unassigned']?.length) renderBankCol('unassigned');
 }
 
 function renderBankCol(cat) {
@@ -1560,20 +1558,15 @@ document.getElementById('addCatConfirmNo').addEventListener('click', () => {
 
 document.getElementById('addCatConfirmYes').addEventListener('click', () => {
   if (!editCatTarget) return;
-  // Save metadata for orphan display
+  // Save metadata for orphan display in stats/schedule
   const deletingCat = customCats.find(c=>c.id===editCatTarget);
   if (deletingCat) deletedCats[editCatTarget] = {name: deletingCat.name, color: deletingCat.color};
-  // Move exercises to unassigned
-  const exToMove = exercises[editCatTarget] || [];
-  if (!exercises['unassigned']) exercises['unassigned'] = [];
-  exToMove.forEach(ex => { exercises['unassigned'].push({...ex, cat: 'unassigned'}); });
+  // Delete exercises from bank entirely
   delete exercises[editCatTarget];
   customCats = customCats.filter(c=>c.id!==editCatTarget);
   if (builtInCatMeta[editCatTarget]) delete builtInCatMeta[editCatTarget];
   const section = document.getElementById('bank-section-'+editCatTarget);
   if (section) section.remove();
-  ensureUnassignedSection();
-  renderBankCol('unassigned');
   updateCatBtns();
   saveState();
   document.getElementById('addCatConfirmDelete').style.display = 'none';
@@ -1582,29 +1575,6 @@ document.getElementById('addCatConfirmYes').addEventListener('click', () => {
   editCatTarget = null;
 });
 
-function ensureUnassignedSection() {
-  if (!exercises['unassigned']) exercises['unassigned'] = [];
-  let section = document.getElementById('bank-section-unassigned');
-  // Hide if empty
-  if (!exercises['unassigned'].length) {
-    if (section) section.style.display = 'none';
-    return;
-  }
-  // Create section if it doesn't exist
-  if (!section) {
-    section = document.createElement('div');
-    section.className = 'bank-section';
-    section.id = 'bank-section-unassigned';
-    section.innerHTML = `
-      <div class="bank-section-header" style="background:rgba(160,160,160,0.07);" onclick="toggleBankSection('unassigned')">
-        <span class="bank-col-title" style="color:#888;">Unassigned</span>
-        <span class="bank-section-chevron" id="bank-chev-unassigned">▼</span>
-      </div>
-      <div class="bank-section-body" id="bank-body-unassigned"><div id="bank-unassigned"></div></div>`;
-    document.querySelector('.bank-cols').appendChild(section);
-  }
-  section.style.display = '';
-}
 document.getElementById('addCancelBtn').addEventListener('click',()=>{ document.getElementById('addModal').classList.add('hidden'); editBankTarget=null; });
 
 document.getElementById('addModal').addEventListener('click',e=>{ if(e.target===document.getElementById('addModal')){ document.getElementById('addModal').classList.add('hidden'); editBankTarget=null; }});
@@ -1978,7 +1948,6 @@ document.getElementById('confirmYes').addEventListener('click',()=>{
   const {cat,idx,name}=deleteTarget;
   exercises[cat].splice(idx,1);
   renderBankCol(cat); renderBankCol('fav'); updateTotal(); saveState();
-  if (cat === 'unassigned') ensureUnassignedSection();
   document.getElementById('confirmModal').classList.add('hidden');
   deleteTarget=null;
 });
