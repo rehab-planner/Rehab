@@ -1358,9 +1358,9 @@ function updateTotal() {
   }
   bar.innerHTML=`
     <div class="total-item">Total: ${timePair(doneMins,totalMins)}</div>
-    <div class="total-item" style="color:var(--alt)">Physio: ${timePair(doneAlt,planAlt)}</div>
-    <div class="total-item" style="color:var(--arm)">Arm: ${timePair(doneArm,planArm)}</div>
-    <div class="total-item" style="color:var(--leg)">Leg: ${timePair(doneLeg,planLeg)}</div>
+    <div class="total-item" style="color:var(--alt)">${getCatMeta('alt')?.name||'Physio'}: ${timePair(doneAlt,planAlt)}</div>
+    <div class="total-item" style="color:var(--arm)">${getCatMeta('arm')?.name||'Arm'}: ${timePair(doneArm,planArm)}</div>
+    <div class="total-item" style="color:var(--leg)">${getCatMeta('leg')?.name||'Leg'}: ${timePair(doneLeg,planLeg)}</div>
   `;
 }
 
@@ -1604,8 +1604,7 @@ addHoldStepper('newTimePlus', 'newTime',+1);
 
 function updateCatBtns() {
   const container = document.getElementById('catBtns');
-  // Rebuild buttons if custom cats exist
-  const builtIn = [{cat:'arm',label:'ARM'},{cat:'leg',label:'LEG'},{cat:'alt',label:'Physio'}];
+  const builtIn = ['arm','leg','alt'].map(id => ({cat:id, label: getCatMeta(id)?.name || id}));
   const all = [...builtIn, ...customCats.map(cc=>({cat:cc.id, label:cc.name}))];
   container.innerHTML = '';
   all.forEach(({cat, label}) => {
@@ -2039,7 +2038,7 @@ function openDaySummary(day, noteOnly=false) {
       sec.className = 'day-summary-cat';
       const title = document.createElement('div');
       title.className = `day-summary-cat-title ${cat}`;
-      title.textContent = catNames[cat];
+      title.textContent = getCatMeta(cat)?.name || catNames[cat];
       sec.appendChild(title);
       catItems.forEach(item => {
         const p = item.planned||{}, d = item.done||{};
@@ -2084,9 +2083,9 @@ function openDaySummary(day, noteOnly=false) {
     stats.className = 'day-summary-stats';
     stats.innerHTML = `
       <div class="stat-total"><span>Total: </span><strong>${fmtMin(Math.round(total))}</strong></div>
-      ${planAlt>0?`<div><span style="color:var(--alt)">Physio: </span><strong>${fmtMin(Math.round(doneAlt))}</strong></div>`:''}
-      ${planArm>0?`<div><span style="color:var(--arm)">Arm: </span><strong>${fmtMin(Math.round(doneArm))}</strong></div>`:''}
-      ${planLeg>0?`<div><span style="color:var(--leg)">Leg: </span><strong>${fmtMin(Math.round(doneLeg))}</strong></div>`:''}
+      ${planAlt>0?`<div><span style="color:var(--alt)">${getCatMeta('alt')?.name||'Physio'}: </span><strong>${fmtMin(Math.round(doneAlt))}</strong></div>`:''}
+      ${planArm>0?`<div><span style="color:var(--arm)">${getCatMeta('arm')?.name||'Arm'}: </span><strong>${fmtMin(Math.round(doneArm))}</strong></div>`:''}
+      ${planLeg>0?`<div><span style="color:var(--leg)">${getCatMeta('leg')?.name||'Leg'}: </span><strong>${fmtMin(Math.round(doneLeg))}</strong></div>`:''}
     `;
     content.appendChild(stats);
   }
@@ -2222,6 +2221,15 @@ function openBatchAddModal(day) {
   const catNames = { fav:'Favourites', alt:'Physio', arm:'Arm', leg:'Leg' };
   const catColors = { fav:'#ffc800', alt:'#c835f1', arm:'#35c8f1', leg:'#f1a035' };
   const catBg = { fav:'rgba(255,200,0,0.07)', alt:'rgba(200,53,241,0.07)', arm:'rgba(53,200,241,0.07)', leg:'rgba(241,160,53,0.07)' };
+  // Apply builtInCatMeta overrides
+  ['alt','arm','leg'].forEach(id => {
+    const meta = getCatMeta(id);
+    if (meta) {
+      catNames[id] = meta.name;
+      catColors[id] = meta.color;
+      const rgb = hexToRgb(meta.color); catBg[id] = `rgba(${rgb},0.07)`;
+    }
+  });
   customCats.forEach(cc => {
     catNames[cc.id] = cc.name; catColors[cc.id] = cc.color;
     const rgb = hexToRgb(cc.color); catBg[cc.id] = `rgba(${rgb},0.07)`;
@@ -2641,7 +2649,7 @@ function generateReport() {
     const sec=document.createElement('div'); sec.style.marginBottom='14px';
     const t=document.createElement('div');
     t.className=`day-summary-cat-title ${cat}`;
-    t.style.marginBottom='8px'; t.textContent=catNames[cat];
+    t.style.marginBottom='8px'; t.textContent=getCatMeta(cat)?.name || catNames[cat];
     sec.appendChild(t);
     catExes.forEach(([name,v])=>{
       const row=document.createElement('div'); row.className='day-summary-item';
@@ -2656,9 +2664,9 @@ function generateReport() {
   const stats=document.createElement('div'); stats.className='day-summary-stats';
   stats.innerHTML=`
     <div class="stat-total"><span>Total: </span><strong>${fmtMin(Math.round(grandTotal))}</strong></div>
-    ${totalAlt>0?`<div><span style="color:var(--alt)">Physio: </span><strong>${fmtMin(Math.round(totalAlt))}</strong></div>`:''}
-    ${totalArm>0?`<div><span style="color:var(--arm)">Arm: </span><strong>${fmtMin(Math.round(totalArm))}</strong></div>`:''}
-    ${totalLeg>0?`<div><span style="color:var(--leg)">Leg: </span><strong>${fmtMin(Math.round(totalLeg))}</strong></div>`:''}
+    ${totalAlt>0?`<div><span style="color:var(--alt)">${getCatMeta('alt')?.name||'Physio'}: </span><strong>${fmtMin(Math.round(totalAlt))}</strong></div>`:''}
+    ${totalArm>0?`<div><span style="color:var(--arm)">${getCatMeta('arm')?.name||'Arm'}: </span><strong>${fmtMin(Math.round(totalArm))}</strong></div>`:''}
+    ${totalLeg>0?`<div><span style="color:var(--leg)">${getCatMeta('leg')?.name||'Leg'}: </span><strong>${fmtMin(Math.round(totalLeg))}</strong></div>`:''}
   `;
   out.appendChild(stats);
   // day notes
