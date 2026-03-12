@@ -1179,17 +1179,18 @@ function renderDay(day) {
       pill.className='placed-pill '+item.cat+(pct>0?' has-progress':'')+(done?' completed':'');
 
       // Set progress as background gradient directly on pill
-      let fillColor = item.cat==='arm' ? 'rgba(53,200,241,0.35)'
-        : item.cat==='leg' ? 'rgba(241,160,53,0.35)'
-        : item.cat==='alt' ? 'rgba(200,53,241,0.35)' : null;
-      if (!fillColor) {
-        const cc = customCats.find(c=>c.id===item.cat);
-        if (cc) { const rgb = hexToRgb(cc.color); fillColor = `rgba(${rgb},0.35)`; }
-        else fillColor = 'rgba(120,120,120,0.35)';
-      }
+      const dotColor = getDotColor(item.cat);
+      const rgb = hexToRgb(dotColor);
+      const fillColor = `rgba(${rgb},0.35)`;
       if (pct > 0) {
         const p = Math.round(pct * 100);
         pill.style.background = `linear-gradient(to right, ${fillColor} ${p}%, rgba(120,120,120,0.12) ${p}%)`;
+        const dotColor = getDotColor(item.cat);
+        if (dotColor) {
+          const rgb = hexToRgb(dotColor);
+          pill.style.borderColor = `rgba(${rgb},0.55)`;
+          pill.style.color = dotColor;
+        }
       }
 
       // Content wrapper (sits above fill via z-index)
