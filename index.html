@@ -1965,6 +1965,7 @@ document.getElementById('confirmYes').addEventListener('click',()=>{
   const {cat,idx,name}=deleteTarget;
   exercises[cat].splice(idx,1);
   renderBankCol(cat); renderBankCol('fav'); updateTotal(); saveState();
+  if (cat === 'unassigned') ensureUnassignedSection();
   document.getElementById('confirmModal').classList.add('hidden');
   deleteTarget=null;
 });
