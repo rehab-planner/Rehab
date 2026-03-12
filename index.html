@@ -1336,27 +1336,32 @@ function calcItemPlannedMinutes(item) {
 function updateTotal() {
   const bar=document.getElementById('totalBar');
   let totalMins=0, doneMins=0;
-  let doneArm=0, doneLeg=0, doneAlt=0;
-  let planArm=0, planLeg=0, planAlt=0;
+  const doneByCat={}, planByCat={};
+  ['alt','arm','leg',...customCats.map(c=>c.id)].forEach(id=>{doneByCat[id]=0;planByCat[id]=0;});
   const daysToCount = viewMode==='day' ? [getDayFromOffset(currentDayOffset).dayName] : DAYS;
   daysToCount.forEach(d => {
     schedule[d].forEach(i => {
       const dm=calcItemDoneMinutes(i), pm=calcItemPlannedMinutes(i);
       doneMins+=dm; totalMins+=pm;
-      if(i.cat==='arm'){doneArm+=dm;planArm+=pm;}
-      else if(i.cat==='leg'){doneLeg+=dm;planLeg+=pm;}
-      else{doneAlt+=dm;planAlt+=pm;}
+      const id = (i.cat==='arm'||i.cat==='leg'||i.cat==='alt') ? i.cat : (customCats.find(c=>c.id===i.cat) ? i.cat : 'alt');
+      doneByCat[id]=(doneByCat[id]||0)+dm;
+      planByCat[id]=(planByCat[id]||0)+pm;
     });
   });
   function timePair(done,plan) {
     if(plan===0) return '<span style="color:var(--muted)">—</span>';
     return `<strong style="color:#f0f0f0">${fmtMin(Math.round(done))}</strong><span style="color:var(--muted)"> / ${fmtMin(Math.round(plan))}</span>`;
   }
+  const builtInItems = ['alt','arm','leg'].map(id=>{
+    const color = getDotColor(id);
+    return planByCat[id]>0 ? `<div class="total-item" style="color:${color}">${getCatMeta(id)?.name||id}: ${timePair(doneByCat[id],planByCat[id])}</div>` : '';
+  }).join('');
+  const customItems = customCats.map(cc=>{
+    return planByCat[cc.id]>0 ? `<div class="total-item" style="color:${cc.color}">${cc.name}: ${timePair(doneByCat[cc.id],planByCat[cc.id])}</div>` : '';
+  }).join('');
   bar.innerHTML=`
     <div class="total-item">Total: ${timePair(doneMins,totalMins)}</div>
-    <div class="total-item" style="color:var(--alt)">${getCatMeta('alt')?.name||'Physio'}: ${timePair(doneAlt,planAlt)}</div>
-    <div class="total-item" style="color:var(--arm)">${getCatMeta('arm')?.name||'Arm'}: ${timePair(doneArm,planArm)}</div>
-    <div class="total-item" style="color:var(--leg)">${getCatMeta('leg')?.name||'Leg'}: ${timePair(doneLeg,planLeg)}</div>
+    ${builtInItems}${customItems}
   `;
 }
 
@@ -2066,22 +2071,27 @@ function openDaySummary(day, noteOnly=false) {
     });
 
     // Stats
-    let doneArm=0,doneLeg=0,doneAlt=0,planArm=0,planLeg=0,planAlt=0;
+    const doneByCat2={}, planByCat2={};
+    ['alt','arm','leg',...customCats.map(c=>c.id)].forEach(id=>{doneByCat2[id]=0;planByCat2[id]=0;});
     items.forEach(i => {
       const dm=calcItemDoneMinutes(i), pm=calcItemPlannedMinutes(i);
-      if(i.cat==='arm'){doneArm+=dm;planArm+=pm;}
-      else if(i.cat==='leg'){doneLeg+=dm;planLeg+=pm;}
-      else{doneAlt+=dm;planAlt+=pm;}
+      const id = (i.cat==='arm'||i.cat==='leg'||i.cat==='alt') ? i.cat : (customCats.find(c=>c.id===i.cat) ? i.cat : 'alt');
+      doneByCat2[id]=(doneByCat2[id]||0)+dm;
+      planByCat2[id]=(planByCat2[id]||0)+pm;
     });
-    const total = doneArm+doneLeg+doneAlt;
-    const planTotal = planArm+planLeg+planAlt;
+    const total = Object.values(doneByCat2).reduce((a,b)=>a+b,0);
     const stats = document.createElement('div');
     stats.className = 'day-summary-stats';
+    const builtInStats = ['alt','arm','leg'].map(id=>{
+      const color = getDotColor(id);
+      return planByCat2[id]>0?`<div><span style="color:${color}">${getCatMeta(id)?.name||id}: </span><strong>${fmtMin(Math.round(doneByCat2[id]))}</strong></div>`:'';
+    }).join('');
+    const customStats = customCats.map(cc=>{
+      return planByCat2[cc.id]>0?`<div><span style="color:${cc.color}">${cc.name}: </span><strong>${fmtMin(Math.round(doneByCat2[cc.id]))}</strong></div>`:'';
+    }).join('');
     stats.innerHTML = `
       <div class="stat-total"><span>Total: </span><strong>${fmtMin(Math.round(total))}</strong></div>
-      ${planAlt>0?`<div><span style="color:var(--alt)">${getCatMeta('alt')?.name||'Physio'}: </span><strong>${fmtMin(Math.round(doneAlt))}</strong></div>`:''}
-      ${planArm>0?`<div><span style="color:var(--arm)">${getCatMeta('arm')?.name||'Arm'}: </span><strong>${fmtMin(Math.round(doneArm))}</strong></div>`:''}
-      ${planLeg>0?`<div><span style="color:var(--leg)">${getCatMeta('leg')?.name||'Leg'}: </span><strong>${fmtMin(Math.round(doneLeg))}</strong></div>`:''}
+      ${builtInStats}${customStats}
     `;
     content.appendChild(stats);
   }
@@ -2604,9 +2614,10 @@ function generateReport() {
   const start = parseDateKey(repRangeStart);
   const end   = parseDateKey(repRangeEnd);
   const dayNames = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
-  let totalArm=0,totalLeg=0,totalAlt=0;
-  let exerciseTotals = {}; // name -> {mins, cat, sessions, detail}
-  let collectedNotes = []; // {date, note}
+  const totalByCat = {};
+  ['alt','arm','leg',...customCats.map(c=>c.id)].forEach(id=>{ totalByCat[id]=0; });
+  let exerciseTotals = {};
+  let collectedNotes = [];
   const cur = new Date(start);
   while(cur<=end){
     const dow=cur.getDay(); const dayIdx=dow===0?6:dow-1;
@@ -2617,13 +2628,11 @@ function generateReport() {
     const items=sched[dayName]||[];
     items.forEach(item=>{
       const pm=calcItemDoneMinutes(item);
-      if(item.cat==='arm') totalArm+=pm;
-      else if(item.cat==='leg') totalLeg+=pm;
-      else totalAlt+=pm;
+      const id = (item.cat==='arm'||item.cat==='leg'||item.cat==='alt') ? item.cat : (customCats.find(c=>c.id===item.cat) ? item.cat : 'alt');
+      totalByCat[id]=(totalByCat[id]||0)+pm;
       if(!exerciseTotals[item.name]) exerciseTotals[item.name]={mins:0,reps:0,cat:item.cat,sessions:0,isRepsOnly:false};
       exerciseTotals[item.name].mins+=pm;
       exerciseTotals[item.name].sessions+=1;
-      // Determine if this item is reps-only (has reps, no mins)
       const p=item.planned||{};
       const d=item.done||{};
       const ps=parseFloat(p.sets)||0,pr=parseFloat(p.reps)||0,pm2=parseFloat(p.mins)||0;
@@ -2631,12 +2640,10 @@ function generateReport() {
       const isRepsOnly = pr>0 && pm2===0;
       if(isRepsOnly) {
         exerciseTotals[item.name].isRepsOnly = true;
-        // accumulate done reps: sets × reps
         const doneReps = ps>0 ? (ds||ps)*pr : (dr||pr);
         exerciseTotals[item.name].reps += doneReps;
       }
     });
-    // collect note
     const dk=dateKey(cur);
     const noteKey=cur.getFullYear()+'-'+(cur.getMonth()+1)+'-'+cur.getDate()+'-'+dayName;
     const oldKey=dk+'-'+dayName;
@@ -2644,23 +2651,25 @@ function generateReport() {
     if(note) collectedNotes.push({date:dk, day:dayName, note});
     cur.setDate(cur.getDate()+1);
   }
-  const grandTotal=totalArm+totalLeg+totalAlt;
+  const grandTotal=Object.values(totalByCat).reduce((a,b)=>a+b,0);
   const out=document.getElementById('reportOutput');
   out.innerHTML='';
-  // date range header
   const header=document.createElement('div');
   header.style.cssText='font-family:"DM Mono",monospace;font-size:13px;color:var(--text);letter-spacing:1px;margin-bottom:14px;';
   header.textContent=repRangeStart+' → '+repRangeEnd;
   out.appendChild(header);
-  // per-category breakdown
-  ['alt','arm','leg'].forEach(cat=>{
+  // per-category breakdown — built-ins + custom cats
+  const allReportCats = ['alt','arm','leg',...customCats.map(c=>c.id)];
+  allReportCats.forEach(cat=>{
     const catExes=Object.entries(exerciseTotals).filter(([,v])=>v.cat===cat && (v.mins>0||v.reps>0));
     if(!catExes.length) return;
-    const catNames={alt:'Physio',arm:'Arm',leg:'Leg'};
+    const catColor = getDotColor(cat);
+    const catLabel = customCats.find(c=>c.id===cat)?.name || getCatMeta(cat)?.name || cat;
     const sec=document.createElement('div'); sec.style.marginBottom='14px';
     const t=document.createElement('div');
-    t.className=`day-summary-cat-title ${cat}`;
-    t.style.marginBottom='8px'; t.textContent=getCatMeta(cat)?.name || catNames[cat];
+    t.className='day-summary-cat-title';
+    t.style.cssText=`color:${catColor};font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;`;
+    t.textContent=catLabel;
     sec.appendChild(t);
     catExes.forEach(([name,v])=>{
       const row=document.createElement('div'); row.className='day-summary-item';
@@ -2673,11 +2682,16 @@ function generateReport() {
   });
   // totals
   const stats=document.createElement('div'); stats.className='day-summary-stats';
+  const builtInTotals = ['alt','arm','leg'].map(id=>{
+    const color=getDotColor(id);
+    return totalByCat[id]>0?`<div><span style="color:${color}">${getCatMeta(id)?.name||id}: </span><strong>${fmtMin(Math.round(totalByCat[id]))}</strong></div>`:'';
+  }).join('');
+  const customTotals = customCats.map(cc=>{
+    return totalByCat[cc.id]>0?`<div><span style="color:${cc.color}">${cc.name}: </span><strong>${fmtMin(Math.round(totalByCat[cc.id]))}</strong></div>`:'';
+  }).join('');
   stats.innerHTML=`
     <div class="stat-total"><span>Total: </span><strong>${fmtMin(Math.round(grandTotal))}</strong></div>
-    ${totalAlt>0?`<div><span style="color:var(--alt)">${getCatMeta('alt')?.name||'Physio'}: </span><strong>${fmtMin(Math.round(totalAlt))}</strong></div>`:''}
-    ${totalArm>0?`<div><span style="color:var(--arm)">${getCatMeta('arm')?.name||'Arm'}: </span><strong>${fmtMin(Math.round(totalArm))}</strong></div>`:''}
-    ${totalLeg>0?`<div><span style="color:var(--leg)">${getCatMeta('leg')?.name||'Leg'}: </span><strong>${fmtMin(Math.round(totalLeg))}</strong></div>`:''}
+    ${builtInTotals}${customTotals}
   `;
   out.appendChild(stats);
   // day notes
