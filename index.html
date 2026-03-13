@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Rehab Planner</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=Roboto:wght@700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --black: #0a0a0a; --dark: #111; --card: #1a1a1a;
@@ -90,9 +90,9 @@
   .rm-btn { position: relative; z-index: 1; background: none; border: none; border-left: 1px solid rgba(255,255,255,0.06); color: inherit; cursor: pointer; opacity: 0.45; font-size: 13px; line-height: 1; padding: 0 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; min-width: 24px; }
   .rm-btn:hover, .rm-btn:active { opacity: 1; }
 
-  .stepper-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 20px; font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif; line-height: 1; cursor: pointer; padding: 0; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; touch-action: manipulation; }
+  .stepper-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 20px; font-family:'Roboto',sans-serif; line-height: 1; cursor: pointer; padding: 0; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; touch-action: manipulation; }
   .stepper-btn:active { background: var(--border); }
-  .stepper-input { flex:1; min-width:0; text-align: center; color: var(--text) !important; font-size:22px !important; font-weight:700 !important; font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif !important; padding: 0 4px !important; cursor:ns-resize; touch-action:none; user-select:none; line-height:38px; height:38px; }
+  .stepper-input { flex:1; min-width:0; text-align: center; color: var(--text) !important; font-size:22px !important; font-weight:700 !important; font-family:'Roboto',sans-serif !important; padding: 0 4px !important; cursor:ns-resize; touch-action:none; user-select:none; line-height:38px; height:38px; }
   .scrubber-track { position:relative; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; margin-top:22px; cursor:ew-resize; touch-action:none; }
   .scrubber-track::before { content:''; position:absolute; left:0; right:0; top:-28px; bottom:-28px; }
   .scrubber-fill { position:absolute; left:0; top:0; height:100%; background:var(--accent); border-radius:3px; width:50%; pointer-events:none; }
