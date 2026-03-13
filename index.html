@@ -276,13 +276,13 @@
 <div style="margin-top:12px;padding:16px;border:1px solid var(--border);border-radius:12px;">
   <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Display</div>
   <div style="display:flex;align-items:center;gap:10px;">
-    <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;white-space:nowrap;">BRIGHTNESS</span>
+    <span style="font-size:14px;opacity:0.5;">☀</span>
     <div id="brightnessSlider" style="flex:1;position:relative;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;cursor:ew-resize;touch-action:none;margin:14px 0;">
       <div style="position:absolute;left:0;right:0;top:-20px;bottom:-20px;"></div>
       <div id="brightnessFill" style="position:absolute;left:0;top:0;height:100%;background:var(--accent);border-radius:3px;width:0%;pointer-events:none;"></div>
       <div id="brightnessThumb" style="position:absolute;top:50%;width:18px;height:18px;background:var(--accent);border-radius:50%;transform:translate(-50%,-50%);left:0%;pointer-events:none;box-shadow:0 0 0 3px rgba(0,0,0,0.4);"></div>
     </div>
-    <span id="brightnessVal" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);width:36px;text-align:right;">100%</span>
+    <span style="font-size:22px;opacity:0.5;">☀</span>
   </div>
 </div>
 
@@ -1457,7 +1457,7 @@ let _brightnessVal = 100;
 function applyBrightness(val) {
   _brightnessVal = val;
   document.body.style.filter = val === 100 ? '' : `brightness(${val}%)`;
-  document.getElementById('brightnessVal').textContent = val + '%';
+  
   const pct = (val - 100) / 50 * 100;
   document.getElementById('brightnessFill').style.width = pct + '%';
   document.getElementById('brightnessThumb').style.left = pct + '%';
