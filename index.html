@@ -90,7 +90,7 @@
   .rm-btn { position: relative; z-index: 1; background: none; border: none; border-left: 1px solid rgba(255,255,255,0.06); color: inherit; cursor: pointer; opacity: 0.45; font-size: 13px; line-height: 1; padding: 0 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; min-width: 24px; }
   .rm-btn:hover, .rm-btn:active { opacity: 1; }
 
-  .stepper-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 20px; font-family:Arial,sans-serif; line-height: 1; cursor: pointer; padding: 0; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; touch-action: manipulation; }
+  .stepper-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 20px; font-family: Arial, sans-serif !important; line-height: 1; cursor: pointer; padding: 0; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; touch-action: manipulation; }
   .stepper-btn:active { background: var(--border); }
   .stepper-input { flex:1; min-width:0; text-align: center; color: var(--text) !important; font-size:22px !important; font-weight:700 !important; font-family:Arial,sans-serif !important; padding: 0 4px !important; cursor:ns-resize; touch-action:none; user-select:none; line-height:38px; height:38px; }
   .scrubber-track { position:relative; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; margin-top:22px; cursor:ew-resize; touch-action:none; }
@@ -151,6 +151,7 @@
   .form-row { margin-bottom: 10px; }
   .form-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; display: block; }
   .form-input { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 7px; padding: 12px; color: var(--text); font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 600; outline: none; transition: border-color 0.15s; user-select: text; -webkit-user-select: text; }
+  .form-input.stepper-input { font-family: 'DM Mono', monospace !important; font-size: 26px !important; font-weight: 500 !important; }
   .form-input:focus { border-color: var(--accent); }
   .form-input:disabled { opacity: 0.4; cursor: not-allowed; }
   .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
@@ -160,9 +161,9 @@
   .seg-btn.active-leg { border-color: var(--leg); color: var(--leg); background: rgba(241,160,53,0.1); }
   .seg-btn.active-alt { border-color: var(--alt); color: var(--alt); background: rgba(200,53,241,0.1); }
   .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-  .btn-primary { flex: 1; background: #5c7a12; color: #d8d8d8; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; border: none; border-radius: 7px; padding: 13px; cursor: pointer; transition: opacity 0.15s; min-height: 48px; }
+  .btn-primary { flex: 1; background: #5c7a12; color: #d8d8d8; font-family: Arial, sans-serif; font-size: 14px; font-weight: 800; border: none; border-radius: 7px; padding: 13px; cursor: pointer; transition: opacity 0.15s; min-height: 48px; }
   .btn-primary:hover, .btn-primary:active { opacity: 0.85; }
-  .btn-secondary { flex: 1; background: #1e1e1e; color: #888; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; border: 1px solid #333; border-radius: 7px; padding: 13px; cursor: pointer; transition: opacity 0.15s; min-height: 48px; }
+  .btn-secondary { flex: 1; background: #1e1e1e; color: #888; font-family: Arial, sans-serif; font-size: 14px; font-weight: 700; border: 1px solid #333; border-radius: 7px; padding: 13px; cursor: pointer; transition: opacity 0.15s; min-height: 48px; }
   .btn-secondary:hover, .btn-secondary:active { border-color: #555; color: #aaa; }
   .btn-cancel { flex: 1; background: none; color: var(--muted); font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600; border: 1px solid var(--border); border-radius: 7px; padding: 13px; cursor: pointer; transition: all 0.15s; min-height: 48px; }
   .btn-cancel:hover, .btn-cancel:active { border-color: var(--muted); color: var(--text); }
