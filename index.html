@@ -221,9 +221,9 @@
 <div class="total-bar" id="totalBar"></div>
 
 <div class="bank">
-  <div class="bank-header">
-    <button class="add-ex-btn" id="addExBtn">+ Add Exercise</button>
-    <button class="add-ex-btn" id="addCatBtn" style="background:none;border:1px solid var(--accent);color:var(--accent);">+ Add Category</button>
+  <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+    <button onclick="openAddModal()" style="background:none;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;letter-spacing:1px;padding:5px 12px;border-radius:6px;cursor:pointer;">+ new exercise</button>
+    <button id="addCatBtn" style="background:none;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;letter-spacing:1px;padding:5px 12px;border-radius:6px;cursor:pointer;">+ new category</button>
   </div>
   <div class="bank-cols">
     <div class="bank-section" id="bank-section-fav">
@@ -1435,8 +1435,7 @@ document.getElementById('editBankDeleteBtn').addEventListener('click', () => {
   editBankTarget = null;
   openConfirmDelete(cat, idx, ex.name);
 });
-document.getElementById('addExBtn').addEventListener('click', openAddModal);
-
+document.getElementById('addCatBtn').addEventListener('click', openAddCatModal);
 // ── Add / Edit Category Modal ─────────────────────────────────────────
 let editCatTarget = null; // cat id when editing
 let selectedCatColor = '#35f1a0';
