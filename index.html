@@ -204,7 +204,7 @@
 </style>
 </head>
 <body>
-
+<div id="page-wrap">
 <h1>REHAB&nbsp;&nbsp;&nbsp;PLANNER</h1>
 <div style="height:10px"></div>
 <div style="display:flex;gap:8px;margin-bottom:10px;">
@@ -291,6 +291,7 @@
   <button id="exportBtn" class="btn-primary" style="background:none;border:1px solid var(--accent);color:var(--accent);">↓ Export Data</button>
   <label id="importLabel" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);text-align:center;cursor:pointer;">↑ Import Data<input type="file" id="importFile" accept=".json" style="display:none;"></label>
 </div>
+</div><!-- /page-wrap -->
 <div class="overlay hidden" id="batchAddModal">
   <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px 20px;width:100%;max-width:400px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
     <div class="modal-title" id="batchAddTitle">Add to MON</div>
@@ -1456,7 +1457,7 @@ let _brightnessSaveTimer = null;
 let _brightnessVal = 100;
 function applyBrightness(val) {
   _brightnessVal = val;
-  document.body.style.filter = val === 100 ? '' : `brightness(${val}%)`;
+  document.getElementById('page-wrap').style.filter = val === 100 ? '' : `brightness(${val}%)`;
   
   const pct = (val - 100) / 50 * 100;
   document.getElementById('brightnessFill').style.width = pct + '%';
