@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#141414">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Rehab Planner</title>
@@ -14,9 +14,9 @@
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=Roboto:wght@700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --black: #0a0a0a; --dark: #111; --card: #1a1a1a;
-    --border: #2a2a2a; --accent: #6a8818; --text: #aaaaaa; --muted: #555;
-    --leg: #f7bc6a; --arm: #6dd8f5; --alt: #d966f5;
+    --black: #191919; --dark: #222; --card: #2b2b2b;
+    --border: #424242; --accent: #83a91f; --text: #d6d6d6; --muted: #868686;
+    --leg: #fad494; --arm: #96e6f8; --alt: #e690f8;
   }
 
   html { -webkit-text-size-adjust: 100%; }
@@ -47,7 +47,7 @@
   .day-actions { display: flex; flex-direction: column; align-items: center; padding: 6px 8px; border-left: 1px solid var(--border); flex-shrink: 0; gap: 5px; justify-content: center; }
   .clear-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 1px; padding: 4px 6px; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.15s; min-height: 28px; width: 100%; }
   .clear-btn:hover, .clear-btn:active { border-color: #f13570; color: #f13570; }
-  .view-day-btn { border-color: #444 !important; color: #888 !important; }
+  .view-day-btn { border-color: #555 !important; color: #999 !important; }
   .view-day-btn:hover, .view-day-btn:active { border-color: var(--accent) !important; color: var(--accent) !important; }
   .text-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 1px; padding: 4px 6px; border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.15s; min-height: 28px; width: 100%; }
   .text-btn:hover, .text-btn:active { border-color: var(--accent); color: var(--accent); }
@@ -82,7 +82,7 @@
 
 
   /* PLACED PILLS */
-  .placed-pill { border-radius: 6px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: stretch; cursor: pointer; white-space: nowrap; touch-action: manipulation; position: relative; overflow: hidden; border: 1px solid rgba(120,120,120,0.3); background: rgba(120,120,120,0.12); color: #888; }
+  .placed-pill { border-radius: 6px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: stretch; cursor: pointer; white-space: nowrap; touch-action: manipulation; position: relative; overflow: hidden; border: 1px solid rgba(150,150,150,0.4); background: rgba(150,150,150,0.16); color: #888; }
   .placed-pill.dragging { opacity: 0.35; }
 
   .pill-content { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 4px; padding: 4px 4px 4px 7px; }
@@ -163,8 +163,8 @@
   .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
   .btn-primary { flex: 1; background: #5c7a12; color: #d8d8d8; font-family: Arial, sans-serif; font-size: 14px; font-weight: 800; border: none; border-radius: 7px; padding: 13px; cursor: pointer; transition: opacity 0.15s; min-height: 48px; }
   .btn-primary:hover, .btn-primary:active { opacity: 0.85; }
-  .btn-secondary { flex: 1; background: #1e1e1e; color: #888; font-family: Arial, sans-serif; font-size: 14px; font-weight: 700; border: 1px solid #333; border-radius: 7px; padding: 13px; cursor: pointer; transition: opacity 0.15s; min-height: 48px; }
-  .btn-secondary:hover, .btn-secondary:active { border-color: #555; color: #aaa; }
+  .btn-secondary { flex: 1; background: #262626; color: #999; font-family: Arial, sans-serif; font-size: 14px; font-weight: 700; border: 1px solid #444; border-radius: 7px; padding: 13px; cursor: pointer; transition: opacity 0.15s; min-height: 48px; }
+  .btn-secondary:hover, .btn-secondary:active { border-color: #666; color: #bbb; }
   .btn-cancel { flex: 1; background: none; color: var(--muted); font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600; border: 1px solid var(--border); border-radius: 7px; padding: 13px; cursor: pointer; transition: all 0.15s; min-height: 48px; }
   .btn-cancel:hover, .btn-cancel:active { border-color: var(--muted); color: var(--text); }
 
@@ -243,7 +243,7 @@
           <span class="bank-section-chevron" id="bank-chev-alt">▼</span>
         </div>
         <button onclick="event.stopPropagation();openAddModalForCat('alt')" style="background:none;border:1px dashed var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:6px;cursor:pointer;margin-right:8px;">+ add</button>
-        <button onclick="event.stopPropagation();openEditCatModal('alt')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+        <button onclick="event.stopPropagation();openEditCatModal('alt')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.75;font-family:'DM Mono',monospace;">✎</button>
       </div>
       <div class="bank-section-body" id="bank-body-alt"><div id="bank-alt"></div></div>
     </div>
@@ -254,7 +254,7 @@
           <span class="bank-section-chevron" id="bank-chev-arm">▼</span>
         </div>
         <button onclick="event.stopPropagation();openAddModalForCat('arm')" style="background:none;border:1px dashed var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:6px;cursor:pointer;margin-right:8px;">+ add</button>
-        <button onclick="event.stopPropagation();openEditCatModal('arm')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+        <button onclick="event.stopPropagation();openEditCatModal('arm')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.75;font-family:'DM Mono',monospace;">✎</button>
       </div>
       <div class="bank-section-body" id="bank-body-arm"><div id="bank-arm"></div></div>
     </div>
@@ -265,7 +265,7 @@
           <span class="bank-section-chevron" id="bank-chev-leg">▼</span>
         </div>
         <button onclick="event.stopPropagation();openAddModalForCat('leg')" style="background:none;border:1px dashed var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:6px;cursor:pointer;margin-right:8px;">+ add</button>
-        <button onclick="event.stopPropagation();openEditCatModal('leg')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+        <button onclick="event.stopPropagation();openEditCatModal('leg')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.75;font-family:'DM Mono',monospace;">✎</button>
       </div>
       <div class="bank-section-body" id="bank-body-leg"><div id="bank-leg"></div></div>
     </div>
@@ -976,7 +976,7 @@ function renderBankSections() {
           <span class="bank-section-chevron" id="bank-chev-${cc.id}">▼</span>
         </div>
         <button onclick="event.stopPropagation();openAddModalForCat('${cc.id}')" style="background:none;border:1px dashed var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:6px;cursor:pointer;margin-right:8px;">+ add</button>
-        <button onclick="event.stopPropagation();openEditCatModal('${cc.id}')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+        <button onclick="event.stopPropagation();openEditCatModal('${cc.id}')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.75;font-family:'DM Mono',monospace;">✎</button>
       </div>
       <div class="bank-section-body" id="bank-body-${cc.id}"><div id="bank-${cc.id}"></div></div>`;
     container.appendChild(section);
@@ -1190,7 +1190,7 @@ function renderDay(day) {
       const fillColor = `rgba(${rgb},0.35)`;
       if (pct > 0) {
         const p = Math.round(pct * 100);
-        pill.style.background = `linear-gradient(to right, ${fillColor} ${p}%, rgba(120,120,120,0.12) ${p}%)`;
+        pill.style.background = `linear-gradient(to right, ${fillColor} ${p}%, rgba(150,150,150,0.16) ${p}%)`;
         pill.style.borderColor = `rgba(${rgb},0.55)`;
         pill.style.color = dotColor;
       }
@@ -1231,7 +1231,7 @@ function renderDay(day) {
   const done = calcDayDoneMinutes(day);
   if (done > 0 || planned > 0) {
     cnt.innerHTML = (done > 0 ? `<div>${fmtMin(done)}</div>` : '<div style="color:transparent">—</div>') +
-      (planned > 0 ? `<div style="color:#555;font-size:10px;">${fmtMin(planned)}</div>` : '');
+      (planned > 0 ? `<div style="color:#777;font-size:10px;">${fmtMin(planned)}</div>` : '');
   } else {
     cnt.innerHTML = '';
   }
@@ -2324,7 +2324,7 @@ function openBatchAddModal(day) {
 
       const pencil = document.createElement('button');
       pencil.textContent = '✎';
-      pencil.style.cssText = 'background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:"DM Mono",monospace;line-height:1;';
+      pencil.style.cssText = 'background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.75;font-family:"DM Mono",monospace;line-height:1;';
       pencil.addEventListener('click', e => {
         e.stopPropagation();
         document.getElementById('batchAddModal').classList.add('hidden');
