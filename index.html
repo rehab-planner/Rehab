@@ -652,7 +652,7 @@ function saveState() {
   if (!_db) return;
   const tx    = _db.transaction(STORE_NAME, 'readwrite');
   const store = tx.objectStore(STORE_NAME);
-  const brightness = _brightnessVal || 100;
+  const brightness = _brightnessVal || 110;
   store.put({ exercises, allSchedules, weekOffset, dayNotes, customCats, builtInCatMeta, deletedCats, brightness }, STATE_KEY);
 }
 
@@ -1454,12 +1454,12 @@ document.getElementById('editBankDeleteBtn').addEventListener('click', () => {
 document.getElementById('addCatBtn').addEventListener('click', openAddCatModal);
 
 let _brightnessSaveTimer = null;
-let _brightnessVal = 100;
+let _brightnessVal = 110;
 function applyBrightness(val) {
   _brightnessVal = val;
   document.getElementById('page-wrap').style.filter = val === 100 ? '' : `brightness(${val}%)`;
   
-  const pct = (val - 100) / 50 * 100;
+  const pct = (val - 100) / 60 * 100;
   document.getElementById('brightnessFill').style.width = pct + '%';
   document.getElementById('brightnessThumb').style.left = pct + '%';
   clearTimeout(_brightnessSaveTimer);
@@ -1467,19 +1467,19 @@ function applyBrightness(val) {
 }
 (function(){
   const track = document.getElementById('brightnessSlider');
-  let startX = null, startVal = 100;
+  let startX = null, startVal = 110;
   track.addEventListener('pointerdown', e => {
     startX = e.clientX; startVal = _brightnessVal;
     track.setPointerCapture(e.pointerId);
     e.preventDefault();
     const rect = track.getBoundingClientRect();
-    const val = Math.round(Math.max(100, Math.min(150, (e.clientX - rect.left) / rect.width * 50 + 100)));
+    const val = Math.round(Math.max(100, Math.min(160, (e.clientX - rect.left) / rect.width * 60 + 100)));
     applyBrightness(val); startVal = val; startX = e.clientX;
   }, {passive:false});
   track.addEventListener('pointermove', e => {
     if (startX === null) return;
     const rect = track.getBoundingClientRect();
-    const val = Math.round(Math.max(100, Math.min(150, (e.clientX - rect.left) / rect.width * 50 + 100)));
+    const val = Math.round(Math.max(100, Math.min(160, (e.clientX - rect.left) / rect.width * 60 + 100)));
     applyBrightness(val);
   }, {passive:false});
   track.addEventListener('pointerup', () => { startX = null; });
