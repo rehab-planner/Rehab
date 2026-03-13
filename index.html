@@ -1278,7 +1278,7 @@ function renderDay(day) {
   const moreBtn = document.createElement('button');
   moreBtn.className = 'text-btn more-btn';
   moreBtn.id = 'note-btn-'+day;
-  moreBtn.textContent = 'Note';
+  moreBtn.textContent = '+ add note';
   moreBtn.addEventListener('pointerdown', e => e.stopPropagation());
   moreBtn.addEventListener('click', () => openDaySummary(day, true));
   // apply has-note indicator
@@ -1290,8 +1290,18 @@ function renderDay(day) {
   const nkUtc = dd.toISOString().slice(0,10)+'-'+day;
   const hasNote = !!(dayNotes[nk] || dayNotes[nkUtc]);
   moreBtn.classList.toggle('has-note', hasNote);
+  moreBtn.textContent = hasNote ? 'view note' : '+ add note';
+  moreBtn.style.cssText = 'border-color:#555;color:#666;';
+  const addExBtn = document.createElement('button');
+  addExBtn.className = 'text-btn more-btn';
+  addExBtn.textContent = '+ add exercise';
+  addExBtn.style.cssText = 'border-color:var(--accent);color:var(--accent);margin-left:0;margin-right:auto;';
+  addExBtn.addEventListener('pointerdown', e => e.stopPropagation());
+  addExBtn.addEventListener('click', () => openBatchAddModal(day));
   const noteRow = document.createElement('div');
   noteRow.className = 'note-btn-row';
+  noteRow.style.justifyContent = 'space-between';
+  noteRow.appendChild(addExBtn);
   noteRow.appendChild(moreBtn);
   body.appendChild(noteRow);
 }
