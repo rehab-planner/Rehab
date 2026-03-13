@@ -1458,8 +1458,12 @@ let _brightnessVal = 110;
 function applyBrightness(val) {
   _brightnessVal = val;
   document.getElementById('page-wrap').style.filter = val === 100 ? '' : `brightness(${val}%)`;
+  // Apply same brightness to all overlays
+  document.querySelectorAll('.overlay').forEach(el => {
+    el.style.filter = val === 100 ? '' : `brightness(${val}%)`;
+  });
   
-  const pct = (val - 100) / 60 * 100;
+  const pct = (val - 100) / 80 * 100;
   document.getElementById('brightnessFill').style.width = pct + '%';
   document.getElementById('brightnessThumb').style.left = pct + '%';
   clearTimeout(_brightnessSaveTimer);
@@ -1473,13 +1477,13 @@ function applyBrightness(val) {
     track.setPointerCapture(e.pointerId);
     e.preventDefault();
     const rect = track.getBoundingClientRect();
-    const val = Math.round(Math.max(100, Math.min(160, (e.clientX - rect.left) / rect.width * 60 + 100)));
+    const val = Math.round(Math.max(100, Math.min(180, (e.clientX - rect.left) / rect.width * 80 + 100)));
     applyBrightness(val); startVal = val; startX = e.clientX;
   }, {passive:false});
   track.addEventListener('pointermove', e => {
     if (startX === null) return;
     const rect = track.getBoundingClientRect();
-    const val = Math.round(Math.max(100, Math.min(160, (e.clientX - rect.left) / rect.width * 60 + 100)));
+    const val = Math.round(Math.max(100, Math.min(180, (e.clientX - rect.left) / rect.width * 80 + 100)));
     applyBrightness(val);
   }, {passive:false});
   track.addEventListener('pointerup', () => { startX = null; });
