@@ -53,7 +53,9 @@
   .text-btn:hover, .text-btn:active { border-color: var(--accent); color: var(--accent); }
   .more-btn { width: auto; min-height: 20px; font-size: 8px; padding: 2px 6px; border-radius: 3px; margin-left: auto; }
   .more-btn.has-note { border-color: #666; color: #666; }
-  .note-btn-row { width: 100%; display: flex; justify-content: flex-end; margin-top: 2px; }
+  .day-body { flex: 1; padding: 6px 8px; display: flex; flex-direction: column; min-width: 0; position: relative; min-height: 36px; }
+  .day-pills { display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-start; align-content: flex-start; }
+  .note-btn-row { width: 100%; display: flex; justify-content: flex-end; margin-top: auto; padding-top: 4px; }
   .rep-cal-day { font-family:'DM Mono',monospace;font-size:11px;text-align:center;padding:5px 2px;border-radius:4px;cursor:pointer;color:var(--muted);position:relative; }
   .rep-cal-day.has-ex { color:var(--text); }
   .rep-cal-day.in-range { background:rgba(106,136,24,0.2); color:var(--accent); }
@@ -1187,10 +1189,12 @@ function renderDay(day) {
   const body=document.getElementById('body-'+day);
   const cnt=document.getElementById('cnt-'+day);
   body.innerHTML='';
+  const pillsContainer = document.createElement('div');
+  pillsContainer.className = 'day-pills';
   if (schedule[day].length===0) {
     const hint=document.createElement('div');
     hint.className='drop-hint'; hint.textContent='+ drop here';
-    body.appendChild(hint);
+    pillsContainer.appendChild(hint);
   } else {
     sortedDayItems(day).forEach(({item, idx}) => {
       const pct = calcProgress(item);
@@ -1239,9 +1243,10 @@ function renderDay(day) {
         document.addEventListener('pointercancel', onUp);
       });
 
-      body.appendChild(pill);
+      pillsContainer.appendChild(pill);
     });
   }
+  body.appendChild(pillsContainer);
   const planned = calcDayMinutes(day);
   const done = calcDayDoneMinutes(day);
   if (done > 0 || planned > 0) {
