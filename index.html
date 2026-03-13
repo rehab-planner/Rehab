@@ -2178,7 +2178,7 @@ function openDaySummary(day, noteOnly=false) {
   _currentNoteKey = getDayNoteKey(day);
   document.getElementById('daySummaryNote').value = dayNotes[_currentNoteKey] || '';
   document.getElementById('daySummaryModal').classList.remove('hidden');
-  if (noteOnly) setTimeout(()=>{ document.getElementById('daySummaryNote').focus(); }, 100);
+  if (noteOnly) setTimeout(()=>{ /* no autofocus */ }, 100);
 }
 document.getElementById('daySummaryClose').addEventListener('click',()=>{ document.getElementById('daySummaryModal').classList.add('hidden'); });
 document.getElementById('daySummaryNoteSave').addEventListener('click',()=>{
