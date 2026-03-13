@@ -37,7 +37,7 @@
   .day-row { background: var(--dark); border: 2px solid var(--border); border-radius: 10px; display: flex; flex-direction: row; align-items: stretch; min-height: 52px; transition: border-color 0.15s, background 0.15s; overflow: hidden; }
   .day-row.drop-active { border-color: var(--accent); background: rgba(200,241,53,0.04); }
   .day-label { width: 72px; flex-shrink: 0; padding: 6px 10px; border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; }
-  .day-name { font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .day-name { font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; font-family: 'Syne', sans-serif; }
   .day-date { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-bottom: 2px; letter-spacing: 0.5px; }
   .day-date { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 1px; }
   .day-count { font-family: 'DM Mono', monospace; font-size: 11px; color: #aaa; margin-top: 7px; }
@@ -65,7 +65,7 @@
 
   /* DAY SUMMARY */
   .day-summary-box { background: var(--dark); border: 1px solid var(--border); border-radius: 14px; padding: 20px 16px; width: 100%; max-width: 100%; max-height: 85vh; overflow-y: auto; }
-  .day-summary-box h2 { font-size: 18px; font-weight: 800; color: var(--accent); margin-bottom: 16px; }
+  .day-summary-box h2 { font-size: 18px; font-weight: 800; color: var(--accent); margin-bottom: 16px; font-family: 'Syne', sans-serif; }
   .day-summary-cat { margin-bottom: 14px; }
   .day-summary-cat-title { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
   .day-summary-cat-title.alt { color: var(--alt); }
@@ -146,7 +146,7 @@
   .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; overscroll-behavior: contain; }
   .overlay.hidden { display: none; }
   .modal { background: var(--dark); border: 1px solid var(--border); border-radius: 14px; padding: 24px 20px; width: 100%; max-width: 500px; }
-  .modal-title { font-size: 16px; font-weight: 800; margin-bottom: 4px; color: var(--accent); }
+  .modal-title { font-size: 16px; font-weight: 800; margin-bottom: 4px; color: var(--accent); font-family: 'Syne', sans-serif; }
   .modal-sub { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 18px; letter-spacing: 1px; text-transform: uppercase; }
   .form-row { margin-bottom: 10px; }
   .form-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; display: block; }
