@@ -525,6 +525,19 @@
   </div>
 </div>
 
+<div class="overlay hidden" id="timerModal">
+  <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:28px 24px;width:100%;max-width:320px;text-align:center;">
+    <div class="modal-title" style="font-family:'Syne',sans-serif;margin-bottom:20px;">TIMER</div>
+    <div id="timerDisplay" style="font-family:'DM Mono',monospace;font-size:52px;font-weight:500;color:var(--text);letter-spacing:2px;margin-bottom:28px;">00:00:00</div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:16px;">
+      <button id="timerStart" class="btn-primary" style="flex:1;min-height:44px;">Start</button>
+      <button id="timerStop" class="btn-secondary" style="flex:1;min-height:44px;">Stop</button>
+      <button id="timerReset" class="btn-cancel" style="flex:1;min-height:44px;">Reset</button>
+    </div>
+    <button class="btn-cancel" id="timerClose" style="width:100%;">Close</button>
+  </div>
+</div>
+
 <div class="overlay hidden" id="clearModal">
   <div class="confirm-box">
     <p>Clear all exercises from <strong id="clearDayName"></strong>?</p>
@@ -1115,6 +1128,12 @@ function buildWeek() {
     addDayBtn.addEventListener('pointerdown',e=>e.stopPropagation());
     addDayBtn.addEventListener('click',()=>openBatchAddModal(day));
     actions.appendChild(addDayBtn);
+    const timerDayBtn=document.createElement('button');
+    timerDayBtn.className='clear-btn'; timerDayBtn.textContent='Timer';
+    timerDayBtn.style.cssText='border-color:#555;color:#666;';
+    timerDayBtn.addEventListener('pointerdown',e=>e.stopPropagation());
+    timerDayBtn.addEventListener('click',()=>openTimerModal());
+    actions.appendChild(timerDayBtn);
     row.appendChild(label); row.appendChild(body); row.appendChild(actions);
     grid.appendChild(row);
   });
@@ -2824,6 +2843,47 @@ document.getElementById('reportModal').addEventListener('click', e=>{ if(e.targe
 document.getElementById('repCalPrev').addEventListener('click', ()=>{ repCalMonth--; if(repCalMonth<0){repCalMonth=11;repCalYear--;} renderRepCal(); });
 document.getElementById('repCalNext').addEventListener('click', ()=>{ repCalMonth++; if(repCalMonth>11){repCalMonth=0;repCalYear++;} renderRepCal(); });
 document.getElementById('generateReportBtn').addEventListener('click', generateReport);
+
+// ── Timer ─────────────────────────────────────────────────────────────
+let _timerSecs = 0, _timerRunning = false, _timerInterval = null;
+
+function timerFmt(s) {
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), ss = s%60;
+  return [h,m,ss].map(n=>String(n).padStart(2,'0')).join(':');
+}
+function timerTick() {
+  _timerSecs++;
+  document.getElementById('timerDisplay').textContent = timerFmt(_timerSecs);
+}
+function openTimerModal() {
+  document.getElementById('timerModal').classList.remove('hidden');
+  document.getElementById('timerDisplay').textContent = timerFmt(_timerSecs);
+}
+document.getElementById('timerStart').addEventListener('click', () => {
+  if (_timerRunning) return;
+  _timerRunning = true;
+  _timerInterval = setInterval(timerTick, 1000);
+  document.getElementById('timerDisplay').style.color = 'var(--accent)';
+});
+document.getElementById('timerStop').addEventListener('click', () => {
+  if (!_timerRunning) return;
+  _timerRunning = false;
+  clearInterval(_timerInterval);
+  document.getElementById('timerDisplay').style.color = 'var(--text)';
+});
+document.getElementById('timerReset').addEventListener('click', () => {
+  _timerRunning = false;
+  clearInterval(_timerInterval);
+  _timerSecs = 0;
+  document.getElementById('timerDisplay').textContent = '00:00:00';
+  document.getElementById('timerDisplay').style.color = 'var(--text)';
+});
+document.getElementById('timerClose').addEventListener('click', () => {
+  document.getElementById('timerModal').classList.add('hidden');
+});
+document.getElementById('timerModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('timerModal')) document.getElementById('timerModal').classList.add('hidden');
+});
 
 </script>
 </body>
