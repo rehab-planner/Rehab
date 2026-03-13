@@ -228,9 +228,8 @@
   <div class="bank-cols">
     <div class="bank-section" id="bank-section-fav">
       <div class="bank-section-header" style="background:rgba(255,200,0,0.07);" onclick="toggleBankSection('fav')">
-        <span class="bank-col-title" style="color:#f5c518;">⭐ Favorites</span>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <button onclick="event.stopPropagation();openEditCatModal('fav')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+        <div style="display:flex;align-items:center;gap:6px;flex:1;">
+          <span class="bank-col-title" style="color:#f5c518;">⭐ Favorites</span>
           <span class="bank-section-chevron" id="bank-chev-fav">▼</span>
         </div>
       </div>
@@ -238,31 +237,34 @@
     </div>
     <div class="bank-section" id="bank-section-alt">
       <div class="bank-section-header alt" onclick="toggleBankSection('alt')">
-        <span class="bank-col-title alt">Physio</span>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <button onclick="event.stopPropagation();openEditCatModal('alt')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+        <div style="display:flex;align-items:center;gap:6px;flex:1;">
+          <span class="bank-col-title alt">Physio</span>
           <span class="bank-section-chevron" id="bank-chev-alt">▼</span>
         </div>
+        <button onclick="event.stopPropagation();openAddModalForCat('alt')" style="background:none;border:1px dashed var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:6px;cursor:pointer;margin-right:8px;">+ add</button>
+        <button onclick="event.stopPropagation();openEditCatModal('alt')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
       </div>
       <div class="bank-section-body" id="bank-body-alt"><div id="bank-alt"></div></div>
     </div>
     <div class="bank-section" id="bank-section-arm">
       <div class="bank-section-header arm" onclick="toggleBankSection('arm')">
-        <span class="bank-col-title arm">Arm</span>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <button onclick="event.stopPropagation();openEditCatModal('arm')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+        <div style="display:flex;align-items:center;gap:6px;flex:1;">
+          <span class="bank-col-title arm">Arm</span>
           <span class="bank-section-chevron" id="bank-chev-arm">▼</span>
         </div>
+        <button onclick="event.stopPropagation();openAddModalForCat('arm')" style="background:none;border:1px dashed var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:6px;cursor:pointer;margin-right:8px;">+ add</button>
+        <button onclick="event.stopPropagation();openEditCatModal('arm')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
       </div>
       <div class="bank-section-body" id="bank-body-arm"><div id="bank-arm"></div></div>
     </div>
     <div class="bank-section" id="bank-section-leg">
       <div class="bank-section-header leg" onclick="toggleBankSection('leg')">
-        <span class="bank-col-title leg">Leg</span>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <button onclick="event.stopPropagation();openEditCatModal('leg')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+        <div style="display:flex;align-items:center;gap:6px;flex:1;">
+          <span class="bank-col-title leg">Leg</span>
           <span class="bank-section-chevron" id="bank-chev-leg">▼</span>
         </div>
+        <button onclick="event.stopPropagation();openAddModalForCat('leg')" style="background:none;border:1px dashed var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:6px;cursor:pointer;margin-right:8px;">+ add</button>
+        <button onclick="event.stopPropagation();openEditCatModal('leg')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
       </div>
       <div class="bank-section-body" id="bank-body-leg"><div id="bank-leg"></div></div>
     </div>
@@ -965,11 +967,12 @@ function renderBankSections() {
     const colorRgb = hexToRgb(cc.color);
     section.innerHTML = `
       <div class="bank-section-header" style="background:rgba(${colorRgb},0.07);" onclick="toggleBankSection('${cc.id}')">
-        <span class="bank-col-title" style="color:${cc.color};">${cc.name}</span>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <button onclick="event.stopPropagation();openEditCatModal('${cc.id}')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
+        <div style="display:flex;align-items:center;gap:6px;flex:1;">
+          <span class="bank-col-title" style="color:${cc.color};">${cc.name}</span>
           <span class="bank-section-chevron" id="bank-chev-${cc.id}">▼</span>
         </div>
+        <button onclick="event.stopPropagation();openAddModalForCat('${cc.id}')" style="background:none;border:1px dashed var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:6px;cursor:pointer;margin-right:8px;">+ add</button>
+        <button onclick="event.stopPropagation();openEditCatModal('${cc.id}')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:'DM Mono',monospace;">✎</button>
       </div>
       <div class="bank-section-body" id="bank-body-${cc.id}"><div id="bank-${cc.id}"></div></div>`;
     container.appendChild(section);
@@ -1389,9 +1392,14 @@ function openAddModal() {
   document.getElementById('newTime').value='0';
   selectedCat='arm'; updateCatBtns();
   const sb = document.getElementById('favStarBtn');
-  sb.style.display='none'; sb.textContent='☆'; sb.style.opacity='0.3'; sb.dataset.fav='0';
+  sb.style.display=''; sb.textContent='☆'; sb.style.opacity='0.35'; sb.dataset.fav='0';
   document.getElementById('addModal').classList.remove('hidden');
   setTimeout(()=>document.getElementById('newName').focus(),50);
+}
+
+function openAddModalForCat(cat) {
+  openAddModal();
+  selectedCat = cat; updateCatBtns();
 }
 
 function openEditBankModal(cat, idx) {
@@ -2283,30 +2291,42 @@ function openBatchAddModal(day) {
     const header = document.createElement('div');
     header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;background:${catBg[cat]};`;
     const headerLabel = document.createElement('span');
-    headerLabel.style.cssText = `font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${color};flex:1;`;
+    headerLabel.style.cssText = `font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${color};`;
     headerLabel.textContent = catNames[cat];
 
-    const headerRight = document.createElement('div');
-    headerRight.style.cssText = 'display:flex;align-items:center;gap:6px;';
+    const headerLeft = document.createElement('div');
+    headerLeft.style.cssText = 'display:flex;align-items:center;gap:6px;flex:1;';
+    headerLeft.appendChild(headerLabel);
 
-    // Pencil — only for editable cats (not fav)
+    const chev = document.createElement('span');
+    chev.style.cssText = `font-size:10px;color:var(--muted);transition:transform 0.2s;`;
+    chev.textContent = '▼';
+    headerLeft.appendChild(chev);
+
+    const headerRight = document.createElement('div');
+    headerRight.style.cssText = 'display:flex;align-items:center;gap:8px;';
+
+    // Pencil + add — only for editable cats (not fav)
     if (cat !== 'fav') {
+      const addBtn = document.createElement('button');
+      addBtn.textContent = '+ add';
+      addBtn.style.cssText = 'background:none;border:1px dashed var(--border);color:var(--muted);font-family:"DM Mono",monospace;font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:6px;cursor:pointer;';
+      addBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        document.getElementById('batchAddModal').classList.add('hidden');
+        unlockBodyScroll();
+        openAddModalForCat(cat);
+      });
+      headerRight.appendChild(addBtn);
+
       const pencil = document.createElement('button');
       pencil.textContent = '✎';
       pencil.style.cssText = 'background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.5;font-family:"DM Mono",monospace;line-height:1;';
       pencil.addEventListener('click', e => {
         e.stopPropagation();
-        // Close batch modal, open cat edit, reopen batch after
         document.getElementById('batchAddModal').classList.add('hidden');
         unlockBodyScroll();
         openEditCatModal(cat);
-        // After cat modal closes (save or cancel), reopen batch modal
-        function onCatModalClose() {
-          if (!document.getElementById('addCatModal').classList.contains('hidden')) return;
-          document.removeEventListener('click', onCatModalClose, true);
-          openBatchAddModal(batchAddDay);
-        }
-        // Poll for cat modal close
         const poll = setInterval(() => {
           if (document.getElementById('addCatModal').classList.contains('hidden')) {
             clearInterval(poll);
@@ -2317,12 +2337,7 @@ function openBatchAddModal(day) {
       headerRight.appendChild(pencil);
     }
 
-    const chev = document.createElement('span');
-    chev.style.cssText = `font-size:10px;color:var(--muted);transition:transform 0.2s;`;
-    chev.textContent = '▼';
-    headerRight.appendChild(chev);
-
-    header.appendChild(headerLabel); header.appendChild(headerRight);
+    header.appendChild(headerLeft); header.appendChild(headerRight);
     header.addEventListener('click', () => toggleCat(cat));
 
     // Body
