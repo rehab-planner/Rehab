@@ -579,8 +579,8 @@
     <div id="addCatConfirmDelete" style="display:none;margin-top:14px;padding:14px;background:#1a1a1a;border:1px solid #f13570;border-radius:10px;">
       <div style="font-size:13px;color:var(--text);margin-bottom:12px;line-height:1.5;">Delete <strong id="addCatConfirmName"></strong>? Exercises in this category will be removed from the bank. Any already scheduled in your week will remain.</div>
       <div style="display:flex;gap:8px;">
-        <button class="btn-cancel" id="addCatConfirmNo" style="flex:1;min-height:40px;font-size:13px;">Cancel</button>
-        <button class="btn-danger" id="addCatConfirmYes" style="flex:1;min-height:40px;font-size:13px;">Delete</button>
+        <button class="btn-cancel" id="addCatConfirmNo" style="flex:1;min-height:44px;font-size:13px;">Cancel</button>
+        <button class="btn-danger" id="addCatConfirmYes" style="flex:1;min-height:44px;font-size:13px;">Delete</button>
       </div>
     </div>
   </div>
@@ -2453,7 +2453,7 @@ function openBatchAddModal(day) {
 
     exItems.forEach(({ex, realCat, idx}) => {
       const row = document.createElement('div');
-      row.style.cssText = `display:flex;align-items:center;gap:10px;padding:6px 12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:#1a1a1a;transition:all 0.15s;margin-bottom:6px;min-height:44px;box-sizing:border-box;`;
+      row.style.cssText = `display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:#1a1a1a;transition:all 0.15s;margin-bottom:6px;height:44px;box-sizing:border-box;`;
       row.dataset.selected = '0';
       row.dataset.cat = realCat;
       row.dataset.idx = idx;
