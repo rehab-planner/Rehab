@@ -2404,7 +2404,7 @@ function openBatchAddModal(day) {
     if (cat !== 'fav') {
       const addBtn = document.createElement('button');
       addBtn.textContent = '+ add';
-      addBtn.style.cssText = 'background:none;border:1px dashed var(--border);color:var(--muted);font-family:Arial,sans-serif;font-size:9px;letter-spacing:1px;padding:0 6px;border-radius:6px;cursor:pointer;height:20px;min-height:0;box-sizing:border-box;display:flex;align-items:center;';
+      addBtn.style.cssText = 'background:none;border:1px dashed var(--border);color:var(--muted);font-family:Arial,sans-serif;font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:6px;cursor:pointer;margin-right:0;';
       addBtn.addEventListener('click', e => {
         e.stopPropagation();
         document.getElementById('batchAddModal').classList.add('hidden');
@@ -2425,7 +2425,7 @@ function openBatchAddModal(day) {
 
       const pencil = document.createElement('button');
       pencil.textContent = '✎';
-      pencil.style.cssText = 'background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0;opacity:0.58;font-family:Arial,sans-serif;height:20px;min-height:0;line-height:20px;display:flex;align-items:center;';
+      pencil.style.cssText = 'background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.58;font-family:Arial,sans-serif;';
       pencil.addEventListener('click', e => {
         e.stopPropagation();
         document.getElementById('batchAddModal').classList.add('hidden');
@@ -2453,7 +2453,7 @@ function openBatchAddModal(day) {
 
     exItems.forEach(({ex, realCat, idx}) => {
       const row = document.createElement('div');
-      row.style.cssText = `display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:#1a1a1a;transition:all 0.15s;margin-bottom:6px;height:44px;box-sizing:border-box;`;
+      row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:#1a1a1a;transition:all 0.15s;margin-bottom:6px;`;
       row.dataset.selected = '0';
       row.dataset.cat = realCat;
       row.dataset.idx = idx;
