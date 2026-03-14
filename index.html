@@ -2383,7 +2383,7 @@ function openBatchAddModal(day) {
     section.style.cssText = `border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:6px;`;
 
     const header = document.createElement('div');
-    header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:6px 12px;cursor:pointer;background:${catBg[cat]};min-height:44px;box-sizing:border-box;`;
+    header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:0 12px;cursor:pointer;background:${catBg[cat]};height:44px;box-sizing:border-box;`;
     const headerLabel = document.createElement('span');
     headerLabel.style.cssText = `font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${color};`;
     headerLabel.textContent = catNames[cat];
@@ -2404,7 +2404,7 @@ function openBatchAddModal(day) {
     if (cat !== 'fav') {
       const addBtn = document.createElement('button');
       addBtn.textContent = '+ add';
-      addBtn.style.cssText = 'background:none;border:1px dashed var(--border);color:var(--muted);font-family:Arial, sans-serif;font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:6px;cursor:pointer;';
+      addBtn.style.cssText = 'background:none;border:1px dashed var(--border);color:var(--muted);font-family:Arial, sans-serif;font-size:9px;letter-spacing:1px;padding:2px 6px;border-radius:6px;cursor:pointer;line-height:1;';
       addBtn.addEventListener('click', e => {
         e.stopPropagation();
         document.getElementById('batchAddModal').classList.add('hidden');
@@ -2425,7 +2425,7 @@ function openBatchAddModal(day) {
 
       const pencil = document.createElement('button');
       pencil.textContent = '✎';
-      pencil.style.cssText = 'background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px;opacity:0.58;font-family:Arial, sans-serif;line-height:1;';
+      pencil.style.cssText = 'background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0 2px;opacity:0.58;font-family:Arial, sans-serif;line-height:1;';
       pencil.addEventListener('click', e => {
         e.stopPropagation();
         document.getElementById('batchAddModal').classList.add('hidden');
