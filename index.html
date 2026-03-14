@@ -1729,6 +1729,11 @@ document.getElementById('addSaveBtn').addEventListener('click',()=>{
   }
   document.getElementById('addModal').classList.add('hidden');
   saveState();
+  // If on front page (not batch modal), expand the saved category
+  if (!batchAddDay) {
+    const catToOpen = selectedCat === 'fav' ? 'fav' : selectedCat;
+    if (openBankSection !== catToOpen) toggleBankSection(catToOpen);
+  }
 });
 
 // ── Plan Modal (drop to day) ───────────────────────────────────────────
