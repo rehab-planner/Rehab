@@ -1427,10 +1427,12 @@ let selectedCat='arm';
 let editBankTarget=null; // {cat, idx} when editing existing
 let _batchSaveListener = null; // stale once-listener to clean up
 let _batchCancelListener = null;
+let _inBatchContext = false; // true only when addModal opened from batch flow
 
 function _clearBatchListeners() {
   if (_batchSaveListener) { document.getElementById('addSaveBtn').removeEventListener('click', _batchSaveListener); _batchSaveListener = null; }
   if (_batchCancelListener) { document.getElementById('addCancelBtn').removeEventListener('click', _batchCancelListener); _batchCancelListener = null; }
+  _inBatchContext = false;
 }
 
 function openAddModal() {
@@ -2432,18 +2434,20 @@ function openBatchAddModal(day) {
         unlockBodyScroll();
         _batchExpandCat = cat;
         openAddModalForCat(cat);
+        _inBatchContext = true;
         _batchSaveListener = () => {
+          if (!_inBatchContext) return;
           const newName = document.getElementById('newName').value.trim();
           if (newName) {
             _batchPreselectEx = newName;
             _batchExpandCat = selectedCat;
           }
-          _batchSaveListener = null; _batchCancelListener = null;
+          _batchSaveListener = null; _batchCancelListener = null; _inBatchContext = false;
           setTimeout(() => openBatchAddModal(batchAddDay), 50);
         };
         _batchCancelListener = () => {
           _batchExpandCat = null; _batchPreselectEx = null;
-          _batchSaveListener = null; _batchCancelListener = null;
+          _batchSaveListener = null; _batchCancelListener = null; _inBatchContext = false;
         };
         document.getElementById('addSaveBtn').addEventListener('click', _batchSaveListener, {once: true});
         document.getElementById('addCancelBtn').addEventListener('click', _batchCancelListener, {once: true});
@@ -2517,8 +2521,9 @@ function openBatchAddModal(day) {
         document.getElementById('batchAddModal').classList.add('hidden');
         unlockBodyScroll();
         openEditBankModal(realCat, idx);
-        _batchSaveListener = () => { _batchSaveListener=null; _batchCancelListener=null; openBatchAddModal(batchAddDay); };
-        _batchCancelListener = () => { _batchSaveListener=null; _batchCancelListener=null; openBatchAddModal(batchAddDay); };
+        _inBatchContext = true;
+        _batchSaveListener = () => { _batchSaveListener=null; _batchCancelListener=null; _inBatchContext=false; openBatchAddModal(batchAddDay); };
+        _batchCancelListener = () => { _batchSaveListener=null; _batchCancelListener=null; _inBatchContext=false; openBatchAddModal(batchAddDay); };
         document.getElementById('addSaveBtn').addEventListener('click', _batchSaveListener, {once:true});
         document.getElementById('addCancelBtn').addEventListener('click', _batchCancelListener, {once:true});
       });
