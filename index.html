@@ -1398,7 +1398,7 @@ function updateTotal() {
   });
   function timePair(done,plan) {
     if(plan===0) return '<span style="color:var(--muted)">—</span>';
-    return `<strong style="color:#f0f0f0">${fmtMin(Math.round(done))}</strong><span style="color:var(--muted)"> / ${fmtMin(Math.round(plan))}</span>`;
+    return `<strong style="color:var(--accent)">${fmtMin(Math.round(done))}</strong><span style="color:var(--muted)"> / ${fmtMin(Math.round(plan))}</span>`;
   }
   // Collect all cat ids present, in order: built-ins, active custom, orphaned
   const knownIds = new Set(['alt','arm','leg',...customCats.map(c=>c.id)]);
