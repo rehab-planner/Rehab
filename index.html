@@ -1680,10 +1680,6 @@ document.getElementById('addCatConfirmYes').addEventListener('click', () => {
 document.getElementById('addCancelBtn').addEventListener('click',()=>{
   document.getElementById('addModal').classList.add('hidden');
   editBankTarget=null;
-  if (_inBatchContext && batchAddDay) {
-    _inBatchContext = false;
-    openBatchAddModal(batchAddDay);
-  }
 });
 
 document.getElementById('addModal').addEventListener('click',e=>{ if(e.target===document.getElementById('addModal')){ document.getElementById('addModal').classList.add('hidden'); editBankTarget=null; }});
@@ -2463,8 +2459,9 @@ function openBatchAddModal(day) {
           setTimeout(() => openBatchAddModal(batchAddDay), 50);
         };
         _batchCancelListener = () => {
-          _batchExpandCat = null; _batchPreselectEx = null;
+          _batchPreselectEx = null;
           _batchSaveListener = null; _batchCancelListener = null; _inBatchContext = false;
+          if (batchAddDay) { _batchExpandCat = cat; openBatchAddModal(batchAddDay); }
         };
         document.getElementById('addSaveBtn').addEventListener('click', _batchSaveListener, {once: true});
         document.getElementById('addCancelBtn').addEventListener('click', _batchCancelListener, {once: true});
@@ -2539,8 +2536,9 @@ function openBatchAddModal(day) {
         unlockBodyScroll();
         openEditBankModal(realCat, idx);
         _inBatchContext = true;
-        _batchSaveListener = () => { _batchSaveListener=null; _batchCancelListener=null; _inBatchContext=false; openBatchAddModal(batchAddDay); };
-        _batchCancelListener = () => { _batchSaveListener=null; _batchCancelListener=null; _inBatchContext=false; openBatchAddModal(batchAddDay); };
+        const _savedExpandCat = realCat;
+        _batchSaveListener = () => { _batchSaveListener=null; _batchCancelListener=null; _inBatchContext=false; _batchExpandCat=_savedExpandCat; openBatchAddModal(batchAddDay); };
+        _batchCancelListener = () => { _batchSaveListener=null; _batchCancelListener=null; _inBatchContext=false; _batchExpandCat=_savedExpandCat; openBatchAddModal(batchAddDay); };
         document.getElementById('addSaveBtn').addEventListener('click', _batchSaveListener, {once:true});
         document.getElementById('addCancelBtn').addEventListener('click', _batchCancelListener, {once:true});
       });
