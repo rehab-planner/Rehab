@@ -2060,7 +2060,10 @@ document.getElementById('removeYes').addEventListener('click',()=>{
   const {day,idx}=removeTarget;
   schedule[day].splice(idx,1); renderDay(day); updateTotal(); saveState();
   document.getElementById('removeModal').classList.add('hidden');
+  document.getElementById('editModal').classList.add('hidden');
+  editTarget=null;
   removeTarget=null;
+  openDaySummary(day, false);
 });
 document.getElementById('removeModal').addEventListener('click',e=>{ if(e.target===document.getElementById('removeModal')){ document.getElementById('removeModal').classList.add('hidden'); removeTarget=null; } });
 
@@ -2318,6 +2321,7 @@ let batchAddDay = null;
 
 // Track when fav was manually collapsed
 let _favCollapsedAt = 0;
+let _batchFavOpen = false; // tracks if fav is currently open in batch modal
 let _batchExpandCat = null; // cat to expand + preselect after new exercise saved
 let _batchPreselectEx = null; // {cat, name} to preselect
 
@@ -2357,8 +2361,9 @@ function openBatchAddModal(day) {
       sections[cat].body.style.display = 'block';
       sections[cat].chev.style.transform = 'rotate(180deg)';
       openCat = cat;
+      if (cat === 'fav') _batchFavOpen = true;
     } else {
-      if (cat === 'fav') _favCollapsedAt = Date.now();
+      if (cat === 'fav') { _favCollapsedAt = Date.now(); _batchFavOpen = false; }
       openCat = null;
     }
   }
@@ -2548,6 +2553,7 @@ function openBatchAddModal(day) {
 }
 
 document.getElementById('batchAddClose').addEventListener('click', () => {
+  if (typeof openCatRef !== 'undefined' && openCatRef === 'fav') _favCollapsedAt = Date.now();
   document.getElementById('batchAddModal').classList.add('hidden');
   unlockBodyScroll();
 });
