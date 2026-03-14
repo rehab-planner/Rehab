@@ -230,7 +230,7 @@
   </div>
   <div class="bank-cols">
     <div class="bank-section" id="bank-section-fav">
-      <div class="bank-section-header" style="background:rgba(255,200,0,0.07);" onclick="toggleBankSection('fav')">
+      <div class="bank-section-header" style="background:rgba(255,200,0,0.07);padding:10px 12px;" onclick="toggleBankSection('fav')">
         <div style="display:flex;align-items:center;gap:6px;flex:1;">
           <span class="bank-col-title" style="color:#f5c518;">⭐ Favorites</span>
           <span class="bank-section-chevron" id="bank-chev-fav">▼</span>
@@ -2383,7 +2383,7 @@ function openBatchAddModal(day) {
     section.style.cssText = `border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:6px;`;
 
     const header = document.createElement('div');
-    header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:7px 12px;cursor:pointer;background:${catBg[cat]};`;
+    header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:${cat==='fav'?'10px':'7px'} 12px;cursor:pointer;background:${catBg[cat]};`;
     const headerLabel = document.createElement('span');
     headerLabel.style.cssText = `font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${color};`;
     headerLabel.textContent = catNames[cat];
