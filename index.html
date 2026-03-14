@@ -203,6 +203,40 @@
   @supports (padding-bottom: env(safe-area-inset-bottom)) {
     body { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
   }
+
+  /* AI FAB */
+  #aiFab { position: fixed; bottom: 24px; right: 20px; z-index: 9000; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,0,0,0.5); transition: transform 0.15s, opacity 0.15s; }
+  #aiFab:active { transform: scale(0.93); }
+  #aiFab svg { width: 24px; height: 24px; }
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    #aiFab { bottom: calc(24px + env(safe-area-inset-bottom)); }
+  }
+
+  /* AI Chat Modal */
+  #aiModal { position: fixed; inset: 0; z-index: 10500; display: flex; align-items: flex-end; justify-content: center; padding: 0; background: rgba(0,0,0,0.7); }
+  #aiModal.hidden { display: none; }
+  #aiSheet { background: var(--dark); border: 1px solid var(--border); border-radius: 18px 18px 0 0; width: 100%; max-width: 520px; height: 75vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+  #aiSheetHeader { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  #aiSheetHeader .modal-title { margin: 0; font-size: 15px; }
+  #aiCloseBtn { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; padding: 0; line-height: 1; }
+  #aiMessages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
+  .ai-msg { max-width: 88%; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.55; padding: 10px 13px; border-radius: 12px; white-space: pre-wrap; }
+  .ai-msg.user { background: rgba(106,136,24,0.18); border: 1px solid rgba(106,136,24,0.3); color: var(--text); align-self: flex-end; border-radius: 12px 12px 3px 12px; }
+  .ai-msg.assistant { background: var(--card); border: 1px solid var(--border); color: var(--text); align-self: flex-start; border-radius: 12px 12px 12px 3px; }
+  .ai-msg.thinking { color: var(--muted); font-style: italic; }
+  #aiSuggestRow { display: flex; gap: 6px; padding: 8px 16px 4px; flex-shrink: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  #aiSuggestRow::-webkit-scrollbar { display: none; }
+  .ai-suggest-chip { background: none; border: 1px solid var(--border); color: var(--muted); font-family: Arial, sans-serif; font-size: 11px; letter-spacing: 0.3px; padding: 5px 10px; border-radius: 20px; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; }
+  .ai-suggest-chip:hover, .ai-suggest-chip:active { border-color: var(--accent); color: var(--accent); }
+  #aiInputRow { display: flex; gap: 8px; padding: 10px 16px 16px; border-top: 1px solid var(--border); flex-shrink: 0; align-items: flex-end; }
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    #aiInputRow { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+  }
+  #aiInput { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text); font-family: Arial, sans-serif; font-size: 14px; outline: none; resize: none; min-height: 42px; max-height: 100px; line-height: 1.4; user-select: text; -webkit-user-select: text; }
+  #aiInput:focus { border-color: var(--accent); }
+  #aiSendBtn { background: var(--accent); border: none; border-radius: 10px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: opacity 0.15s; }
+  #aiSendBtn:active { opacity: 0.8; }
+  #aiSendBtn svg { width: 18px; height: 18px; }
 </style>
 </head>
 <body>
@@ -2976,6 +3010,325 @@ document.getElementById('timerModal').addEventListener('click', e => {
   if (e.target === document.getElementById('timerModal')) document.getElementById('timerModal').classList.add('hidden');
 });
 
+</script>
+
+<!-- AI FAB -->
+<button id="aiFab" title="Rehab AI">
+  <svg viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2a4 4 0 0 1 4 4v1h1a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-1v1a4 4 0 0 1-8 0v-1H7a3 3 0 0 1-3-3v-2a3 3 0 0 1 3-3h1V6a4 4 0 0 1 4-4z"/>
+    <circle cx="9.5" cy="9.5" r="0.8" fill="#0a0a0a" stroke="none"/>
+    <circle cx="14.5" cy="9.5" r="0.8" fill="#0a0a0a" stroke="none"/>
+    <path d="M9 13.5c.8 1 2.2 1.5 3 1.5s2.2-.5 3-1.5"/>
+  </svg>
+</button>
+
+<!-- AI CHAT MODAL -->
+<div id="aiModal" class="hidden">
+  <div id="aiSheet">
+    <div id="aiSheetHeader">
+      <div class="modal-title">REHAB AI</div>
+      <button id="aiCloseBtn">×</button>
+    </div>
+    <div id="aiMessages"></div>
+    <div id="aiSuggestRow">
+      <button class="ai-suggest-chip" data-q="Plan a balanced week using my exercises">Plan my week</button>
+      <button class="ai-suggest-chip" data-q="Put all leg exercises on Monday, Wednesday and Friday">Leg days MWF</button>
+      <button class="ai-suggest-chip" data-q="Clear the whole week and start fresh">Clear week</button>
+      <button class="ai-suggest-chip" data-q="What exercises do I have scheduled today?">Today's plan</button>
+      <button class="ai-suggest-chip" data-q="Spread my exercises evenly across the week with rest days">Balance week</button>
+    </div>
+    <div id="aiInputRow">
+      <textarea id="aiInput" placeholder="Ask about your rehab plan…" rows="1"></textarea>
+      <button id="aiSendBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Rehab AI with Tool Bridge ─────────────────────────────────────────────────
+(function(){
+  const fab      = document.getElementById('aiFab');
+  const modal    = document.getElementById('aiModal');
+  const closeBtn = document.getElementById('aiCloseBtn');
+  const msgsEl   = document.getElementById('aiMessages');
+  const inputEl  = document.getElementById('aiInput');
+  const sendBtn  = document.getElementById('aiSendBtn');
+  const suggestRow = document.getElementById('aiSuggestRow');
+
+  let chatHistory = [];
+  let thinking = false;
+
+  // ── App context snapshot ──────────────────────────────────────────────
+  function getAppContext() {
+    try {
+      const allEx = [];
+      const cats = ['fav','arm','leg','alt', ...customCats.map(c=>c.id)];
+      cats.forEach(cat => {
+        const list = exercises[cat] || [];
+        list.forEach(e => allEx.push(`${e.name} [cat:${cat}]${e.sets?` sets:${e.sets}`:''}${e.reps?` reps:${e.reps}`:''}${e.mins?` mins:${e.mins}`:''}`));
+      });
+      const bankStr = allEx.length ? allEx.join('\n') : 'Empty bank';
+
+      const sched = currentSchedule();
+      const schedLines = DAYS.map(d => {
+        const items = sched[d] || [];
+        return items.length ? `${d}: ${items.map(i=>i.name).join(', ')}` : `${d}: (empty)`;
+      });
+
+      return `EXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}`;
+    } catch(e) { return 'Unable to read app data.'; }
+  }
+
+  // ── Tool definitions ──────────────────────────────────────────────────
+  const AI_TOOLS = [
+    {
+      name: 'add_exercise_to_day',
+      description: 'Add an exercise from the bank to a specific day of the current week. Only use exercise names that exist in the exercise bank.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          exercise_name: { type: 'string', description: 'Exact name of the exercise from the bank' },
+          day: { type: 'string', enum: ['MON','TUE','WED','THU','FRI','SAT','SUN'], description: 'Day of the week' }
+        },
+        required: ['exercise_name', 'day']
+      }
+    },
+    {
+      name: 'remove_exercise_from_day',
+      description: 'Remove an exercise from a specific day of the current week.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          exercise_name: { type: 'string', description: 'Exact name of the exercise to remove' },
+          day: { type: 'string', enum: ['MON','TUE','WED','THU','FRI','SAT','SUN'] }
+        },
+        required: ['exercise_name', 'day']
+      }
+    },
+    {
+      name: 'clear_day',
+      description: 'Remove all exercises from a specific day.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          day: { type: 'string', enum: ['MON','TUE','WED','THU','FRI','SAT','SUN'] }
+        },
+        required: ['day']
+      }
+    },
+    {
+      name: 'clear_week',
+      description: 'Remove all exercises from all days of the current week.',
+      input_schema: { type: 'object', properties: {} }
+    }
+  ];
+
+  // ── Tool executor ─────────────────────────────────────────────────────
+  function executeTool(name, input) {
+    try {
+      if (name === 'add_exercise_to_day') {
+        const { exercise_name, day } = input;
+        // Find exercise in bank
+        let found = null;
+        const cats = ['fav','arm','leg','alt', ...customCats.map(c=>c.id)];
+        for (const cat of cats) {
+          const ex = (exercises[cat]||[]).find(e => e.name.toLowerCase() === exercise_name.toLowerCase());
+          if (ex) { found = { ...ex, cat }; break; }
+        }
+        if (!found) return { success: false, error: `Exercise "${exercise_name}" not found in bank` };
+        const sched = currentSchedule();
+        const alreadyThere = (sched[day]||[]).some(i => i.name.toLowerCase() === exercise_name.toLowerCase());
+        if (alreadyThere) return { success: false, error: `${exercise_name} is already on ${day}` };
+        sched[day].push({
+          name: found.name, cat: found.cat,
+          planned: { sets: found.sets||'', reps: found.reps||'', mins: found.mins||'' },
+          done: { sets:'', reps:'', mins:'' }, progress: 0
+        });
+        renderDay(day); updateTotal(); saveState();
+        return { success: true, message: `Added ${found.name} to ${day}` };
+      }
+
+      if (name === 'remove_exercise_from_day') {
+        const { exercise_name, day } = input;
+        const sched = currentSchedule();
+        const idx = (sched[day]||[]).findIndex(i => i.name.toLowerCase() === exercise_name.toLowerCase());
+        if (idx === -1) return { success: false, error: `${exercise_name} not found on ${day}` };
+        sched[day].splice(idx, 1);
+        renderDay(day); updateTotal(); saveState();
+        return { success: true, message: `Removed ${exercise_name} from ${day}` };
+      }
+
+      if (name === 'clear_day') {
+        const { day } = input;
+        const sched = currentSchedule();
+        sched[day] = [];
+        renderDay(day); updateTotal(); saveState();
+        return { success: true, message: `Cleared ${day}` };
+      }
+
+      if (name === 'clear_week') {
+        const sched = currentSchedule();
+        DAYS.forEach(d => { sched[d] = []; renderDay(d); });
+        updateTotal(); saveState();
+        return { success: true, message: 'Cleared entire week' };
+      }
+
+      return { success: false, error: `Unknown tool: ${name}` };
+    } catch(e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // ── Message UI ────────────────────────────────────────────────────────
+  function addMsg(role, text) {
+    const div = document.createElement('div');
+    div.className = `ai-msg ${role}`;
+    div.textContent = text;
+    msgsEl.appendChild(div);
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+    return div;
+  }
+
+  function addActionMsg(actions) {
+    const div = document.createElement('div');
+    div.className = 'ai-msg assistant';
+    div.style.cssText = 'border-color:rgba(106,136,24,0.4);background:rgba(106,136,24,0.08);font-size:12px;';
+    div.textContent = '✓ ' + actions.join('  •  ');
+    msgsEl.appendChild(div);
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  }
+
+  // ── Main send loop with tool use ──────────────────────────────────────
+  async function sendMessage(userText) {
+    if (!userText.trim() || thinking) return;
+    thinking = true;
+    sendBtn.style.opacity = '0.4';
+    suggestRow.style.display = 'none';
+
+    addMsg('user', userText.trim());
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+
+    chatHistory.push({ role: 'user', content: userText.trim() });
+
+    const thinkingEl = addMsg('assistant thinking', '…');
+
+    const systemPrompt = `You are a physiotherapy assistant built into the Rehab Planner app. You can read and modify the user's exercise schedule using tools.
+
+When the user asks you to arrange, plan, schedule, add, move, or remove exercises, use the tools to do it directly — don't just describe what to do.
+After making changes, give a brief 1–2 sentence summary of what you did.
+Be concise. No markdown. Plain text only.
+
+${getAppContext()}`;
+
+    try {
+      // Agentic loop — keep going while AI wants to use tools
+      let loopMessages = [...chatHistory];
+      let finalText = null;
+      const actionsDone = [];
+
+      while (true) {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1000,
+            system: systemPrompt,
+            tools: AI_TOOLS,
+            messages: loopMessages
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+          thinkingEl.textContent = 'API error: ' + (data.error.message || 'unknown');
+          thinkingEl.className = 'ai-msg assistant';
+          chatHistory.pop();
+          thinking = false;
+          sendBtn.style.opacity = '1';
+          return;
+        }
+
+        // Collect text and tool_use blocks
+        const textBlock = data.content.find(b => b.type === 'text');
+        const toolBlocks = data.content.filter(b => b.type === 'tool_use');
+
+        if (data.stop_reason === 'tool_use' && toolBlocks.length > 0) {
+          // Execute all tools
+          const toolResults = [];
+          toolBlocks.forEach(tb => {
+            const result = executeTool(tb.name, tb.input);
+            if (result.success) actionsDone.push(result.message);
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: tb.id,
+              content: JSON.stringify(result)
+            });
+          });
+
+          // Add assistant turn + tool results to loop
+          loopMessages.push({ role: 'assistant', content: data.content });
+          loopMessages.push({ role: 'user', content: toolResults });
+          // continue loop
+
+        } else {
+          // end_turn — we have final reply
+          finalText = textBlock?.text || (actionsDone.length ? 'Done.' : 'Sorry, something went wrong.');
+          break;
+        }
+      }
+
+      // Show actions taken
+      if (actionsDone.length) {
+        thinkingEl.remove();
+        addActionMsg(actionsDone);
+        if (finalText && finalText !== 'Done.') addMsg('assistant', finalText);
+      } else {
+        thinkingEl.textContent = finalText;
+        thinkingEl.className = 'ai-msg assistant';
+      }
+
+      chatHistory.push({ role: 'assistant', content: finalText });
+
+    } catch(e) {
+      thinkingEl.textContent = 'Connection error. Make sure the app is running on GitHub Pages.';
+      thinkingEl.className = 'ai-msg assistant';
+      chatHistory.pop();
+    }
+
+    thinking = false;
+    sendBtn.style.opacity = '1';
+  }
+
+  // ── Event listeners ───────────────────────────────────────────────────
+  fab.addEventListener('click', () => {
+    modal.classList.remove('hidden');
+    if (chatHistory.length === 0) {
+      addMsg('assistant', "Hi! I can see your exercise bank and current week. Tell me what you want — e.g. \"Put leg exercises Mon/Wed/Fri\" or \"Plan a light week\" — and I'll arrange it for you.");
+    }
+    setTimeout(() => inputEl.focus(), 300);
+  });
+
+  closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
+  sendBtn.addEventListener('click', () => sendMessage(inputEl.value));
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(inputEl.value); }
+  });
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 100) + 'px';
+  });
+  suggestRow.querySelectorAll('.ai-suggest-chip').forEach(chip => {
+    chip.addEventListener('click', () => sendMessage(chip.dataset.q));
+  });
+})();
 </script>
 </body>
 </html>
