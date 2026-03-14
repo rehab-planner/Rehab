@@ -1084,7 +1084,7 @@ function renderBankCol(cat) {
     del.className='bank-pill-del';
     del.textContent='×';
     del.addEventListener('pointerdown', e=>e.stopPropagation());
-    del.addEventListener('click', e=>{ e.stopPropagation(); openConfirmDelete(itemCat,idx,ex.name); });
+    del.addEventListener('click', e=>{ e.stopPropagation(); openConfirmDelete(itemCat,idx,ex.name,null,null,openBankSection); });
     pill.appendChild(del);
 
     container.appendChild(pill);
@@ -1477,7 +1477,7 @@ document.getElementById('editBankDeleteBtn').addEventListener('click', () => {
   const ex = exercises[cat][idx];
   document.getElementById('addModal').classList.add('hidden');
   editBankTarget = null;
-  openConfirmDelete(cat, idx, ex.name, batchAddDay);
+  openConfirmDelete(cat, idx, ex.name, batchAddDay, _batchOpenCat);
 });
 document.getElementById('addCatBtn').addEventListener('click', openAddCatModal);
 
@@ -2029,20 +2029,25 @@ document.getElementById('editSaveBtn').addEventListener('click',saveEdit);
 
 // ── Confirm Delete ────────────────────────────────────────────────────
 let deleteTarget=null;
-function openConfirmDelete(cat,idx,name,fromBatchDay=null) {
-  deleteTarget={cat,idx,name,fromBatchDay};
+function openConfirmDelete(cat,idx,name,fromBatchDay=null,expandCat=null,bankSection=null) {
+  deleteTarget={cat,idx,name,fromBatchDay,expandCat,bankSection};
   document.getElementById('confirmName').textContent=name;
   document.getElementById('confirmModal').classList.remove('hidden');
 }
 document.getElementById('confirmNo').addEventListener('click',()=>{ document.getElementById('confirmModal').classList.add('hidden'); deleteTarget=null; });
 document.getElementById('confirmYes').addEventListener('click',()=>{
   if (!deleteTarget) return;
-  const {cat,idx,name,fromBatchDay}=deleteTarget;
+  const {cat,idx,name,fromBatchDay,expandCat,bankSection}=deleteTarget;
   exercises[cat].splice(idx,1);
   renderBankCol(cat); renderBankCol('fav'); updateTotal(); saveState();
   document.getElementById('confirmModal').classList.add('hidden');
   deleteTarget=null;
-  if (fromBatchDay) openBatchAddModal(fromBatchDay);
+  if (fromBatchDay) {
+    _batchExpandCat = expandCat;
+    openBatchAddModal(fromBatchDay);
+  } else if (bankSection) {
+    toggleBankSection(bankSection);
+  }
 });
 document.getElementById('confirmModal').addEventListener('click',e=>{ if(e.target===document.getElementById('confirmModal')){ document.getElementById('confirmModal').classList.add('hidden'); deleteTarget=null; } });
 document.getElementById('clearNo').addEventListener('click',()=>{ document.getElementById('clearModal').classList.add('hidden'); });
@@ -2319,6 +2324,7 @@ let batchAddDay = null;
 
 // Track when fav was manually collapsed
 let _favCollapsedAt = 0;
+let _batchOpenCat = null; // currently open category in batch modal
 let _batchExpandCat = null; // cat to expand + preselect after new exercise saved
 let _batchPreselectEx = null; // {cat, name} to preselect
 
@@ -2358,9 +2364,11 @@ function openBatchAddModal(day) {
       sections[cat].body.style.display = 'block';
       sections[cat].chev.style.transform = 'rotate(180deg)';
       openCat = cat;
+      _batchOpenCat = cat;
     } else {
       if (cat === 'fav') _favCollapsedAt = Date.now();
       openCat = null;
+      _batchOpenCat = null;
     }
   }
 
