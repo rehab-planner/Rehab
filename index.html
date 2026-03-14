@@ -2383,7 +2383,7 @@ function openBatchAddModal(day) {
     section.style.cssText = `border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:6px;`;
 
     const header = document.createElement('div');
-    header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;background:${catBg[cat]};`;
+    header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:6px 12px;cursor:pointer;background:${catBg[cat]};min-height:44px;box-sizing:border-box;`;
     const headerLabel = document.createElement('span');
     headerLabel.style.cssText = `font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${color};`;
     headerLabel.textContent = catNames[cat];
@@ -2453,7 +2453,7 @@ function openBatchAddModal(day) {
 
     exItems.forEach(({ex, realCat, idx}) => {
       const row = document.createElement('div');
-      row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:#1a1a1a;transition:all 0.15s;margin-bottom:6px;`;
+      row.style.cssText = `display:flex;align-items:center;gap:10px;padding:6px 12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:#1a1a1a;transition:all 0.15s;margin-bottom:6px;min-height:44px;box-sizing:border-box;`;
       row.dataset.selected = '0';
       row.dataset.cat = realCat;
       row.dataset.idx = idx;
