@@ -2316,6 +2316,11 @@ function toggleBankSection(cat) {
 // ── Batch Add Modal ───────────────────────────────────────────────────
 let batchAddDay = null;
 
+// Track when fav was manually collapsed
+let _favCollapsedAt = 0;
+let _batchExpandCat = null; // cat to expand + preselect after new exercise saved
+let _batchPreselectEx = null; // {cat, name} to preselect
+
 function openBatchAddModal(day) {
   batchAddDay = day;
   document.getElementById('batchAddTitle').textContent = 'Add to ' + day;
@@ -2353,6 +2358,7 @@ function openBatchAddModal(day) {
       sections[cat].chev.style.transform = 'rotate(180deg)';
       openCat = cat;
     } else {
+      if (cat === 'fav') _favCollapsedAt = Date.now();
       openCat = null;
     }
   }
@@ -2402,7 +2408,17 @@ function openBatchAddModal(day) {
         e.stopPropagation();
         document.getElementById('batchAddModal').classList.add('hidden');
         unlockBodyScroll();
+        _batchExpandCat = cat;
         openAddModalForCat(cat);
+        // After save, capture the new exercise name then reopen batch
+        document.getElementById('addSaveBtn').addEventListener('click', () => {
+          const newName = document.getElementById('newName').value.trim();
+          if (newName) _batchPreselectEx = newName;
+          setTimeout(() => openBatchAddModal(batchAddDay), 50);
+        }, {once: true});
+        document.getElementById('addCancelBtn').addEventListener('click', () => {
+          _batchExpandCat = null; _batchPreselectEx = null;
+        }, {once: true});
       });
       headerRight.appendChild(addBtn);
 
@@ -2483,6 +2499,7 @@ function openBatchAddModal(day) {
         document.getElementById('addCancelBtn').addEventListener('click', reopenBatch, {once:true});
       });
 
+      row.dataset.exname = ex.name;
       row.appendChild(check); row.appendChild(dot); row.appendChild(name); row.appendChild(detail);
 
       row.addEventListener('click', () => {
@@ -2504,9 +2521,27 @@ function openBatchAddModal(day) {
 
   document.getElementById('batchAddModal').classList.remove('hidden');
   lockBodyScroll();
-  // Auto-expand favourites if non-empty
-  const favItems = ['alt','arm','leg'].some(c => exercises[c].some(ex => ex.fav));
-  if (favItems) setTimeout(() => toggleCat('fav'), 0);
+
+  // Handle expand + preselect after new exercise saved
+  if (_batchExpandCat && sections[_batchExpandCat]) {
+    setTimeout(() => {
+      toggleCat(_batchExpandCat);
+      // Preselect the newly added exercise by name
+      if (_batchPreselectEx) {
+        const rows = sections[_batchExpandCat].body.querySelectorAll('[data-exname]');
+        rows.forEach(row => {
+          if (row.dataset.exname === _batchPreselectEx) row.click();
+        });
+        _batchPreselectEx = null;
+      }
+      _batchExpandCat = null;
+    }, 0);
+  } else {
+    // Auto-expand favourites if non-empty and not suppressed within 6 hours
+    const favItems = ['alt','arm','leg',...customCats.map(c=>c.id)].some(c => (exercises[c]||[]).some(ex => ex.fav));
+    const suppressed = (Date.now() - _favCollapsedAt) < 6 * 60 * 60 * 1000;
+    if (favItems && !suppressed) setTimeout(() => toggleCat('fav'), 0);
+  }
 }
 
 document.getElementById('batchAddClose').addEventListener('click', () => {
