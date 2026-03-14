@@ -2530,7 +2530,10 @@ function openBatchAddModal(day) {
       if (_batchPreselectEx) {
         const rows = sections[_batchExpandCat].body.querySelectorAll('[data-exname]');
         rows.forEach(row => {
-          if (row.dataset.exname === _batchPreselectEx) row.click();
+          if (row.dataset.exname === _batchPreselectEx) {
+            row.click();
+            setTimeout(() => row.scrollIntoView({behavior:'smooth', block:'center'}), 50);
+          }
         });
         _batchPreselectEx = null;
       }
