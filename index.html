@@ -2574,11 +2574,13 @@ function openBatchAddModal(day) {
 document.getElementById('batchAddClose').addEventListener('click', () => {
   document.getElementById('batchAddModal').classList.add('hidden');
   unlockBodyScroll();
+  batchAddDay = null;
 });
 document.getElementById('batchAddModal').addEventListener('click', e => {
   if (e.target === document.getElementById('batchAddModal')) {
     document.getElementById('batchAddModal').classList.add('hidden');
     unlockBodyScroll();
+    batchAddDay = null;
   }
 });
 
