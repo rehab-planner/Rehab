@@ -1677,7 +1677,14 @@ document.getElementById('addCatConfirmYes').addEventListener('click', () => {
   editCatTarget = null;
 });
 
-document.getElementById('addCancelBtn').addEventListener('click',()=>{ document.getElementById('addModal').classList.add('hidden'); editBankTarget=null; });
+document.getElementById('addCancelBtn').addEventListener('click',()=>{
+  document.getElementById('addModal').classList.add('hidden');
+  editBankTarget=null;
+  if (_inBatchContext && batchAddDay) {
+    _inBatchContext = false;
+    openBatchAddModal(batchAddDay);
+  }
+});
 
 document.getElementById('addModal').addEventListener('click',e=>{ if(e.target===document.getElementById('addModal')){ document.getElementById('addModal').classList.add('hidden'); editBankTarget=null; }});
 addHoldStepper('newSetsMinus','newSets',-1);
@@ -2049,7 +2056,17 @@ function openConfirmDelete(cat,idx,name,fromBatchDay=null,expandCat=null,bankSec
   document.getElementById('confirmName').textContent=name;
   document.getElementById('confirmModal').classList.remove('hidden');
 }
-document.getElementById('confirmNo').addEventListener('click',()=>{ document.getElementById('confirmModal').classList.add('hidden'); deleteTarget=null; });
+document.getElementById('confirmNo').addEventListener('click',()=>{
+  document.getElementById('confirmModal').classList.add('hidden');
+  if (deleteTarget?.fromBatchDay) {
+    const {fromBatchDay, expandCat} = deleteTarget;
+    deleteTarget = null;
+    _batchExpandCat = expandCat;
+    openBatchAddModal(fromBatchDay);
+  } else {
+    deleteTarget = null;
+  }
+});
 document.getElementById('confirmYes').addEventListener('click',()=>{
   if (!deleteTarget) return;
   const {cat,idx,name,fromBatchDay,expandCat,bankSection}=deleteTarget;
@@ -2569,10 +2586,8 @@ function openBatchAddModal(day) {
       _batchExpandCat = null;
     }, 0);
   } else {
-    // Auto-expand favourites if non-empty and not suppressed within 6 hours
-    const favItems = ['alt','arm','leg',...customCats.map(c=>c.id)].some(c => (exercises[c]||[]).some(ex => ex.fav));
-    const suppressed = (Date.now() - _favCollapsedAt) < 6 * 60 * 60 * 1000;
-    if (favItems && !suppressed) setTimeout(() => toggleCat('fav'), 0);
+    // Auto-expand favourites disabled
+    // if (favItems && !suppressed) setTimeout(() => toggleCat('fav'), 0);
   }
 }
 
