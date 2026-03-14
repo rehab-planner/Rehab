@@ -2419,10 +2419,12 @@ function openBatchAddModal(day) {
         unlockBodyScroll();
         _batchExpandCat = cat;
         openAddModalForCat(cat);
-        // After save, capture the new exercise name then reopen batch
         document.getElementById('addSaveBtn').addEventListener('click', () => {
           const newName = document.getElementById('newName').value.trim();
-          if (newName) _batchPreselectEx = newName;
+          if (newName) {
+            _batchPreselectEx = newName;
+            _batchExpandCat = selectedCat; // use actual saved cat
+          }
           setTimeout(() => openBatchAddModal(batchAddDay), 50);
         }, {once: true});
         document.getElementById('addCancelBtn').addEventListener('click', () => {
