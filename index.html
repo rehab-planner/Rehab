@@ -113,7 +113,7 @@
   /* 3 columns default — collapses to 1 at narrow widths via @media below */
 
   .bank-section { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 4px; }
-  .bank-section-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; cursor: pointer; user-select: none; }
+  .bank-section-header { display: flex; align-items: center; justify-content: space-between; padding: 5px 12px; cursor: pointer; user-select: none; }
   .bank-section-header .bank-col-title { margin: 0; font-size: 10px; font-family: Arial, sans-serif; letter-spacing: 1.5px; text-transform: uppercase; }
   .bank-section-header.arm { background: rgba(53,200,241,0.07); }
   .bank-section-header.leg { background: rgba(241,160,53,0.07); }
@@ -190,7 +190,7 @@
   @media (max-width: 500px) {
     .bank-cols { gap: 4px; }
     /* Category sections flow as a flat list with colored titles as dividers */
-    .bank-section-header { padding: 10px 12px; }
+    .bank-section-header { padding: 5px 12px; }
     h1 { font-size: 20px; }
     .week-nav-label { font-size: 11px; }
     .week-nav-btn { font-size: 9px; padding: 6px 8px; }
@@ -2383,7 +2383,7 @@ function openBatchAddModal(day) {
     section.style.cssText = `border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:6px;`;
 
     const header = document.createElement('div');
-    header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;background:${catBg[cat]};`;
+    header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:5px 12px;cursor:pointer;background:${catBg[cat]};`;
     const headerLabel = document.createElement('span');
     headerLabel.style.cssText = `font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${color};`;
     headerLabel.textContent = catNames[cat];
@@ -2453,7 +2453,7 @@ function openBatchAddModal(day) {
 
     exItems.forEach(({ex, realCat, idx}) => {
       const row = document.createElement('div');
-      row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:#1a1a1a;transition:all 0.15s;margin-bottom:6px;`;
+      row.style.cssText = `display:flex;align-items:center;gap:10px;padding:5px 12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:#1a1a1a;transition:all 0.15s;margin-bottom:6px;`;
       row.dataset.selected = '0';
       row.dataset.cat = realCat;
       row.dataset.idx = idx;
