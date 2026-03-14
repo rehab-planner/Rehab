@@ -1425,14 +1425,34 @@ function updateTotal() {
 // ── Add / Edit Bank Exercise Modal ────────────────────────────────────
 let selectedCat='arm';
 let editBankTarget=null; // {cat, idx} when editing existing
-let _batchSaveListener = null; // stale once-listener to clean up
-let _batchCancelListener = null;
-let _inBatchContext = false; // true only when addModal opened from batch flow
+// Batch return: when addModal is opened from batch context, this stores what to do on close
+let _batchReturn = null; // { day, expandCat, preselectName } or null
 
+function _setBatchReturn(day, expandCat, preselectName=null) {
+  _batchReturn = { day, expandCat, preselectName };
+}
+function _clearBatchReturn() {
+  _batchReturn = null;
+}
+function _doReturnToBatch(preselectOverride=null) {
+  if (!_batchReturn) return;
+  const { day, expandCat, preselectName } = _batchReturn;
+  _batchReturn = null;
+  _batchExpandCat = expandCat;
+  if (preselectOverride) _batchPreselectEx = preselectOverride;
+  else if (preselectName) _batchPreselectEx = preselectName;
+  openBatchAddModal(day);
+}
+
+// Legacy aliases (kept for any remaining references)
+let _batchSaveListener = null;
+let _batchCancelListener = null;
+let _inBatchContext = false;
 function _clearBatchListeners() {
   if (_batchSaveListener) { document.getElementById('addSaveBtn').removeEventListener('click', _batchSaveListener); _batchSaveListener = null; }
   if (_batchCancelListener) { document.getElementById('addCancelBtn').removeEventListener('click', _batchCancelListener); _batchCancelListener = null; }
   _inBatchContext = false;
+  _clearBatchReturn();
 }
 
 function openAddModal() {
@@ -1487,7 +1507,7 @@ document.getElementById('editBankDeleteBtn').addEventListener('click', () => {
   const ex = exercises[cat][idx];
   document.getElementById('addModal').classList.add('hidden');
   editBankTarget = null;
-  openConfirmDelete(cat, idx, ex.name, batchAddDay, _batchOpenCat);
+  openConfirmDelete(cat, idx, ex.name, batchAddDay, _batchReturn?.expandCat || _batchOpenCat);
 });
 document.getElementById('addCatBtn').addEventListener('click', openAddCatModal);
 
@@ -1680,6 +1700,7 @@ document.getElementById('addCatConfirmYes').addEventListener('click', () => {
 document.getElementById('addCancelBtn').addEventListener('click',()=>{
   document.getElementById('addModal').classList.add('hidden');
   editBankTarget=null;
+  if (_batchReturn) _doReturnToBatch();
 });
 
 document.getElementById('addModal').addEventListener('click',e=>{ if(e.target===document.getElementById('addModal')){ document.getElementById('addModal').classList.add('hidden'); editBankTarget=null; }});
@@ -1742,8 +1763,12 @@ document.getElementById('addSaveBtn').addEventListener('click',()=>{
   }
   document.getElementById('addModal').classList.add('hidden');
   saveState();
-  // If on front page (not batch modal), expand the saved category
-  if (!batchAddDay) {
+  if (_batchReturn) {
+    // For new exercises, expand where it was actually saved
+    if (!editBankTarget) _batchReturn.expandCat = selectedCat;
+    _doReturnToBatch(editBankTarget ? null : name);
+  } else if (!batchAddDay) {
+    // Front page: expand the saved category
     const catToOpen = selectedCat === 'fav' ? 'fav' : selectedCat;
     if (openBankSection !== catToOpen) toggleBankSection(catToOpen);
   }
@@ -2445,26 +2470,8 @@ function openBatchAddModal(day) {
         e.stopPropagation();
         document.getElementById('batchAddModal').classList.add('hidden');
         unlockBodyScroll();
-        _batchExpandCat = cat;
         openAddModalForCat(cat);
-        _inBatchContext = true;
-        _batchSaveListener = () => {
-          if (!_inBatchContext) return;
-          const newName = document.getElementById('newName').value.trim();
-          if (newName) {
-            _batchPreselectEx = newName;
-            _batchExpandCat = selectedCat;
-          }
-          _batchSaveListener = null; _batchCancelListener = null; _inBatchContext = false;
-          setTimeout(() => openBatchAddModal(batchAddDay), 50);
-        };
-        _batchCancelListener = () => {
-          _batchPreselectEx = null;
-          _batchSaveListener = null; _batchCancelListener = null; _inBatchContext = false;
-          if (batchAddDay) { _batchExpandCat = cat; openBatchAddModal(batchAddDay); }
-        };
-        document.getElementById('addSaveBtn').addEventListener('click', _batchSaveListener, {once: true});
-        document.getElementById('addCancelBtn').addEventListener('click', _batchCancelListener, {once: true});
+        _setBatchReturn(batchAddDay, cat);
       });
       headerRight.appendChild(addBtn);
 
@@ -2535,12 +2542,7 @@ function openBatchAddModal(day) {
         document.getElementById('batchAddModal').classList.add('hidden');
         unlockBodyScroll();
         openEditBankModal(realCat, idx);
-        _inBatchContext = true;
-        const _savedExpandCat = realCat;
-        _batchSaveListener = () => { _batchSaveListener=null; _batchCancelListener=null; _inBatchContext=false; _batchExpandCat=_savedExpandCat; openBatchAddModal(batchAddDay); };
-        _batchCancelListener = () => { _batchSaveListener=null; _batchCancelListener=null; _inBatchContext=false; _batchExpandCat=_savedExpandCat; openBatchAddModal(batchAddDay); };
-        document.getElementById('addSaveBtn').addEventListener('click', _batchSaveListener, {once:true});
-        document.getElementById('addCancelBtn').addEventListener('click', _batchCancelListener, {once:true});
+        _setBatchReturn(batchAddDay, realCat);
       });
 
       row.dataset.exname = ex.name;
