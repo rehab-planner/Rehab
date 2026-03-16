@@ -697,6 +697,24 @@ function openDB() {
   });
 }
 
+// Generic key-value helpers reusing same store
+window._idbGet = function(key) {
+  return new Promise((resolve, reject) => {
+    if (!_db) return resolve(null);
+    const req = _db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(key);
+    req.onsuccess = e => resolve(e.target.result || null);
+    req.onerror = () => resolve(null);
+  });
+};
+window._idbSet = function(key, value) {
+  return new Promise((resolve, reject) => {
+    if (!_db) return resolve();
+    const req = _db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).put(value, key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => resolve();
+  });
+};
+
 function saveState() {
   if (!_db) return;
   const tx    = _db.transaction(STORE_NAME, 'readwrite');
@@ -3062,6 +3080,90 @@ document.getElementById('timerModal').addEventListener('click', e => {
   let chatHistory = [];
   let thinking = false;
 
+  // ── THREE-LAYER MEMORY SYSTEM ─────────────────────────────────────────
+  // Layer 1: Full Memory — permanent profile, max 500 tokens, updated forever
+  // Layer 2: Short Term Memory — compressed summaries of past sessions
+  // Layer 3: Chat Memory — raw last 10 messages for immediate context
+
+  const CHAT_WINDOW       = 10;  // raw messages sent to API
+  const SHORT_TERM_TRIGGER = 50; // compress after this many messages
+  const FULL_MEMORY_LIMIT  = 500; // token budget for full memory (chars ~= tokens*4)
+
+  let fullMemory      = ''; // Layer 1
+  let shortTermMemory = ''; // Layer 2
+  // chatHistory is Layer 3
+
+  // ── Load all three layers from IndexedDB ─────────────────────────────
+  async function loadMemory() {
+    try { fullMemory      = (await window._idbGet('ai_full_memory'))      || ''; } catch(e) { fullMemory = ''; }
+    try { shortTermMemory = (await window._idbGet('ai_short_term_memory')) || ''; } catch(e) { shortTermMemory = ''; }
+    try {
+      const h = await window._idbGet('ai_chat_history');
+      chatHistory = h ? JSON.parse(h) : [];
+    } catch(e) { chatHistory = []; }
+  }
+
+  async function saveLayer(key, value) {
+    try { await window._idbSet(key, value); } catch(e) {}
+  }
+
+  // ── Layer 1: Update Full Memory (runs every 4 exchanges, uses Haiku) ──
+  async function updateFullMemory(userMsg, aiReply) {
+    if (chatHistory.length % 8 !== 0) return; // every 4 exchanges
+    try {
+      const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 500,
+          system: `You maintain a permanent user profile for a stroke rehabilitation app. 
+Extract and update confirmed facts only. Max 500 tokens. Plain text, one fact per line.
+Categories to track: Personal (age, name), Medical (stroke type, date, affected side, severity), 
+Goals, Progress notes, What works well, What to avoid, Therapist info.
+Format: "Category - Key: Value". If nothing new, return profile unchanged.`,
+          messages: [{ role: 'user', content: 
+            `CURRENT PROFILE:\n${fullMemory || '(new user)'}\n\nNEW EXCHANGE:\nUser: ${userMsg}\nAI: ${aiReply}\n\nOutput updated profile:`
+          }]
+        })
+      });
+      const data = await res.json();
+      const updated = data.content?.[0]?.text?.trim();
+      if (updated) { fullMemory = updated; await saveLayer('ai_full_memory', fullMemory); }
+    } catch(e) {}
+  }
+
+  // ── Layer 2: Compress into Short Term Memory (every 50 messages) ──────
+  async function maybeCompressShortTerm() {
+    if (chatHistory.length < SHORT_TERM_TRIGGER || chatHistory.length % SHORT_TERM_TRIGGER !== 0) return;
+    const toCompress = chatHistory.slice(-SHORT_TERM_TRIGGER);
+    try {
+      const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 400,
+          system: `You compress rehabilitation chat history into a concise medical summary.
+Strip small talk and greetings. Keep only medically relevant information.
+Focus on: exercises discussed, symptoms mentioned, progress reported, problems encountered, 
+recommendations made, user reactions. Max 350 tokens. Plain text paragraphs.`,
+          messages: [{ role: 'user', content:
+            `EXISTING SUMMARY:\n${shortTermMemory || '(none)'}\n\nNEW MESSAGES TO ADD:\n${
+              toCompress.map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`).join('\n')
+            }\n\nOutput updated summary:`
+          }]
+        })
+      });
+      const data = await res.json();
+      const updated = data.content?.[0]?.text?.trim();
+      if (updated) { shortTermMemory = updated; await saveLayer('ai_short_term_memory', shortTermMemory); }
+    } catch(e) {}
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────
+  (async () => { await loadMemory(); })();
+
   // ── App context snapshot ──────────────────────────────────────────────
   function getAppContext() {
     try {
@@ -3262,16 +3364,21 @@ document.getElementById('timerModal').addEventListener('click', e => {
 
     const systemPrompt = `You are a physiotherapy assistant built into the Rehab Planner app. You help stroke rehabilitation patients.
 
-When the user asks you to arrange, plan, schedule, add, move, or remove exercises, use the tools to do it directly. After making schedule changes, give a brief 1-2 sentence summary.
-When the user asks to create a new exercise not in the bank, use create_exercise to add it.
-When the user asks about good exercises for a muscle or condition, use web_search to research stroke rehab best practices first, then use create_exercise to add the best ones.
-For general questions about stroke, rehab, or exercises — answer fully and helpfully. No markdown formatting, plain text only.
+When asked to schedule, add, move, or remove exercises — use tools directly. Summarise changes in 1-2 sentences.
+When asked to create a new exercise — use create_exercise.
+When asked about exercises for a muscle/condition — use web_search first, then create_exercise.
+For general questions — answer fully. Plain text only, no markdown.
 
+${fullMemory ? `=== PERMANENT USER PROFILE ===\n${fullMemory}\n` : '=== USER PROFILE ===\nNew user. Learn about them naturally — ask about stroke type, affected side, goals.\n'}
+${shortTermMemory ? `=== RECENT HISTORY SUMMARY ===\n${shortTermMemory}\n` : ''}
 ${getAppContext()}`;
+
+    // Layer 3: last 10 raw messages
+    const windowedHistory = chatHistory.slice(-CHAT_WINDOW);
 
     try {
       // Agentic loop — keep going while AI wants to use tools
-      let loopMessages = [...chatHistory];
+      let loopMessages = [...windowedHistory];
       let finalText = null;
       const actionsDone = [];
 
@@ -3340,6 +3447,10 @@ ${getAppContext()}`;
       }
 
       chatHistory.push({ role: 'assistant', content: finalText });
+      await saveLayer('ai_chat_history', JSON.stringify(chatHistory));
+      // Background: update all memory layers (cheap Haiku calls)
+      updateFullMemory(userText.trim(), finalText);
+      maybeCompressShortTerm();
 
     } catch(e) {
       thinkingEl.textContent = 'Connection error. Make sure the app is running on GitHub Pages.';
@@ -3352,10 +3463,22 @@ ${getAppContext()}`;
   }
 
   // ── Event listeners ───────────────────────────────────────────────────
+  let _chatRendered = false;
   fab.addEventListener('click', () => {
     modal.classList.remove('hidden');
-    if (chatHistory.length === 0) {
-      addMsg('assistant', "Hi! I can see your exercise bank and current week. Tell me what you want — e.g. \"Put leg exercises Mon/Wed/Fri\" or \"Plan a light week\" — and I'll arrange it for you.");
+    if (!_chatRendered) {
+      _chatRendered = true;
+      if (chatHistory.length === 0) {
+        const greeting = fullMemory
+          ? `Welcome back! I remember your profile. How can I help with your rehab today?`
+          : `Hi! I'm your Rehab AI assistant. To personalise your experience, could you tell me about your stroke — type, when it happened, and which side is affected?`;
+        addMsg('assistant', greeting);
+      } else {
+        // Restore recent messages to UI
+        chatHistory.slice(-CHAT_WINDOW).forEach(m => {
+          if (typeof m.content === 'string') addMsg(m.role, m.content);
+        });
+      }
     }
     setTimeout(() => inputEl.focus(), 300);
   });
