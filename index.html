@@ -3286,7 +3286,19 @@ Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
         return items.length ? `${d}: ${items.map(i=>i.name).join(', ')}` : `${d}: -`;
       });
 
-      return `EXERCISE BANK:\n${bankStr}\n\nWEEK SCHEDULE:\n${schedLines.join('\n')}`;
+      // All weeks — sorted by date, skip empty weeks
+      const allWeeksStr = Object.entries(allSchedules)
+        .filter(([key, week]) => DAYS.some(d => (week[d]||[]).length > 0))
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, week]) => {
+          const lines = DAYS.map(d => {
+            const items = (week[d]||[]).filter(i => i.name);
+            return items.length ? `  ${d}: ${items.map(i=>i.name).join(', ')}` : null;
+          }).filter(Boolean);
+          return `Week ${key}:\n${lines.join('\n')}`;
+        }).join('\n\n') || '(no history yet)';
+
+      return `EXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}\n\nALL WEEKS HISTORY:\n${allWeeksStr}`;
     } catch(e) { return 'Unable to read app data.'; }
   }
 
@@ -3465,6 +3477,7 @@ When asked to schedule, add, move, or remove exercises — use tools directly. S
 When asked to create a new exercise — use create_exercise.
 When asked about exercises for a muscle/condition — use web_search first, then create_exercise.
 For general questions — answer fully. Plain text only, no markdown.
+You have access to the user's full schedule history across all weeks — use it to identify patterns, progress and consistency.
 Always use the memories below — never say you don't know something already in the profile or history.
 
 ${fullMemory ? `=== PERMANENT USER PROFILE ===\n${fullMemory}\n` : '=== USER PROFILE ===\nNew user — learn about them naturally.\n'}
