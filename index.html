@@ -3168,6 +3168,13 @@ document.getElementById('timerModal').addEventListener('click', e => {
     } catch(e) { chatHistory = []; }
   }
 
+  async function waitForDB(maxWait=5000) {
+    const start = Date.now();
+    while (!window._db && Date.now() - start < maxWait) {
+      await new Promise(r => setTimeout(r, 100));
+    }
+  }
+
   async function saveLayer(key, value) {
     try { await window._idbSet(key, value); } catch(e) {}
   }
@@ -3181,14 +3188,18 @@ document.getElementById('timerModal').addEventListener('click', e => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 500,
-          system: `You maintain a permanent user profile for a stroke rehabilitation app.
-Extract and update confirmed facts only. Max 500 tokens. Plain text, one fact per line.
-Categories: Personal (age, name), Medical (stroke type, date, affected side, severity),
-Goals, Progress notes, What works well, What to avoid, Therapist info.
-Format: "Category - Key: Value". If nothing new, return profile unchanged.`,
+          max_tokens: 600,
+          system: `You maintain a detailed permanent profile for a stroke rehabilitation patient.
+Update the profile with any new confirmed information from the exchange.
+Write in full sentences where needed — be specific and detailed, not just key-value pairs.
+A future AI reading this profile must fully understand the patient's situation without any other context.
+Include: full name, age, stroke type and location in brain, exact date of stroke, affected side and specific limbs,
+initial symptoms, current symptoms, recovery timeline, what has improved, what is still difficult,
+spasticity details (where, how much, triggers), therapy goals, what exercises work well, what to avoid,
+therapist names if mentioned, medications if mentioned, emotional state if relevant.
+Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
           messages: [{ role: 'user', content:
-            `CURRENT PROFILE:\n${fullMemory || '(new user)'}\n\nNEW EXCHANGE:\nUser: ${userMsg}\nAI: ${aiReply}\n\nOutput updated profile:`
+            `CURRENT PROFILE:\n${fullMemory || '(new user, no profile yet)'}\n\nNEW EXCHANGE:\nUser: ${userMsg}\nAI: ${aiReply}\n\nOutput the updated detailed profile:`
           }]
         })
       });
