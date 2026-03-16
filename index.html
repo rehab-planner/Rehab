@@ -3443,12 +3443,13 @@ When asked to schedule, add, move, or remove exercises — use tools directly. S
 When asked to create a new exercise — use create_exercise.
 When asked about exercises for a muscle/condition — use web_search first, then create_exercise.
 For general questions — answer fully. Plain text only, no markdown.
+Always use the memories below — never say you don't know something already in the profile or history.
 
-${fullMemory ? `=== PERMANENT USER PROFILE ===\n${fullMemory}\n` : '=== USER PROFILE ===\nNew user. Learn about them naturally.\n'}
-${shortTermText ? `=== RECENT CONVERSATION (last ${Math.min(chatHistory.length, SHORT_TERM_WINDOW)} messages) ===\n${shortTermText}\n` : ''}
+${fullMemory ? `=== PERMANENT USER PROFILE ===\n${fullMemory}\n` : '=== USER PROFILE ===\nNew user — learn about them naturally.\n'}
+${shortTermText ? `=== CONVERSATION HISTORY (last ${Math.min(chatHistory.length, SHORT_TERM_WINDOW)} messages) ===\n${shortTermText}\n` : ''}
 ${getAppContext()}`;
 
-    // Layer 3: last 4 raw messages sent as messages array
+    // Last 4 messages as active window — always includes current user message
     const windowedHistory = chatHistory.slice(-CHAT_WINDOW);
 
     try {
