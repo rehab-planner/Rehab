@@ -3235,8 +3235,19 @@ Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
     if (!_chatRendered) {
       _chatRendered = true;
       if (chatHistory.length === 0) {
+        // Extract name from full memory if available
+        let userName = '';
+        if (fullMemory) {
+          const nameMatch = fullMemory.match(/(?:my name is|I(?:'m| am) ([A-Z][a-z]+)|Name[:\s]+([A-Z][a-z]+)|Patient[:\s]+([A-Z][a-z]+))/i);
+          if (nameMatch) userName = nameMatch[1] || nameMatch[2] || nameMatch[3] || '';
+          // Also try "Mladen" style direct name extraction
+          if (!userName) {
+            const directMatch = fullMemory.match(/—\s*([A-Z][a-z]+),|\*\*.*?([A-Z][a-z]{3,}),\s*\d+\s*years/);
+            if (directMatch) userName = directMatch[1] || directMatch[2] || '';
+          }
+        }
         const greeting = fullMemory
-          ? `Welcome back! I remember your profile. How can I help with your rehab today?`
+          ? `Hello${userName ? ' ' + userName : ''}! How can I help with your rehab today?`
           : `Hi! I'm your Rehab AI assistant. To personalise your experience, could you tell me about your stroke — type, when it happened, and which side is affected?`;
         addMsg('assistant', greeting);
       } else {
