@@ -327,7 +327,35 @@
   <button id="exportBtn" class="btn-primary" style="background:none;border:1px solid var(--accent);color:var(--accent);">↓ Export Data</button>
   <label id="importLabel" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);text-align:center;cursor:pointer;">↑ Import Data<input type="file" id="importFile" accept=".json" style="display:none;"></label>
 </div>
+
+<div style="margin-top:12px;padding:16px;border:1px solid var(--border);border-radius:12px;">
+  <div style="font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">AI Memory</div>
+  <button id="aboutMeBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">About Me</button>
+</div>
 </div><!-- /page-wrap -->
+<div class="overlay hidden" id="aboutMeModal">
+  <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px;width:100%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title" style="font-family:'Syne',sans-serif;">ABOUT ME</div>
+      <button id="aboutMeClose" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0;">×</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:8px;">Permanent Profile</div>
+        <div id="aboutMeFullMemory" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;"></div>
+      </div>
+      <div>
+        <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#35c8f1;margin-bottom:8px;">Recent History Summary</div>
+        <div id="aboutMeShortTerm" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button id="aboutMeClear" class="btn-cancel" style="flex:1;">Clear Memory</button>
+      <button id="aboutMeCloseBtn" class="btn-primary" style="flex:1;">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay hidden" id="batchAddModal">
   <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px 20px;width:100%;max-width:400px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
     <div class="modal-title" id="batchAddTitle">Add to MON</div>
@@ -692,7 +720,7 @@ function openDB() {
     req.onupgradeneeded = e => {
       e.target.result.createObjectStore(STORE_NAME);
     };
-    req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+    req.onsuccess = e => { _db = e.target.result; window._db = _db; resolve(_db); };
     req.onerror   = e => reject(e.target.error);
   });
 }
@@ -700,16 +728,18 @@ function openDB() {
 // Generic key-value helpers reusing same store
 window._idbGet = function(key) {
   return new Promise((resolve, reject) => {
-    if (!_db) return resolve(null);
-    const req = _db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(key);
+    const db = window._db;
+    if (!db) return resolve(null);
+    const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(key);
     req.onsuccess = e => resolve(e.target.result || null);
     req.onerror = () => resolve(null);
   });
 };
 window._idbSet = function(key, value) {
   return new Promise((resolve, reject) => {
-    if (!_db) return resolve();
-    const req = _db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).put(value, key);
+    const db = window._db;
+    if (!db) return resolve();
+    const req = db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).put(value, key);
     req.onsuccess = () => resolve();
     req.onerror = () => resolve();
   });
@@ -2354,6 +2384,37 @@ document.getElementById('importFile').addEventListener('change', e => {
   reader.readAsText(file);
 });
 
+// ── About Me Modal ────────────────────────────────────────────────────
+document.getElementById('aboutMeBtn').addEventListener('click', async () => {
+  const modal = document.getElementById('aboutMeModal');
+  const fullEl = document.getElementById('aboutMeFullMemory');
+  const shortEl = document.getElementById('aboutMeShortTerm');
+  const full = (await window._idbGet('ai_full_memory')) || '';
+  const histRaw = await window._idbGet('ai_chat_history');
+  const hist = histRaw ? JSON.parse(histRaw) : [];
+  const shortMsgs = hist.slice(-50);
+  const shortText = shortMsgs.map(m => `${m.role === 'user' ? 'You' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`).join('\n\n');
+  fullEl.textContent  = full || '(no profile yet — start chatting with the AI)';
+  shortEl.textContent = shortText || '(no messages yet)';
+  modal.classList.remove('hidden');
+});
+document.getElementById('aboutMeClose').addEventListener('click', () => {
+  document.getElementById('aboutMeModal').classList.add('hidden');
+});
+document.getElementById('aboutMeCloseBtn').addEventListener('click', () => {
+  document.getElementById('aboutMeModal').classList.add('hidden');
+});
+document.getElementById('aboutMeModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('aboutMeModal')) document.getElementById('aboutMeModal').classList.add('hidden');
+});
+document.getElementById('aboutMeClear').addEventListener('click', async () => {
+  if (!confirm('Clear all AI memory? This cannot be undone.')) return;
+  await window._idbSet('ai_full_memory', '');
+  await window._idbSet('ai_chat_history', '[]');
+  document.getElementById('aboutMeFullMemory').textContent = '(cleared)';
+  document.getElementById('aboutMeShortTerm').textContent  = '(cleared)';
+});
+
 // ── Init ──────────────────────────────────────────────────────────────
 openDB().then(loadStateFromDB).then(saved => {
   if (saved) {
@@ -3081,22 +3142,26 @@ document.getElementById('timerModal').addEventListener('click', e => {
   let thinking = false;
 
   // ── THREE-LAYER MEMORY SYSTEM ─────────────────────────────────────────
-  // Layer 1: Full Memory — permanent profile, max 500 tokens, updated forever
-  // Layer 2: Short Term Memory — compressed summaries of past sessions
-  // Layer 3: Chat Memory — raw last 10 messages for immediate context
+  // Layer 1: Full Memory     — permanent profile, updated every 4 exchanges
+  // Layer 2: Short Term      — sliding window of last 50 raw messages, always saved
+  // Layer 3: Chat Memory     — last 4 messages sent to API as immediate context
+  //
+  // On reload with 20 messages:
+  //   Full Memory   = updated (every 4 msgs = 5 updates)
+  //   Short Term    = last 20 msgs (up to 50)
+  //   Chat Memory   = last 4 msgs
+  //   Nothing lost.
 
-  const CHAT_WINDOW       = 10;  // raw messages sent to API
-  const SHORT_TERM_TRIGGER = 50; // compress after this many messages
-  const FULL_MEMORY_LIMIT  = 500; // token budget for full memory (chars ~= tokens*4)
+  const CHAT_WINDOW  = 4;   // raw messages sent to API
+  const SHORT_TERM_WINDOW = 50; // sliding window stored in IndexedDB
 
-  let fullMemory      = ''; // Layer 1
-  let shortTermMemory = ''; // Layer 2
-  // chatHistory is Layer 3
+  let fullMemory = ''; // Layer 1 — permanent profile
+  // Layer 2 — derived live from chatHistory.slice(-50), no separate var needed
+  // chatHistory — full raw history, Layer 2+3 source
 
-  // ── Load all three layers from IndexedDB ─────────────────────────────
+  // ── Load from IndexedDB ───────────────────────────────────────────────
   async function loadMemory() {
-    try { fullMemory      = (await window._idbGet('ai_full_memory'))      || ''; } catch(e) { fullMemory = ''; }
-    try { shortTermMemory = (await window._idbGet('ai_short_term_memory')) || ''; } catch(e) { shortTermMemory = ''; }
+    try { fullMemory = (await window._idbGet('ai_full_memory')) || ''; } catch(e) { fullMemory = ''; }
     try {
       const h = await window._idbGet('ai_chat_history');
       chatHistory = h ? JSON.parse(h) : [];
@@ -3107,9 +3172,9 @@ document.getElementById('timerModal').addEventListener('click', e => {
     try { await window._idbSet(key, value); } catch(e) {}
   }
 
-  // ── Layer 1: Update Full Memory (runs every 4 exchanges, uses Haiku) ──
+  // ── Layer 1: Update Full Memory every 4 exchanges (uses Haiku) ────────
   async function updateFullMemory(userMsg, aiReply) {
-    if (chatHistory.length % 8 !== 0) return; // every 4 exchanges
+    if (chatHistory.length % 8 !== 0) return; // every 4 exchanges (2 msgs each)
     try {
       const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
         method: 'POST',
@@ -3117,12 +3182,12 @@ document.getElementById('timerModal').addEventListener('click', e => {
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 500,
-          system: `You maintain a permanent user profile for a stroke rehabilitation app. 
+          system: `You maintain a permanent user profile for a stroke rehabilitation app.
 Extract and update confirmed facts only. Max 500 tokens. Plain text, one fact per line.
-Categories to track: Personal (age, name), Medical (stroke type, date, affected side, severity), 
+Categories: Personal (age, name), Medical (stroke type, date, affected side, severity),
 Goals, Progress notes, What works well, What to avoid, Therapist info.
 Format: "Category - Key: Value". If nothing new, return profile unchanged.`,
-          messages: [{ role: 'user', content: 
+          messages: [{ role: 'user', content:
             `CURRENT PROFILE:\n${fullMemory || '(new user)'}\n\nNEW EXCHANGE:\nUser: ${userMsg}\nAI: ${aiReply}\n\nOutput updated profile:`
           }]
         })
@@ -3133,36 +3198,44 @@ Format: "Category - Key: Value". If nothing new, return profile unchanged.`,
     } catch(e) {}
   }
 
-  // ── Layer 2: Compress into Short Term Memory (every 50 messages) ──────
-  async function maybeCompressShortTerm() {
-    if (chatHistory.length < SHORT_TERM_TRIGGER || chatHistory.length % SHORT_TERM_TRIGGER !== 0) return;
-    const toCompress = chatHistory.slice(-SHORT_TERM_TRIGGER);
-    try {
-      const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 400,
-          system: `You compress rehabilitation chat history into a concise medical summary.
-Strip small talk and greetings. Keep only medically relevant information.
-Focus on: exercises discussed, symptoms mentioned, progress reported, problems encountered, 
-recommendations made, user reactions. Max 350 tokens. Plain text paragraphs.`,
-          messages: [{ role: 'user', content:
-            `EXISTING SUMMARY:\n${shortTermMemory || '(none)'}\n\nNEW MESSAGES TO ADD:\n${
-              toCompress.map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`).join('\n')
-            }\n\nOutput updated summary:`
-          }]
-        })
-      });
-      const data = await res.json();
-      const updated = data.content?.[0]?.text?.trim();
-      if (updated) { shortTermMemory = updated; await saveLayer('ai_short_term_memory', shortTermMemory); }
-    } catch(e) {}
+  // ── Layer 2: Short Term = last 50 messages as readable text ───────────
+  function getShortTermText() {
+    const msgs = chatHistory.slice(-SHORT_TERM_WINDOW);
+    return msgs.map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`).join('\n');
   }
 
-  // ── Init ──────────────────────────────────────────────────────────────
-  (async () => { await loadMemory(); })();
+  let _chatRendered = false;
+  let _memoryReady = false;
+
+  (async () => {
+    await waitForDB();
+    await loadMemory();
+    _memoryReady = true;
+  })();
+
+  fab.addEventListener('click', async () => {
+    modal.classList.remove('hidden');
+    // Wait for memory if not ready yet
+    if (!_memoryReady) {
+      await waitForDB();
+      await loadMemory();
+      _memoryReady = true;
+    }
+    if (!_chatRendered) {
+      _chatRendered = true;
+      if (chatHistory.length === 0) {
+        const greeting = fullMemory
+          ? `Welcome back! I remember your profile. How can I help with your rehab today?`
+          : `Hi! I'm your Rehab AI assistant. To personalise your experience, could you tell me about your stroke — type, when it happened, and which side is affected?`;
+        addMsg('assistant', greeting);
+      } else {
+        chatHistory.slice(-CHAT_WINDOW).forEach(m => {
+          if (typeof m.content === 'string') addMsg(m.role, m.content);
+        });
+      }
+    }
+    setTimeout(() => inputEl.focus(), 300);
+  });
 
   // ── App context snapshot ──────────────────────────────────────────────
   function getAppContext() {
@@ -3362,6 +3435,8 @@ recommendations made, user reactions. Max 350 tokens. Plain text paragraphs.`,
 
     const thinkingEl = addMsg('assistant thinking', '…');
 
+    const shortTermText = getShortTermText();
+
     const systemPrompt = `You are a physiotherapy assistant built into the Rehab Planner app. You help stroke rehabilitation patients.
 
 When asked to schedule, add, move, or remove exercises — use tools directly. Summarise changes in 1-2 sentences.
@@ -3369,11 +3444,11 @@ When asked to create a new exercise — use create_exercise.
 When asked about exercises for a muscle/condition — use web_search first, then create_exercise.
 For general questions — answer fully. Plain text only, no markdown.
 
-${fullMemory ? `=== PERMANENT USER PROFILE ===\n${fullMemory}\n` : '=== USER PROFILE ===\nNew user. Learn about them naturally — ask about stroke type, affected side, goals.\n'}
-${shortTermMemory ? `=== RECENT HISTORY SUMMARY ===\n${shortTermMemory}\n` : ''}
+${fullMemory ? `=== PERMANENT USER PROFILE ===\n${fullMemory}\n` : '=== USER PROFILE ===\nNew user. Learn about them naturally.\n'}
+${shortTermText ? `=== RECENT CONVERSATION (last ${Math.min(chatHistory.length, SHORT_TERM_WINDOW)} messages) ===\n${shortTermText}\n` : ''}
 ${getAppContext()}`;
 
-    // Layer 3: last 10 raw messages
+    // Layer 3: last 4 raw messages sent as messages array
     const windowedHistory = chatHistory.slice(-CHAT_WINDOW);
 
     try {
@@ -3448,9 +3523,8 @@ ${getAppContext()}`;
 
       chatHistory.push({ role: 'assistant', content: finalText });
       await saveLayer('ai_chat_history', JSON.stringify(chatHistory));
-      // Background: update all memory layers (cheap Haiku calls)
+      // Update full memory in background every 4 exchanges
       updateFullMemory(userText.trim(), finalText);
-      maybeCompressShortTerm();
 
     } catch(e) {
       thinkingEl.textContent = 'Connection error. Make sure the app is running on GitHub Pages.';
@@ -3463,26 +3537,6 @@ ${getAppContext()}`;
   }
 
   // ── Event listeners ───────────────────────────────────────────────────
-  let _chatRendered = false;
-  fab.addEventListener('click', () => {
-    modal.classList.remove('hidden');
-    if (!_chatRendered) {
-      _chatRendered = true;
-      if (chatHistory.length === 0) {
-        const greeting = fullMemory
-          ? `Welcome back! I remember your profile. How can I help with your rehab today?`
-          : `Hi! I'm your Rehab AI assistant. To personalise your experience, could you tell me about your stroke — type, when it happened, and which side is affected?`;
-        addMsg('assistant', greeting);
-      } else {
-        // Restore recent messages to UI
-        chatHistory.slice(-CHAT_WINDOW).forEach(m => {
-          if (typeof m.content === 'string') addMsg(m.role, m.content);
-        });
-      }
-    }
-    setTimeout(() => inputEl.focus(), 300);
-  });
-
   closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
   modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
   sendBtn.addEventListener('click', () => sendMessage(inputEl.value));
