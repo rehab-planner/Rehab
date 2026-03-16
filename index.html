@@ -3066,20 +3066,30 @@ document.getElementById('timerModal').addEventListener('click', e => {
   function getAppContext() {
     try {
       const allEx = [];
-      const cats = ['fav','arm','leg','alt', ...customCats.map(c=>c.id)];
+      const cats = ['arm','leg','alt', ...customCats.map(c=>c.id)]; // skip fav (duplicates)
       cats.forEach(cat => {
         const list = exercises[cat] || [];
-        list.forEach(e => allEx.push(`${e.name} [cat:${cat}]${e.sets?` sets:${e.sets}`:''}${e.reps?` reps:${e.reps}`:''}${e.mins?` mins:${e.mins}`:''}`));
+        if (list.length) {
+          const names = list.map(e => {
+            let detail = e.name;
+            if (e.sets && e.reps) detail += `(${e.sets}x${e.reps}reps)`;
+            else if (e.sets && e.mins) detail += `(${e.sets}x${e.mins}min)`;
+            else if (e.mins) detail += `(${e.mins}min)`;
+            else if (e.reps) detail += `(${e.reps}reps)`;
+            return detail;
+          });
+          allEx.push(`${cat}: ${names.join(', ')}`);
+        }
       });
       const bankStr = allEx.length ? allEx.join('\n') : 'Empty bank';
 
       const sched = currentSchedule();
       const schedLines = DAYS.map(d => {
-        const items = sched[d] || [];
-        return items.length ? `${d}: ${items.map(i=>i.name).join(', ')}` : `${d}: (empty)`;
+        const items = (sched[d] || []).filter(i => i.name);
+        return items.length ? `${d}: ${items.map(i=>i.name).join(', ')}` : `${d}: -`;
       });
 
-      return `EXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}`;
+      return `EXERCISE BANK:\n${bankStr}\n\nWEEK SCHEDULE:\n${schedLines.join('\n')}`;
     } catch(e) { return 'Unable to read app data.'; }
   }
 
@@ -3250,13 +3260,12 @@ document.getElementById('timerModal').addEventListener('click', e => {
 
     const thinkingEl = addMsg('assistant thinking', '…');
 
-    const systemPrompt = `You are a physiotherapy assistant built into the Rehab Planner app. You can read and modify the user's exercise schedule using tools.
+    const systemPrompt = `You are a physiotherapy assistant built into the Rehab Planner app. You help stroke rehabilitation patients.
 
-When the user asks you to arrange, plan, schedule, add, move, or remove exercises, use the tools to do it directly — don't just describe what to do.
-When the user asks you to create, suggest, or add a new exercise that doesn't exist in the bank yet, use the create_exercise tool to add it to the bank.
-When the user asks about good exercises for a specific muscle, condition, or goal — especially for stroke rehabilitation — use web_search to research current best practices first, then use create_exercise to add the best ones to the bank.
-After making changes, give a brief 1–2 sentence summary of what you did.
-Be concise. No markdown. Plain text only.
+When the user asks you to arrange, plan, schedule, add, move, or remove exercises, use the tools to do it directly. After making schedule changes, give a brief 1-2 sentence summary.
+When the user asks to create a new exercise not in the bank, use create_exercise to add it.
+When the user asks about good exercises for a muscle or condition, use web_search to research stroke rehab best practices first, then use create_exercise to add the best ones.
+For general questions about stroke, rehab, or exercises — answer fully and helpfully. No markdown formatting, plain text only.
 
 ${getAppContext()}`;
 
@@ -3272,7 +3281,7 @@ ${getAppContext()}`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 1000,
+            max_tokens: 3000,
             system: systemPrompt,
             tools: AI_TOOLS,
             messages: loopMessages
