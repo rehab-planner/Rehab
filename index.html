@@ -344,6 +344,10 @@
         <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:8px;">Permanent Profile</div>
         <div id="aboutMeFullMemory" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;"></div>
       </div>
+      <div>
+        <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#35c8f1;margin-bottom:8px;">Recent History Summary</div>
+        <div id="aboutMeShortTerm" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;"></div>
+      </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button id="aboutMeClear" class="btn-cancel" style="flex:1;">Clear Memory</button>
@@ -2384,8 +2388,14 @@ document.getElementById('importFile').addEventListener('change', e => {
 document.getElementById('aboutMeBtn').addEventListener('click', async () => {
   const modal = document.getElementById('aboutMeModal');
   const fullEl = document.getElementById('aboutMeFullMemory');
+  const shortEl = document.getElementById('aboutMeShortTerm');
   const full = (await window._idbGet('ai_full_memory')) || '';
-  fullEl.textContent = full || '(no profile yet — start chatting with the AI)';
+  const histRaw = await window._idbGet('ai_chat_history');
+  const hist = histRaw ? JSON.parse(histRaw) : [];
+  const shortMsgs = hist.slice(-50);
+  const shortText = shortMsgs.map(m => `${m.role === 'user' ? 'You' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`).join('\n\n');
+  fullEl.textContent  = full || '(no profile yet — start chatting with the AI)';
+  shortEl.textContent = shortText || '(no messages yet)';
   modal.classList.remove('hidden');
 });
 document.getElementById('aboutMeClose').addEventListener('click', () => {
@@ -2402,6 +2412,7 @@ document.getElementById('aboutMeClear').addEventListener('click', async () => {
   await window._idbSet('ai_full_memory', '');
   await window._idbSet('ai_chat_history', '[]');
   document.getElementById('aboutMeFullMemory').textContent = '(cleared)';
+  document.getElementById('aboutMeShortTerm').textContent  = '(cleared)';
 });
 
 // ── Init ──────────────────────────────────────────────────────────────
@@ -3141,8 +3152,8 @@ document.getElementById('timerModal').addEventListener('click', e => {
   //   Chat Memory   = last 4 msgs
   //   Nothing lost.
 
-  const CHAT_WINDOW  = 4;   // msgs 1-4 (most recent)   // raw messages sent to API
-  const SHORT_TERM_WINDOW = 40; // sliding window stored in IndexedDB
+  const CHAT_WINDOW  = 4;   // raw messages sent to API
+  const SHORT_TERM_WINDOW = 50; // sliding window stored in IndexedDB
 
   let fullMemory = ''; // Layer 1 — permanent profile
   // Layer 2 — derived live from chatHistory.slice(-50), no separate var needed
@@ -3170,7 +3181,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
 
   // ── Layer 1: Update Full Memory every 4 exchanges (uses Haiku) ────────
   async function updateFullMemory(userMsg, aiReply) {
-    if (chatHistory.length % 2 !== 0) return; // every 1 exchange (2 msgs)
+    if (chatHistory.length % 8 !== 0) return; // every 4 exchanges (2 msgs each)
     try {
       const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
         method: 'POST',
@@ -3198,8 +3209,8 @@ Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
     } catch(e) {}
   }
 
+  // ── Layer 2: Short Term = last 50 messages as readable text ───────────
   function getShortTermText() {
-    // Layer 2: last 40 messages (includes all recent context)
     const msgs = chatHistory.slice(-SHORT_TERM_WINDOW);
     return msgs.map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`).join('\n');
   }
@@ -3488,7 +3499,7 @@ ${getAppContext()}`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 8096,
+            max_tokens: 3000,
             system: systemPrompt,
             tools: AI_TOOLS,
             messages: loopMessages
