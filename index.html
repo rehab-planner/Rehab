@@ -3153,7 +3153,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
   //   Nothing lost.
 
   const CHAT_WINDOW  = 4;   // raw messages sent to API (messages 1-4)
-  const SHORT_TERM_WINDOW = 8; // sliding window for short-term memory (messages 1-8)
+  const SHORT_TERM_WINDOW = 6; // messages 5-10 (older than active chat window, no overlap)
 
   let fullMemory = ''; // Layer 1 — permanent profile
   // Layer 2 — derived live from chatHistory.slice(-50), no separate var needed
@@ -3183,7 +3183,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
   async function updateFullMemory(userMsg, aiReply) {
     if (chatHistory.length % 4 !== 0) return; // every 4 messages (2 exchanges)
     try {
-      const shortTermHistory = chatHistory.slice(-SHORT_TERM_WINDOW)
+      const shortTermHistory = chatHistory.slice(-(CHAT_WINDOW + SHORT_TERM_WINDOW), -CHAT_WINDOW)
         .map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`)
         .join('\n');
       const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
@@ -3213,9 +3213,9 @@ Target around 600 words. If nothing new was learned, return the profile unchange
     } catch(e) {}
   }
 
-  // ── Layer 2: Short Term = last 50 messages as readable text ───────────
+  // ── Layer 2: Short Term = messages 5-10 (older than active chat window) ──
   function getShortTermText() {
-    const msgs = chatHistory.slice(-SHORT_TERM_WINDOW);
+    const msgs = chatHistory.slice(-(CHAT_WINDOW + SHORT_TERM_WINDOW), -CHAT_WINDOW);
     return msgs.map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`).join('\n');
   }
 
