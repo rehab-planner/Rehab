@@ -3293,7 +3293,7 @@ Target around 600 words. If nothing new was learned, return the profile unchange
           return `Week ${key}:\n${lines.join('\n')}`;
         }).join('\n\n') || '(no history yet)';
 
-      return `EXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}`;
+      return `EXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}\n\nCALENDAR HISTORY (last 8 weeks):\n${allWeeksStr}`;
     } catch(e) { return 'Unable to read app data.'; }
   }
 
