@@ -2394,8 +2394,8 @@ document.getElementById('aboutMeBtn').addEventListener('click', async () => {
   const hist = histRaw ? JSON.parse(histRaw) : [];
   const shortMsgs = hist.slice(-50);
   const shortText = shortMsgs.map(m => `${m.role === 'user' ? 'You' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`).join('\n\n');
-  fullEl.innerHTML  = renderMd(full || '(no profile yet — start chatting with the AI)');
-  shortEl.innerHTML = renderMd(shortText || '(no messages yet)');
+  fullEl.textContent  = full || '(no profile yet — start chatting with the AI)';
+  shortEl.textContent = shortText || '(no messages yet)';
   modal.classList.remove('hidden');
 });
 document.getElementById('aboutMeClose').addEventListener('click', () => {
@@ -3153,7 +3153,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
   //   Nothing lost.
 
   const CHAT_WINDOW  = 4;   // raw messages sent to API
-  const SHORT_TERM_WINDOW = 15; // sliding window stored in IndexedDB
+  const SHORT_TERM_WINDOW = 10; // sliding window stored in IndexedDB
 
   let fullMemory = ''; // Layer 1 — permanent profile
   // Layer 2 — derived live from chatHistory.slice(-50), no separate var needed
@@ -3181,14 +3181,14 @@ document.getElementById('timerModal').addEventListener('click', e => {
 
   // ── Layer 1: Update Full Memory every 4 exchanges (uses Haiku) ────────
   async function updateFullMemory(userMsg, aiReply) {
-    if (chatHistory.length % 4 !== 0) return; // every 2 exchanges (2 msgs each)
+    if (chatHistory.length % 8 !== 0) return; // every 4 exchanges (2 msgs each)
     try {
       const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 2000,
+          max_tokens: 1200,
           system: `You maintain a detailed permanent profile for a stroke rehabilitation patient.
 Update the profile with any new confirmed information from the exchange.
 Write in full sentences where needed — be specific and detailed, not just key-value pairs.
@@ -3197,7 +3197,7 @@ Include: full name, age, stroke type and location in brain, exact date of stroke
 initial symptoms, current symptoms, recovery timeline, what has improved, what is still difficult,
 spasticity details (where, how much, triggers), therapy goals, what exercises work well, what to avoid,
 therapist names if mentioned, medications if mentioned, emotional state if relevant.
-Max 1000 tokens. If nothing new was learned, return the profile unchanged.`,
+Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
           messages: [{ role: 'user', content:
             `CURRENT PROFILE:\n${fullMemory || '(new user, no profile yet)'}\n\nNEW EXCHANGE:\nUser: ${userMsg}\nAI: ${aiReply}\n\nOutput the updated detailed profile:`
           }]
@@ -3444,7 +3444,6 @@ Max 1000 tokens. If nothing new was learned, return the profile unchanged.`,
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/\n/g, '<br>');
   }
-  window.renderMd = renderMd;
   function addMsg(role, text) {
     const div = document.createElement('div');
     div.className = `ai-msg ${role}`;
