@@ -2385,14 +2385,8 @@ document.getElementById('importFile').addEventListener('change', e => {
 document.getElementById('aboutMeBtn').addEventListener('click', async () => {
   const modal = document.getElementById('aboutMeModal');
   const fullEl = document.getElementById('aboutMeFullMemory');
-  const shortEl = document.getElementById('aboutMeShortTerm');
   const full = (await window._idbGet('ai_full_memory')) || '';
-  const histRaw = await window._idbGet('ai_chat_history');
-  const hist = histRaw ? JSON.parse(histRaw) : [];
-  const shortMsgs = hist.slice(-50);
-  const shortText = shortMsgs.map(m => `${m.role === 'user' ? 'You' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`).join('\n\n');
-  fullEl.textContent  = full || '(no profile yet — start chatting with the AI)';
-  shortEl.textContent = shortText || '(no messages yet)';
+  fullEl.textContent = full || '(no profile yet — start chatting with the AI)';
   modal.classList.remove('hidden');
 });
 document.getElementById('aboutMeClose').addEventListener('click', () => {
@@ -2409,7 +2403,6 @@ document.getElementById('aboutMeClear').addEventListener('click', async () => {
   await window._idbSet('ai_full_memory', '');
   await window._idbSet('ai_chat_history', '[]');
   document.getElementById('aboutMeFullMemory').textContent = '(cleared)';
-  document.getElementById('aboutMeShortTerm').textContent  = '(cleared)';
 });
 
 // ── Init ──────────────────────────────────────────────────────────────
