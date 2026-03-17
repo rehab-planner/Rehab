@@ -3436,11 +3436,17 @@ Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
   }
 
   // ── Message UI ────────────────────────────────────────────────────────
-  function renderMd(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/**(.+?)**/g,"<strong>$1</strong>").replace(/*(.+?)*/g,"<em>$1</em>").replace(/\n/g,"<br>");}
+  function renderMd(t) {
+    return t
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>');
+  }
   function addMsg(role, text) {
-    const div = document.createElement("div");
+    const div = document.createElement('div');
     div.className = `ai-msg ${role}`;
-    if (role === "assistant") { div.innerHTML = renderMd(text); } else { div.textContent = text; }
+    if (role === 'assistant') { div.innerHTML = renderMd(text); } else { div.textContent = text; }
     msgsEl.appendChild(div);
     msgsEl.scrollTop = msgsEl.scrollHeight;
     return div;
