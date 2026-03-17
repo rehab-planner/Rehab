@@ -3153,7 +3153,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
   //   Nothing lost.
 
   const CHAT_WINDOW  = 4;   // raw messages sent to API
-  const SHORT_TERM_WINDOW = 50; // sliding window stored in IndexedDB
+  const SHORT_TERM_WINDOW = 30; // sliding window stored in IndexedDB
 
   let fullMemory = ''; // Layer 1 — permanent profile
   // Layer 2 — derived live from chatHistory.slice(-50), no separate var needed
@@ -3436,10 +3436,11 @@ Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
   }
 
   // ── Message UI ────────────────────────────────────────────────────────
+  function renderMd(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/**(.+?)**/g,"<strong>$1</strong>").replace(/*(.+?)*/g,"<em>$1</em>").replace(/\n/g,"<br>");}
   function addMsg(role, text) {
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.className = `ai-msg ${role}`;
-    div.textContent = text;
+    if (role === "assistant") { div.innerHTML = renderMd(text); } else { div.textContent = text; }
     msgsEl.appendChild(div);
     msgsEl.scrollTop = msgsEl.scrollHeight;
     return div;
@@ -3499,7 +3500,7 @@ ${getAppContext()}`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 3000,
+            max_tokens: 8096,
             system: systemPrompt,
             tools: AI_TOOLS,
             messages: loopMessages
@@ -3553,7 +3554,7 @@ ${getAppContext()}`;
         addActionMsg(actionsDone);
         if (finalText && finalText !== 'Done.') addMsg('assistant', finalText);
       } else {
-        thinkingEl.textContent = finalText;
+        thinkingEl.innerHTML = renderMd(finalText);
         thinkingEl.className = 'ai-msg assistant';
       }
 
