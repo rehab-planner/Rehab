@@ -3188,7 +3188,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 600,
+          max_tokens: 1200,
           system: `You maintain a detailed permanent profile for a stroke rehabilitation patient.
 Update the profile with any new confirmed information from the exchange.
 Write in full sentences where needed — be specific and detailed, not just key-value pairs.
@@ -3286,10 +3286,11 @@ Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
         return items.length ? `${d}: ${items.map(i=>i.name).join(', ')}` : `${d}: -`;
       });
 
-      // All weeks — sorted by date, skip empty weeks
+      // All weeks — sorted by date, skip empty, cap to last 8
       const allWeeksStr = Object.entries(allSchedules)
         .filter(([key, week]) => DAYS.some(d => (week[d]||[]).length > 0))
         .sort(([a], [b]) => a.localeCompare(b))
+        .slice(-8)
         .map(([key, week]) => {
           const lines = DAYS.map(d => {
             const items = (week[d]||[]).filter(i => i.name);
