@@ -3492,7 +3492,7 @@ For general questions — be concise. Maximum 3-4 short paragraphs. No lists lon
 Always use the memories below — never say you don't know something already in the profile or history.
 
 ${fullMemory ? `=== PERMANENT USER PROFILE ===\n${fullMemory}\n` : '=== USER PROFILE ===\nNew user — learn about them naturally.\n'}
-${shortTermText ? `=== CONVERSATION HISTORY (last ${Math.min(chatHistory.length, SHORT_TERM_WINDOW)} messages) ===\n${shortTermText}\n` : ''}
+${shortTermText ? `=== CONVERSATION HISTORY (messages 5-10) ===\n${shortTermText}\n` : ''}
 ${getAppContext()}`;
 
     // Last 4 messages as active window — always includes current user message
