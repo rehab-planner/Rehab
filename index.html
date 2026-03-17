@@ -3152,8 +3152,8 @@ document.getElementById('timerModal').addEventListener('click', e => {
   //   Chat Memory   = last 4 msgs
   //   Nothing lost.
 
-  const CHAT_WINDOW  = 4;   // raw messages sent to API
-  const SHORT_TERM_WINDOW = 10; // sliding window stored in IndexedDB
+  const CHAT_WINDOW  = 4;   // raw messages sent to API (messages 1-4)
+  const SHORT_TERM_WINDOW = 8; // sliding window for short-term memory (messages 1-8)
 
   let fullMemory = ''; // Layer 1 — permanent profile
   // Layer 2 — derived live from chatHistory.slice(-50), no separate var needed
@@ -3181,9 +3181,9 @@ document.getElementById('timerModal').addEventListener('click', e => {
 
   // ── Layer 1: Update Full Memory every 4 exchanges (uses Haiku) ────────
   async function updateFullMemory(userMsg, aiReply) {
-    if (chatHistory.length % 4 !== 0) return; // every 2 exchanges (2 msgs each)
+    if (chatHistory.length % 4 !== 0) return; // every 4 messages (2 exchanges)
     try {
-      const recentHistory = chatHistory.slice(-20)
+      const shortTermHistory = chatHistory.slice(-SHORT_TERM_WINDOW)
         .map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`)
         .join('\n');
       const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
@@ -3191,7 +3191,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1200,
+          max_tokens: 1500,
           system: `You maintain a detailed permanent profile for a stroke rehabilitation patient.
 Update the profile with any new confirmed information from the conversation.
 Write in full sentences where needed — be specific and detailed, not just key-value pairs.
@@ -3200,9 +3200,9 @@ Include: full name, age, stroke type and location in brain, exact date of stroke
 initial symptoms, current symptoms, recovery timeline, what has improved, what is still difficult,
 spasticity details (where, how much, triggers), therapy goals, what exercises work well, what to avoid,
 therapist names if mentioned, medications if mentioned, emotional state if relevant.
-Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
+Target around 600 words. If nothing new was learned, return the profile unchanged.`,
           messages: [{ role: 'user', content:
-            `CURRENT PROFILE:\n${fullMemory || '(new user, no profile yet)'}\n\nRECENT CONVERSATION:\n${recentHistory}\n\nOutput the updated detailed profile:`
+            `CURRENT PROFILE:\n${fullMemory || '(new user, no profile yet)'}\n\nRECENT CONVERSATION (short-term memory):\n${shortTermHistory}\n\nOutput the updated detailed profile:`
           }]
         })
       });
