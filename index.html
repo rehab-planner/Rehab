@@ -3315,17 +3315,32 @@ document.getElementById('timerModal').addEventListener('click', e => {
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 2000,
-          system: `You maintain the PERSONAL AND MEDICAL profile of a stroke rehabilitation patient.
-ONLY update this profile when new personal, identity, or medical information is detected.
-If the conversation contains NO new personal/medical/physical info — return the profile UNCHANGED, word for word.
+          system: `You maintain the PERSONAL & MEDICAL section of a stroke rehabilitation patient's profile.
+If NO new information belonging to this section is found — return the profile UNCHANGED, word for word.
 Write as compact bullet points and short factual statements. No narrative, no opinions.
-Include ONLY: full name, age, stroke type and brain location, stroke date, affected side and limbs,
-initial and current symptoms, recovery timeline, improvements, remaining difficulties,
-spasticity details (where/how much/triggers), medications and doses, therapist names, therapy types and frequency, goals.
-Do NOT include: exercise names, scheduling preferences, workout observations, or app usage patterns.
+
+BELONGS HERE:
+- Identity: name, age, occupation
+- Stroke: type, brain location, date, size
+- Affected side and specific limbs
+- Symptoms: initial and current (weakness, spasticity, co-contraction, tone levels)
+- Physical abilities and limitations (e.g. can climb 6 flights, walks without cane, cannot extend fingers voluntarily)
+- Medical procedures: Botox sessions (date, location, muscles injected, units), surgeries, hospitalizations
+- Medications and doses
+- Therapist names, therapy types (PT, OT, SDE), session frequency and duration
+- Recovery timeline and milestones
+- Goals
+
+DOES NOT BELONG HERE (goes in Exercise Memory instead):
+- Which exercises work well or poorly
+- Session timing preferences (morning vs evening)
+- Fatigue patterns during workouts
+- Equipment preferences
+- Progression notes for specific exercises
+
 Target ~600 words. Return ONLY the profile text.`,
           messages: [{ role: 'user', content:
-            `CURRENT PROFILE:\n${fullMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated profile (or unchanged if no new personal/medical info):`
+            `CURRENT PROFILE:\n${fullMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated profile (or unchanged if no new info belongs here):`
           }]
         })
       }),
@@ -3335,17 +3350,30 @@ Target ~600 words. Return ONLY the profile text.`,
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 2000,
-          system: `You maintain the EXERCISE MEMORY for a stroke rehabilitation patient.
-ONLY update when new exercise-related information is detected in the conversation.
-If the conversation contains NO new exercise info — return the profile UNCHANGED, word for word.
+          system: `You maintain the EXERCISE MEMORY section of a stroke rehabilitation patient's profile.
+If NO new information belonging to this section is found — return the memory UNCHANGED, word for word.
 Write as compact bullet points and short factual statements. No narrative, no opinions.
-Include ONLY: exercises that work well and why, exercises to avoid and why, timing preferences (e.g. better in morning),
-equipment used, technique notes, fatigue patterns, session length preferences, recovery observations, progression notes.
-Do NOT include: personal identity, medical history, stroke details, medications, or scheduling instructions.
-Target ~500 words. Rewrite entirely with most current info when updating — no stale data.
-Return ONLY the exercise memory text.`,
+Rewrite entirely with most current info when updating — remove stale data.
+
+BELONGS HERE:
+- Specific exercises that work well and exactly why (e.g. "EMS Hand reduces tone for 2hrs after")
+- Specific exercises to avoid and why
+- Timing preferences for training (e.g. "better results in morning before tone builds up")
+- Equipment used and observations (e.g. "EMS at 40min effective, beyond that fatigue")
+- Technique notes for specific exercises
+- Fatigue patterns and recovery time between sets
+- Session length that works vs causes overtraining
+- Progression observations (e.g. "added 5 reps without quality drop")
+
+DOES NOT BELONG HERE (goes in Personal & Medical instead):
+- Stroke details, Botox procedures, medications
+- Physical abilities and limitations (e.g. can walk without cane, finger extension status)
+- Spasticity levels or tone baselines — unless directly linked to a specific exercise
+- Therapist names or therapy session types
+
+Target ~500 words. Return ONLY the exercise memory text.`,
           messages: [{ role: 'user', content:
-            `CURRENT EXERCISE MEMORY:\n${exerciseMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated exercise memory (or unchanged if no new exercise info):`
+            `CURRENT EXERCISE MEMORY:\n${exerciseMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated exercise memory (or unchanged if no new info belongs here):`
           }]
         })
       })
