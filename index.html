@@ -3189,7 +3189,6 @@ document.getElementById('timerModal').addEventListener('click', e => {
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 2000,
-          stream: true,
           system: `You maintain a detailed permanent profile for a stroke rehabilitation patient.
 Update the profile with any new confirmed information from the exchange.
 Write in full sentences where needed — be specific and detailed, not just key-value pairs.
@@ -3204,29 +3203,9 @@ Max 1000 tokens. If nothing new was learned, return the profile unchanged.`,
           }]
         })
       });
-      // Stream the response to avoid Worker timeout
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = '', updated = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop();
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const raw = line.slice(6).trim();
-          if (raw === '[DONE]') break;
-          try {
-            const evt = JSON.parse(raw);
-            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-              updated += evt.delta.text;
-            }
-          } catch {}
-        }
-      }
-      if (updated.trim()) { fullMemory = updated.trim(); await saveLayer('ai_full_memory', fullMemory); }
+      const data = await res.json();
+      const updated = data.content?.[0]?.text?.trim();
+      if (updated) { fullMemory = updated; await saveLayer('ai_full_memory', fullMemory); }
     } catch(e) {}
   }
 
