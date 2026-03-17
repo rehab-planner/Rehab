@@ -3192,14 +3192,15 @@ document.getElementById('timerModal').addEventListener('click', e => {
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 1500,
-          system: `You maintain a detailed permanent profile for a stroke rehabilitation patient.
+          system: `You maintain a structured factual profile for a stroke rehabilitation patient.
 Update the profile with any new confirmed information from the conversation.
-Write in full sentences where needed — be specific and detailed, not just key-value pairs.
+Write as compact bullet points and short factual statements — NO narrative, NO storytelling, NO opinions or interpretations.
+Just facts: who, what, when, how much, which side, which muscle, which date.
 A future AI reading this profile must fully understand the patient's situation without any other context.
 Include: full name, age, stroke type and location in brain, exact date of stroke, affected side and specific limbs,
 initial symptoms, current symptoms, recovery timeline, what has improved, what is still difficult,
 spasticity details (where, how much, triggers), therapy goals, what exercises work well, what to avoid,
-therapist names if mentioned, medications if mentioned, emotional state if relevant.
+therapist names if mentioned, medications and doses if mentioned.
 Target around 600 words. If nothing new was learned, return the profile unchanged.`,
           messages: [{ role: 'user', content:
             `CURRENT PROFILE:\n${fullMemory || '(new user, no profile yet)'}\n\nRECENT CONVERSATION (short-term memory):\n${shortTermHistory}\n\nOutput the updated detailed profile:`
