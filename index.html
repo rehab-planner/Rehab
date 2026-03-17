@@ -332,6 +332,7 @@
   <div style="font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">AI Memory</div>
   <div style="display:flex;flex-direction:column;gap:8px;">
     <button id="aboutMeBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">About Me</button>
+    <button id="exerciseMemoryBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">Exercise Memory</button>
     <button id="rehabRulesBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">Rehab Rules</button>
     <button id="aiModelRulesBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">AI Model Rules</button>
   </div>
@@ -353,6 +354,23 @@
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button id="aboutMeClear" class="btn-cancel" style="flex:1;">Clear Memory</button>
       <button id="aboutMeCloseBtn" class="btn-primary" style="flex:1;">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Exercise Memory Modal -->
+<div class="overlay hidden" id="exerciseMemoryModal">
+  <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px;width:100%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div class="modal-title" style="font-family:'Syne',sans-serif;">EXERCISE MEMORY</div>
+      <button id="exerciseMemoryClose" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0;">×</button>
+    </div>
+    <div style="font-family:Arial,sans-serif;font-size:11px;color:var(--muted);margin-bottom:12px;">Auto-built from conversations. What works, what to avoid, timing, technique notes.</div>
+    <div id="exerciseMemoryContent" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;flex:1;overflow-y:auto;"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button id="exerciseMemoryClear" class="btn-cancel" style="flex:1;">Clear</button>
+      <button id="exerciseMemoryCloseBtn" class="btn-primary" style="flex:1;">Close</button>
     </div>
   </div>
 </div>
@@ -2439,11 +2457,30 @@ document.getElementById('aboutMeModal').addEventListener('click', e => {
 document.getElementById('aboutMeClear').addEventListener('click', async () => {
   if (!confirm('Clear all AI memory? This cannot be undone.')) return;
   await window._idbSet('ai_full_memory', '');
+  await window._idbSet('ai_exercise_memory', '');
   await window._idbSet('ai_chat_history', '[]');
+  fullMemory = '';
+  exerciseMemory = '';
   document.getElementById('aboutMeFullMemory').textContent = '(cleared)';
 });
 
-// ── Rehab Rules Modal ─────────────────────────────────────────────────
+// ── Exercise Memory Modal ─────────────────────────────────────────────
+document.getElementById('exerciseMemoryBtn').addEventListener('click', async () => {
+  const val = (await window._idbGet('ai_exercise_memory')) || '';
+  document.getElementById('exerciseMemoryContent').textContent = val || '(no exercise memory yet — start chatting with the AI)';
+  document.getElementById('exerciseMemoryModal').classList.remove('hidden');
+});
+document.getElementById('exerciseMemoryClose').addEventListener('click', () => document.getElementById('exerciseMemoryModal').classList.add('hidden'));
+document.getElementById('exerciseMemoryCloseBtn').addEventListener('click', () => document.getElementById('exerciseMemoryModal').classList.add('hidden'));
+document.getElementById('exerciseMemoryModal').addEventListener('click', e => { if (e.target === document.getElementById('exerciseMemoryModal')) document.getElementById('exerciseMemoryModal').classList.add('hidden'); });
+document.getElementById('exerciseMemoryClear').addEventListener('click', async () => {
+  if (!confirm('Clear Exercise Memory?')) return;
+  await window._idbSet('ai_exercise_memory', '');
+  exerciseMemory = '';
+  document.getElementById('exerciseMemoryContent').textContent = '(cleared)';
+});
+
+
 const REHAB_RULES_LIMIT = 800;
 document.getElementById('rehabRulesBtn').addEventListener('click', async () => {
   const val = (await window._idbGet('rehab_rules')) || '';
@@ -3239,13 +3276,13 @@ document.getElementById('timerModal').addEventListener('click', e => {
   const CHAT_WINDOW  = 8;   // raw messages sent to API
   const SHORT_TERM_WINDOW = 6; // messages 5-10 (older than active chat window, no overlap)
 
-  let fullMemory = ''; // Layer 1 — permanent profile
-  // Layer 2 — derived live from chatHistory.slice(-50), no separate var needed
-  // chatHistory — full raw history, Layer 2+3 source
+  let fullMemory = '';     // About Me — personal, medical, physical
+  let exerciseMemory = ''; // Exercise Memory — what works, preferences, observations
 
   // ── Load from IndexedDB ───────────────────────────────────────────────
   async function loadMemory() {
     try { fullMemory = (await window._idbGet('ai_full_memory')) || ''; } catch(e) { fullMemory = ''; }
+    try { exerciseMemory = (await window._idbGet('ai_exercise_memory')) || ''; } catch(e) { exerciseMemory = ''; }
     try {
       const h = await window._idbGet('ai_chat_history');
       chatHistory = h ? JSON.parse(h) : [];
@@ -3263,38 +3300,71 @@ document.getElementById('timerModal').addEventListener('click', e => {
     try { await window._idbSet(key, value); } catch(e) {}
   }
 
-  // ── Layer 1: Update Full Memory every 4 exchanges (uses Haiku) ────────
-  async function updateFullMemory(userMsg, aiReply) {
-    if (chatHistory.length % 4 !== 0) return; // every 4 messages (2 exchanges)
-    try {
-      const shortTermHistory = chatHistory.slice(-(CHAT_WINDOW + SHORT_TERM_WINDOW), -CHAT_WINDOW)
-        .map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`)
-        .join('\n');
-      const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
+  // ── Memory Updates: two focused Haiku calls every 4 messages ─────────
+  async function updateMemories() {
+    if (chatHistory.length % 4 !== 0) return;
+    const recentConvo = chatHistory.slice(-CHAT_WINDOW)
+      .map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`)
+      .join('\n');
+
+    // Run both in parallel
+    const [aboutRes, exRes] = await Promise.allSettled([
+      fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 2000,
-          system: `You maintain a structured factual profile for a stroke rehabilitation patient.
-Update the profile with any new confirmed information from the conversation.
-Write as compact bullet points and short factual statements — NO narrative, NO storytelling, NO opinions or interpretations.
-Just facts: who, what, when, how much, which side, which muscle, which date.
-A future AI reading this profile must fully understand the patient's situation without any other context.
-Include: full name, age, stroke type and location in brain, exact date of stroke, affected side and specific limbs,
-initial symptoms, current symptoms, recovery timeline, what has improved, what is still difficult,
-spasticity details (where, how much, triggers), therapy goals, what exercises work well, what to avoid,
-therapist names if mentioned, medications and doses if mentioned.
-Target around 600 words. If nothing new was learned, return the profile unchanged.`,
+          system: `You maintain the PERSONAL AND MEDICAL profile of a stroke rehabilitation patient.
+ONLY update this profile when new personal, identity, or medical information is detected.
+If the conversation contains NO new personal/medical/physical info — return the profile UNCHANGED, word for word.
+Write as compact bullet points and short factual statements. No narrative, no opinions.
+Include ONLY: full name, age, stroke type and brain location, stroke date, affected side and limbs,
+initial and current symptoms, recovery timeline, improvements, remaining difficulties,
+spasticity details (where/how much/triggers), medications and doses, therapist names, therapy types and frequency, goals.
+Do NOT include: exercise names, scheduling preferences, workout observations, or app usage patterns.
+Target ~600 words. Return ONLY the profile text.`,
           messages: [{ role: 'user', content:
-            `CURRENT PROFILE:\n${fullMemory || '(new user, no profile yet)'}\n\nRECENT CONVERSATION (short-term memory):\n${shortTermHistory}\n\nOutput the updated detailed profile:`
+            `CURRENT PROFILE:\n${fullMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated profile (or unchanged if no new personal/medical info):`
           }]
         })
-      });
-      const data = await res.json();
-      const updated = data.content?.[0]?.text?.trim();
-      if (updated) { fullMemory = updated; await saveLayer('ai_full_memory', fullMemory); }
-    } catch(e) {}
+      }),
+      fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 2000,
+          system: `You maintain the EXERCISE MEMORY for a stroke rehabilitation patient.
+ONLY update when new exercise-related information is detected in the conversation.
+If the conversation contains NO new exercise info — return the profile UNCHANGED, word for word.
+Write as compact bullet points and short factual statements. No narrative, no opinions.
+Include ONLY: exercises that work well and why, exercises to avoid and why, timing preferences (e.g. better in morning),
+equipment used, technique notes, fatigue patterns, session length preferences, recovery observations, progression notes.
+Do NOT include: personal identity, medical history, stroke details, medications, or scheduling instructions.
+Target ~500 words. Rewrite entirely with most current info when updating — no stale data.
+Return ONLY the exercise memory text.`,
+          messages: [{ role: 'user', content:
+            `CURRENT EXERCISE MEMORY:\n${exerciseMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated exercise memory (or unchanged if no new exercise info):`
+          }]
+        })
+      })
+    ]);
+
+    if (aboutRes.status === 'fulfilled') {
+      try {
+        const data = await aboutRes.value.json();
+        const updated = data.content?.[0]?.text?.trim();
+        if (updated && updated !== fullMemory) { fullMemory = updated; await saveLayer('ai_full_memory', fullMemory); }
+      } catch(e) {}
+    }
+    if (exRes.status === 'fulfilled') {
+      try {
+        const data = await exRes.value.json();
+        const updated = data.content?.[0]?.text?.trim();
+        if (updated && updated !== exerciseMemory) { exerciseMemory = updated; await saveLayer('ai_exercise_memory', exerciseMemory); }
+      } catch(e) {}
+    }
   }
 
   // ── Layer 2: Short Term = messages 5-10 (older than active chat window) ──
@@ -3577,7 +3647,8 @@ When asked about exercises for a muscle/condition — use web_search first, then
 For general questions — be concise. Maximum 3-4 short paragraphs. No lists longer than 5 items. Plain text only, no markdown, no asterisks.
 Always use the memories below — never say you don't know something already in the profile or history.
 
-${fullMemory ? `=== PERMANENT USER PROFILE ===\n${fullMemory}\n` : '=== USER PROFILE ===\nNew user — learn about them naturally.\n'}
+${fullMemory ? `=== ABOUT ME ===\n${fullMemory}\n` : '=== ABOUT ME ===\nNew user — learn about them naturally.\n'}
+${exerciseMemory ? `=== EXERCISE MEMORY ===\n${exerciseMemory}\n` : ''}
 ${rehabRules ? `=== REHAB RULES ===\n${rehabRules}\n` : ''}
 ${aiModelRules ? `=== AI MODEL RULES ===\n${aiModelRules}\n` : ''}
 ${getAppContext()}`;
@@ -3697,7 +3768,7 @@ ${getAppContext()}`;
 
       chatHistory.push({ role: 'assistant', content: finalText });
       await saveLayer('ai_chat_history', JSON.stringify(chatHistory));
-      updateFullMemory(userText.trim(), finalText);
+      updateMemories();
 
     } catch(e) {
       thinkingEl.textContent = 'Connection error. Make sure the app is running on GitHub Pages.';
