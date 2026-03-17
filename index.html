@@ -3153,7 +3153,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
   //   Nothing lost.
 
   const CHAT_WINDOW  = 4;   // raw messages sent to API
-  const SHORT_TERM_WINDOW = 30; // sliding window stored in IndexedDB
+  const SHORT_TERM_WINDOW = 10; // sliding window stored in IndexedDB
 
   let fullMemory = ''; // Layer 1 — permanent profile
   // Layer 2 — derived live from chatHistory.slice(-50), no separate var needed
@@ -3299,7 +3299,7 @@ Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
           return `Week ${key}:\n${lines.join('\n')}`;
         }).join('\n\n') || '(no history yet)';
 
-      return `EXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}\n\nALL WEEKS HISTORY:\n${allWeeksStr}`;
+      return `EXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}`;
     } catch(e) { return 'Unable to read app data.'; }
   }
 
@@ -3484,8 +3484,7 @@ Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
 When asked to schedule, add, move, or remove exercises — use tools directly. Summarise changes in 1-2 sentences.
 When asked to create a new exercise — use create_exercise.
 When asked about exercises for a muscle/condition — use web_search first, then create_exercise.
-For general questions — answer fully. Plain text only, no markdown.
-You have access to the user's full schedule history across all weeks — use it to identify patterns, progress and consistency.
+For general questions — be concise. Maximum 3-4 short paragraphs. No lists longer than 5 items. Plain text only, no markdown, no asterisks.
 Always use the memories below — never say you don't know something already in the profile or history.
 
 ${fullMemory ? `=== PERMANENT USER PROFILE ===\n${fullMemory}\n` : '=== USER PROFILE ===\nNew user — learn about them naturally.\n'}
@@ -3507,7 +3506,7 @@ ${getAppContext()}`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 8096,
+            max_tokens: 1500,
             system: systemPrompt,
             tools: AI_TOOLS,
             messages: loopMessages
