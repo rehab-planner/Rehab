@@ -3495,62 +3495,134 @@ ${getAppContext()}`;
     const windowedHistory = chatHistory.slice(-CHAT_WINDOW);
 
     try {
-      // Agentic loop — keep going while AI wants to use tools
+      // ── Streaming first turn, non-streaming for tool loops ────────────
       let loopMessages = [...windowedHistory];
       let finalText = null;
       const actionsDone = [];
+      let firstTurn = true;
 
       while (true) {
+        const useStream = firstTurn;
+        firstTurn = false;
+
         const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 1500,
+            max_tokens: 800,
             system: systemPrompt,
             tools: AI_TOOLS,
-            messages: loopMessages
+            messages: loopMessages,
+            stream: useStream
           })
         });
 
-        const data = await res.json();
+        if (useStream) {
+          // ── Parse SSE stream ────────────────────────────────────────
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = '';
+          let streamText = '';
+          let stopReason = null;
+          let toolBlocks = [];
+          let currentTool = null;
+          let fullContent = []; // reconstruct for tool loop
 
-        if (data.error) {
-          thinkingEl.textContent = 'API error: ' + (data.error.message || 'unknown');
           thinkingEl.className = 'ai-msg assistant';
-          chatHistory.pop();
-          thinking = false;
-          sendBtn.style.opacity = '1';
-          return;
-        }
 
-        // Collect text and tool_use blocks
-        const textBlock = data.content.find(b => b.type === 'text');
-        const toolBlocks = data.content.filter(b => b.type === 'tool_use');
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split('
+');
+            buf = lines.pop(); // keep incomplete line
 
-        if (data.stop_reason === 'tool_use' && toolBlocks.length > 0) {
-          // Execute all tools
-          const toolResults = [];
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              const raw = line.slice(6).trim();
+              if (raw === '[DONE]') break;
+              let evt;
+              try { evt = JSON.parse(raw); } catch { continue; }
+
+              if (evt.type === 'content_block_start') {
+                if (evt.content_block.type === 'text') {
+                  fullContent[evt.index] = { type: 'text', text: '' };
+                } else if (evt.content_block.type === 'tool_use') {
+                  currentTool = { type: 'tool_use', id: evt.content_block.id, name: evt.content_block.name, input: '' };
+                  fullContent[evt.index] = currentTool;
+                  toolBlocks.push(currentTool);
+                }
+              } else if (evt.type === 'content_block_delta') {
+                if (evt.delta.type === 'text_delta') {
+                  streamText += evt.delta.text;
+                  if (fullContent[evt.index]) fullContent[evt.index].text += evt.delta.text;
+                  thinkingEl.innerHTML = renderMd(streamText);
+                  msgsEl.scrollTop = msgsEl.scrollHeight;
+                } else if (evt.delta.type === 'input_json_delta' && currentTool) {
+                  currentTool.input += evt.delta.partial_json;
+                }
+              } else if (evt.type === 'message_delta') {
+                stopReason = evt.delta.stop_reason;
+              }
+            }
+          }
+
+          // Parse tool inputs from JSON strings
           toolBlocks.forEach(tb => {
-            if (tb.name === 'web_search') return; // handled natively by API
-            const result = executeTool(tb.name, tb.input);
-            if (result.success) actionsDone.push(result.message);
-            toolResults.push({
-              type: 'tool_result',
-              tool_use_id: tb.id,
-              content: JSON.stringify(result)
-            });
+            try { tb.input = JSON.parse(tb.input || '{}'); } catch { tb.input = {}; }
           });
 
-          // Add assistant turn + tool results to loop
-          loopMessages.push({ role: 'assistant', content: data.content });
-          loopMessages.push({ role: 'user', content: toolResults });
-          // continue loop
+          const cleanContent = fullContent.filter(Boolean);
+
+          if (stopReason === 'tool_use' && toolBlocks.length > 0) {
+            const toolResults = [];
+            toolBlocks.forEach(tb => {
+              if (tb.name === 'web_search') return;
+              const result = executeTool(tb.name, tb.input);
+              if (result.success) actionsDone.push(result.message);
+              toolResults.push({ type: 'tool_result', tool_use_id: tb.id, content: JSON.stringify(result) });
+            });
+            thinkingEl.remove();
+            loopMessages.push({ role: 'assistant', content: cleanContent });
+            loopMessages.push({ role: 'user', content: toolResults });
+            continue;
+          } else {
+            finalText = streamText || (actionsDone.length ? 'Done.' : 'Sorry, something went wrong.');
+            break;
+          }
 
         } else {
-          // end_turn — we have final reply
-          finalText = textBlock?.text || (actionsDone.length ? 'Done.' : 'Sorry, something went wrong.');
-          break;
+          // ── Non-streaming for subsequent tool turns ─────────────────
+          const data = await res.json();
+
+          if (data.error) {
+            thinkingEl.textContent = 'API error: ' + (data.error.message || 'unknown');
+            thinkingEl.className = 'ai-msg assistant';
+            chatHistory.pop();
+            thinking = false;
+            sendBtn.style.opacity = '1';
+            return;
+          }
+
+          const textBlock = data.content.find(b => b.type === 'text');
+          const toolBlocks = data.content.filter(b => b.type === 'tool_use');
+
+          if (data.stop_reason === 'tool_use' && toolBlocks.length > 0) {
+            const toolResults = [];
+            toolBlocks.forEach(tb => {
+              if (tb.name === 'web_search') return;
+              const result = executeTool(tb.name, tb.input);
+              if (result.success) actionsDone.push(result.message);
+              toolResults.push({ type: 'tool_result', tool_use_id: tb.id, content: JSON.stringify(result) });
+            });
+            loopMessages.push({ role: 'assistant', content: data.content });
+            loopMessages.push({ role: 'user', content: toolResults });
+          } else {
+            finalText = textBlock?.text || (actionsDone.length ? 'Done.' : 'Sorry, something went wrong.');
+            break;
+          }
         }
       }
 
@@ -3566,7 +3638,6 @@ ${getAppContext()}`;
 
       chatHistory.push({ role: 'assistant', content: finalText });
       await saveLayer('ai_chat_history', JSON.stringify(chatHistory));
-      // Update full memory in background every 4 exchanges
       updateFullMemory(userText.trim(), finalText);
 
     } catch(e) {
