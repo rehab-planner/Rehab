@@ -344,14 +344,6 @@
         <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:8px;">Permanent Profile</div>
         <div id="aboutMeFullMemory" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;"></div>
       </div>
-      <div>
-        <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#35c8f1;margin-bottom:8px;">Recent History Summary</div>
-        <div id="aboutMeShortTerm" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;"></div>
-      </div>
-      <div>
-        <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#f1a035;margin-bottom:8px;">AI Rules</div>
-        <div id="aboutMeRules" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.8;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:40px;"></div>
-      </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button id="aboutMeClear" class="btn-cancel" style="flex:1;">Clear Memory</button>
@@ -2392,20 +2384,8 @@ document.getElementById('importFile').addEventListener('change', e => {
 document.getElementById('aboutMeBtn').addEventListener('click', async () => {
   const modal = document.getElementById('aboutMeModal');
   const fullEl = document.getElementById('aboutMeFullMemory');
-  const shortEl = document.getElementById('aboutMeShortTerm');
-  const rulesEl = document.getElementById('aboutMeRules');
   const full = (await window._idbGet('ai_full_memory')) || '';
-  const histRaw = await window._idbGet('ai_chat_history');
-  const hist = histRaw ? JSON.parse(histRaw) : [];
-  const shortMsgs = hist.slice(-50);
-  const shortText = shortMsgs.map(m => `${m.role === 'user' ? 'You' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`).join('\n\n');
-  fullEl.textContent  = full || '(no profile yet — start chatting with the AI)';
-  shortEl.textContent = shortText || '(no messages yet)';
-  // Show rules
-  await loadAIRules();
-  rulesEl.innerHTML = aiRules.length
-    ? aiRules.map((r, i) => `${i+1}. ${r}`).join('\n')
-    : '(no rules yet)';
+  fullEl.textContent = full || '(no profile yet — start chatting with the AI)';
   modal.classList.remove('hidden');
 });
 document.getElementById('aboutMeClose').addEventListener('click', () => {
@@ -2422,7 +2402,6 @@ document.getElementById('aboutMeClear').addEventListener('click', async () => {
   await window._idbSet('ai_full_memory', '');
   await window._idbSet('ai_chat_history', '[]');
   document.getElementById('aboutMeFullMemory').textContent = '(cleared)';
-  document.getElementById('aboutMeShortTerm').textContent  = '(cleared)';
 });
 
 // ── Init ──────────────────────────────────────────────────────────────
@@ -2470,27 +2449,6 @@ openDB().then(loadStateFromDB).then(saved => {
 });
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
-
-// ── AI Rules ──────────────────────────────────────────────────────────
-let aiRules = [];
-async function loadAIRules() {
-  try {
-    const res = await fetch('./ai_rules.json?v=' + Date.now());
-    const data = await res.json();
-    aiRules = data.rules || [];
-  } catch(e) { aiRules = []; }
-  // Merge with any user-added rules from IndexedDB
-  try {
-    const stored = await window._idbGet('ai_rules');
-    if (stored) {
-      const extra = JSON.parse(stored);
-      // Merge: keep file rules + any new ones from DB not already in file
-      extra.forEach(r => { if (!aiRules.includes(r)) aiRules.push(r); });
-    }
-  } catch(e) {}
-}
-// Load rules after DB is ready
-openDB().then(() => loadAIRules());
 
 // ── Top Toolbar Buttons ───────────────────────────────────────────────
 // ── Exercise Bank Accordion ───────────────────────────────────────────
@@ -3183,8 +3141,8 @@ document.getElementById('timerModal').addEventListener('click', e => {
   //   Chat Memory   = last 4 msgs
   //   Nothing lost.
 
-  const CHAT_WINDOW  = 4;   // raw messages sent to API
-  const SHORT_TERM_WINDOW = 50; // sliding window stored in IndexedDB
+  const CHAT_WINDOW  = 4;   // msgs 1-4 (most recent)   // raw messages sent to API
+  const SHORT_TERM_WINDOW = 40; // sliding window stored in IndexedDB
 
   let fullMemory = ''; // Layer 1 — permanent profile
   // Layer 2 — derived live from chatHistory.slice(-50), no separate var needed
@@ -3212,7 +3170,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
 
   // ── Layer 1: Update Full Memory every 4 exchanges (uses Haiku) ────────
   async function updateFullMemory(userMsg, aiReply) {
-    if (chatHistory.length % 8 !== 0) return; // every 4 exchanges (2 msgs each)
+    if (chatHistory.length % 2 !== 0) return; // every 1 exchange (2 msgs)
     try {
       const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
         method: 'POST',
@@ -3240,8 +3198,8 @@ Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
     } catch(e) {}
   }
 
-  // ── Layer 2: Short Term = last 50 messages as readable text ───────────
   function getShortTermText() {
+    // Layer 2: last 40 messages (includes all recent context)
     const msgs = chatHistory.slice(-SHORT_TERM_WINDOW);
     return msgs.map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`).join('\n');
   }
@@ -3380,19 +3338,8 @@ Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
       input_schema: { type: 'object', properties: {} }
     },
     {
-      name: 'add_rule',
-      description: 'Add a new global rule when the user says "new rule" followed by the rule text.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          rule: { type: 'string', description: 'The rule text to add' }
-        },
-        required: ['rule']
-      }
-    },
-    {
       name: 'create_exercise',
-      description: 'Create a new exercise and add it to the exercise bank.',
+      description: 'Create a new exercise and add it to the exercise bank. Use this when the user asks to create, add, or suggest a new exercise that does not yet exist in the bank.',
       input_schema: {
         type: 'object',
         properties: {
@@ -3471,14 +3418,6 @@ Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
         return { success: true, message: `Created "${exName.trim()}" in ${cat} category` };
       }
 
-      if (name === 'add_rule') {
-        const { rule } = input;
-        if (!rule || !rule.trim()) return { success: false, error: 'Rule text is required' };
-        aiRules.push(rule.trim());
-        saveLayer('ai_rules', JSON.stringify(aiRules));
-        return { success: true, message: `New rule added: "${rule.trim()}"` };
-      }
-
       return { success: false, error: `Unknown tool: ${name}` };
     } catch(e) {
       return { success: false, error: e.message };
@@ -3526,14 +3465,12 @@ Max 500 tokens. If nothing new was learned, return the profile unchanged.`,
 When asked to schedule, add, move, or remove exercises — use tools directly. Summarise changes in 1-2 sentences.
 When asked to create a new exercise — use create_exercise.
 When asked about exercises for a muscle/condition — use web_search first, then create_exercise.
-When the user says "new rule" followed by text — use add_rule to save it immediately.
+For general questions — answer fully. Plain text only, no markdown.
 You have access to the user's full schedule history across all weeks — use it to identify patterns, progress and consistency.
 Always use the memories below — never say you don't know something already in the profile or history.
 
-${aiRules.length ? `=== GLOBAL RULES ===\n${aiRules.map((r,i) => `${i+1}. ${r}`).join('\n')}\n` : ''}
 ${fullMemory ? `=== PERMANENT USER PROFILE ===\n${fullMemory}\n` : '=== USER PROFILE ===\nNew user — learn about them naturally.\n'}
 ${shortTermText ? `=== CONVERSATION HISTORY (last ${Math.min(chatHistory.length, SHORT_TERM_WINDOW)} messages) ===\n${shortTermText}\n` : ''}
-${aiRules.length ? `=== APP RULES (always follow these) ===\n${aiRules.map((r,i)=>`${i+1}. ${r}`).join('\n')}\n` : ''}
 ${getAppContext()}`;
 
     // Last 4 messages as active window — always includes current user message
