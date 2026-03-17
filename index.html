@@ -3495,16 +3495,12 @@ ${getAppContext()}`;
     const windowedHistory = chatHistory.slice(-CHAT_WINDOW);
 
     try {
-      // ── Streaming first turn, non-streaming for tool loops ────────────
+      // ── All turns stream — Worker passes chunks through without buffering ──
       let loopMessages = [...windowedHistory];
       let finalText = null;
       const actionsDone = [];
-      let firstTurn = true;
 
       while (true) {
-        const useStream = firstTurn;
-        firstTurn = false;
-
         const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3514,114 +3510,87 @@ ${getAppContext()}`;
             system: systemPrompt,
             tools: AI_TOOLS,
             messages: loopMessages,
-            stream: useStream
+            stream: true
           })
         });
 
-        if (useStream) {
-          // ── Parse SSE stream ────────────────────────────────────────
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder();
-          let buf = '';
-          let streamText = '';
-          let stopReason = null;
-          let toolBlocks = [];
-          let currentTool = null;
-          let fullContent = []; // reconstruct for tool loop
+        // ── Parse SSE stream ──────────────────────────────────────────
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+        let streamText = '';
+        let stopReason = null;
+        let toolBlocks = [];
+        let currentTool = null;
+        let fullContent = [];
 
-          thinkingEl.className = 'ai-msg assistant';
+        thinkingEl.className = 'ai-msg assistant';
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buf += decoder.decode(value, { stream: true });
-            const lines = buf.split('\n');
-            buf = lines.pop(); // keep incomplete line
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split('\n');
+          buf = lines.pop();
 
-            for (const line of lines) {
-              if (!line.startsWith('data: ')) continue;
-              const raw = line.slice(6).trim();
-              if (raw === '[DONE]') break;
-              let evt;
-              try { evt = JSON.parse(raw); } catch { continue; }
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const raw = line.slice(6).trim();
+            if (raw === '[DONE]') break;
+            let evt;
+            try { evt = JSON.parse(raw); } catch { continue; }
 
-              if (evt.type === 'content_block_start') {
-                if (evt.content_block.type === 'text') {
-                  fullContent[evt.index] = { type: 'text', text: '' };
-                } else if (evt.content_block.type === 'tool_use') {
-                  currentTool = { type: 'tool_use', id: evt.content_block.id, name: evt.content_block.name, input: '' };
-                  fullContent[evt.index] = currentTool;
-                  toolBlocks.push(currentTool);
-                }
-              } else if (evt.type === 'content_block_delta') {
-                if (evt.delta.type === 'text_delta') {
-                  streamText += evt.delta.text;
-                  if (fullContent[evt.index]) fullContent[evt.index].text += evt.delta.text;
-                  thinkingEl.innerHTML = renderMd(streamText);
-                  msgsEl.scrollTop = msgsEl.scrollHeight;
-                } else if (evt.delta.type === 'input_json_delta' && currentTool) {
-                  currentTool.input += evt.delta.partial_json;
-                }
-              } else if (evt.type === 'message_delta') {
-                stopReason = evt.delta.stop_reason;
+            if (evt.type === 'content_block_start') {
+              if (evt.content_block.type === 'text') {
+                fullContent[evt.index] = { type: 'text', text: '' };
+              } else if (evt.content_block.type === 'tool_use') {
+                currentTool = { type: 'tool_use', id: evt.content_block.id, name: evt.content_block.name, input: '' };
+                fullContent[evt.index] = currentTool;
+                toolBlocks.push(currentTool);
               }
+            } else if (evt.type === 'content_block_delta') {
+              if (evt.delta.type === 'text_delta') {
+                streamText += evt.delta.text;
+                if (fullContent[evt.index]) fullContent[evt.index].text += evt.delta.text;
+                thinkingEl.innerHTML = renderMd(streamText);
+                msgsEl.scrollTop = msgsEl.scrollHeight;
+              } else if (evt.delta.type === 'input_json_delta' && currentTool) {
+                currentTool.input += evt.delta.partial_json;
+              }
+            } else if (evt.type === 'message_delta') {
+              stopReason = evt.delta.stop_reason;
+            } else if (evt.type === 'error') {
+              thinkingEl.textContent = 'API error: ' + (evt.error?.message || 'unknown');
+              thinkingEl.className = 'ai-msg assistant';
+              chatHistory.pop();
+              thinking = false;
+              sendBtn.style.opacity = '1';
+              return;
             }
           }
+        }
 
-          // Parse tool inputs from JSON strings
+        toolBlocks.forEach(tb => {
+          try { tb.input = JSON.parse(tb.input || '{}'); } catch { tb.input = {}; }
+        });
+
+        const cleanContent = fullContent.filter(Boolean);
+
+        if (stopReason === 'tool_use' && toolBlocks.length > 0) {
+          const toolResults = [];
           toolBlocks.forEach(tb => {
-            try { tb.input = JSON.parse(tb.input || '{}'); } catch { tb.input = {}; }
+            if (tb.name === 'web_search') return;
+            const result = executeTool(tb.name, tb.input);
+            if (result.success) actionsDone.push(result.message);
+            toolResults.push({ type: 'tool_result', tool_use_id: tb.id, content: JSON.stringify(result) });
           });
-
-          const cleanContent = fullContent.filter(Boolean);
-
-          if (stopReason === 'tool_use' && toolBlocks.length > 0) {
-            const toolResults = [];
-            toolBlocks.forEach(tb => {
-              if (tb.name === 'web_search') return;
-              const result = executeTool(tb.name, tb.input);
-              if (result.success) actionsDone.push(result.message);
-              toolResults.push({ type: 'tool_result', tool_use_id: tb.id, content: JSON.stringify(result) });
-            });
-            thinkingEl.remove();
-            loopMessages.push({ role: 'assistant', content: cleanContent });
-            loopMessages.push({ role: 'user', content: toolResults });
-            continue;
-          } else {
-            finalText = streamText || (actionsDone.length ? 'Done.' : 'Sorry, something went wrong.');
-            break;
-          }
-
+          thinkingEl.remove();
+          loopMessages.push({ role: 'assistant', content: cleanContent });
+          loopMessages.push({ role: 'user', content: toolResults });
+          continue;
         } else {
-          // ── Non-streaming for subsequent tool turns ─────────────────
-          const data = await res.json();
-
-          if (data.error) {
-            thinkingEl.textContent = 'API error: ' + (data.error.message || 'unknown');
-            thinkingEl.className = 'ai-msg assistant';
-            chatHistory.pop();
-            thinking = false;
-            sendBtn.style.opacity = '1';
-            return;
-          }
-
-          const textBlock = data.content.find(b => b.type === 'text');
-          const toolBlocks = data.content.filter(b => b.type === 'tool_use');
-
-          if (data.stop_reason === 'tool_use' && toolBlocks.length > 0) {
-            const toolResults = [];
-            toolBlocks.forEach(tb => {
-              if (tb.name === 'web_search') return;
-              const result = executeTool(tb.name, tb.input);
-              if (result.success) actionsDone.push(result.message);
-              toolResults.push({ type: 'tool_result', tool_use_id: tb.id, content: JSON.stringify(result) });
-            });
-            loopMessages.push({ role: 'assistant', content: data.content });
-            loopMessages.push({ role: 'user', content: toolResults });
-          } else {
-            finalText = textBlock?.text || (actionsDone.length ? 'Done.' : 'Sorry, something went wrong.');
-            break;
-          }
+          finalText = streamText || (actionsDone.length ? 'Done.' : 'Sorry, something went wrong.');
+          break;
         }
       }
 
