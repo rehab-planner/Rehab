@@ -3152,7 +3152,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
   //   Chat Memory   = last 4 msgs
   //   Nothing lost.
 
-  const CHAT_WINDOW  = 4;   // raw messages sent to API (messages 1-4)
+  const CHAT_WINDOW  = 8;   // raw messages sent to API
   const SHORT_TERM_WINDOW = 6; // messages 5-10 (older than active chat window, no overlap)
 
   let fullMemory = ''; // Layer 1 — permanent profile
@@ -3191,7 +3191,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1500,
+          max_tokens: 2000,
           system: `You maintain a structured factual profile for a stroke rehabilitation patient.
 Update the profile with any new confirmed information from the conversation.
 Write as compact bullet points and short factual statements — NO narrative, NO storytelling, NO opinions or interpretations.
@@ -3492,7 +3492,6 @@ For general questions — be concise. Maximum 3-4 short paragraphs. No lists lon
 Always use the memories below — never say you don't know something already in the profile or history.
 
 ${fullMemory ? `=== PERMANENT USER PROFILE ===\n${fullMemory}\n` : '=== USER PROFILE ===\nNew user — learn about them naturally.\n'}
-${shortTermText ? `=== CONVERSATION HISTORY (messages 5-10) ===\n${shortTermText}\n` : ''}
 ${getAppContext()}`;
 
     // Last 4 messages as active window — always includes current user message
