@@ -330,7 +330,11 @@
 
 <div style="margin-top:12px;padding:16px;border:1px solid var(--border);border-radius:12px;">
   <div style="font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">AI Memory</div>
-  <button id="aboutMeBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">About Me</button>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <button id="aboutMeBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">About Me</button>
+    <button id="rehabRulesBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">Rehab Rules</button>
+    <button id="aiModelRulesBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">AI Model Rules</button>
+  </div>
 </div>
 </div><!-- /page-wrap -->
 <div class="overlay hidden" id="aboutMeModal">
@@ -349,6 +353,40 @@
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button id="aboutMeClear" class="btn-cancel" style="flex:1;">Clear Memory</button>
       <button id="aboutMeCloseBtn" class="btn-primary" style="flex:1;">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rehab Rules Modal -->
+<div class="overlay hidden" id="rehabRulesModal">
+  <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px;width:100%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div class="modal-title" style="font-family:'Syne',sans-serif;">REHAB RULES</div>
+      <button id="rehabRulesClose" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0;">×</button>
+    </div>
+    <div style="font-family:Arial,sans-serif;font-size:11px;color:var(--muted);margin-bottom:12px;">Instructions about how to train, schedule exercises, and manage your rehab plan. Sent to AI on every message.</div>
+    <textarea id="rehabRulesText" placeholder="e.g. Don't create new exercises unless I ask. Always suggest rest days between leg sessions." style="flex:1;min-height:200px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-family:Arial,sans-serif;font-size:13px;line-height:1.6;resize:none;box-sizing:border-box;"></textarea>
+    <div id="rehabRulesCount" style="font-family:Arial,sans-serif;font-size:10px;color:var(--muted);text-align:right;margin-top:4px;">0 / 800 chars</div>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button id="rehabRulesClear" class="btn-cancel" style="flex:1;">Clear</button>
+      <button id="rehabRulesSave" class="btn-primary" style="flex:1;">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI Model Rules Modal -->
+<div class="overlay hidden" id="aiModelRulesModal">
+  <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px;width:100%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div class="modal-title" style="font-family:'Syne',sans-serif;">AI MODEL RULES</div>
+      <button id="aiModelRulesClose" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0;">×</button>
+    </div>
+    <div style="font-family:Arial,sans-serif;font-size:11px;color:var(--muted);margin-bottom:12px;">Instructions about how the AI responds — tone, length, format. Sent to AI on every message.</div>
+    <textarea id="aiModelRulesText" placeholder="e.g. Keep answers short. Never use bullet points. Always address me by name." style="flex:1;min-height:200px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-family:Arial,sans-serif;font-size:13px;line-height:1.6;resize:none;box-sizing:border-box;"></textarea>
+    <div id="aiModelRulesCount" style="font-family:Arial,sans-serif;font-size:10px;color:var(--muted);text-align:right;margin-top:4px;">0 / 500 chars</div>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button id="aiModelRulesClear" class="btn-cancel" style="flex:1;">Clear</button>
+      <button id="aiModelRulesSave" class="btn-primary" style="flex:1;">Save</button>
     </div>
   </div>
 </div>
@@ -2405,7 +2443,63 @@ document.getElementById('aboutMeClear').addEventListener('click', async () => {
   document.getElementById('aboutMeFullMemory').textContent = '(cleared)';
 });
 
-// ── Init ──────────────────────────────────────────────────────────────
+// ── Rehab Rules Modal ─────────────────────────────────────────────────
+const REHAB_RULES_LIMIT = 800;
+document.getElementById('rehabRulesBtn').addEventListener('click', async () => {
+  const val = (await window._idbGet('rehab_rules')) || '';
+  document.getElementById('rehabRulesText').value = val;
+  document.getElementById('rehabRulesCount').textContent = `${val.length} / ${REHAB_RULES_LIMIT} chars`;
+  document.getElementById('rehabRulesCount').style.color = val.length > REHAB_RULES_LIMIT * 0.9 ? '#f87171' : 'var(--muted)';
+  document.getElementById('rehabRulesModal').classList.remove('hidden');
+});
+document.getElementById('rehabRulesText').addEventListener('input', function() {
+  const len = this.value.length;
+  if (len > REHAB_RULES_LIMIT) this.value = this.value.slice(0, REHAB_RULES_LIMIT);
+  document.getElementById('rehabRulesCount').textContent = `${Math.min(len, REHAB_RULES_LIMIT)} / ${REHAB_RULES_LIMIT} chars`;
+  document.getElementById('rehabRulesCount').style.color = len > REHAB_RULES_LIMIT * 0.9 ? '#f87171' : 'var(--muted)';
+});
+document.getElementById('rehabRulesSave').addEventListener('click', async () => {
+  await window._idbSet('rehab_rules', document.getElementById('rehabRulesText').value.trim());
+  document.getElementById('rehabRulesModal').classList.add('hidden');
+});
+document.getElementById('rehabRulesClear').addEventListener('click', async () => {
+  if (!confirm('Clear Rehab Rules?')) return;
+  document.getElementById('rehabRulesText').value = '';
+  document.getElementById('rehabRulesCount').textContent = `0 / ${REHAB_RULES_LIMIT} chars`;
+  await window._idbSet('rehab_rules', '');
+});
+document.getElementById('rehabRulesClose').addEventListener('click', () => document.getElementById('rehabRulesModal').classList.add('hidden'));
+document.getElementById('rehabRulesModal').addEventListener('click', e => { if (e.target === document.getElementById('rehabRulesModal')) document.getElementById('rehabRulesModal').classList.add('hidden'); });
+
+// ── AI Model Rules Modal ──────────────────────────────────────────────
+const AI_MODEL_RULES_LIMIT = 500;
+document.getElementById('aiModelRulesBtn').addEventListener('click', async () => {
+  const val = (await window._idbGet('ai_model_rules')) || '';
+  document.getElementById('aiModelRulesText').value = val;
+  document.getElementById('aiModelRulesCount').textContent = `${val.length} / ${AI_MODEL_RULES_LIMIT} chars`;
+  document.getElementById('aiModelRulesCount').style.color = val.length > AI_MODEL_RULES_LIMIT * 0.9 ? '#f87171' : 'var(--muted)';
+  document.getElementById('aiModelRulesModal').classList.remove('hidden');
+});
+document.getElementById('aiModelRulesText').addEventListener('input', function() {
+  const len = this.value.length;
+  if (len > AI_MODEL_RULES_LIMIT) this.value = this.value.slice(0, AI_MODEL_RULES_LIMIT);
+  document.getElementById('aiModelRulesCount').textContent = `${Math.min(len, AI_MODEL_RULES_LIMIT)} / ${AI_MODEL_RULES_LIMIT} chars`;
+  document.getElementById('aiModelRulesCount').style.color = len > AI_MODEL_RULES_LIMIT * 0.9 ? '#f87171' : 'var(--muted)';
+});
+document.getElementById('aiModelRulesSave').addEventListener('click', async () => {
+  await window._idbSet('ai_model_rules', document.getElementById('aiModelRulesText').value.trim());
+  document.getElementById('aiModelRulesModal').classList.add('hidden');
+});
+document.getElementById('aiModelRulesClear').addEventListener('click', async () => {
+  if (!confirm('Clear AI Model Rules?')) return;
+  document.getElementById('aiModelRulesText').value = '';
+  document.getElementById('aiModelRulesCount').textContent = `0 / ${AI_MODEL_RULES_LIMIT} chars`;
+  await window._idbSet('ai_model_rules', '');
+});
+document.getElementById('aiModelRulesClose').addEventListener('click', () => document.getElementById('aiModelRulesModal').classList.add('hidden'));
+document.getElementById('aiModelRulesModal').addEventListener('click', e => { if (e.target === document.getElementById('aiModelRulesModal')) document.getElementById('aiModelRulesModal').classList.add('hidden'); });
+
+
 openDB().then(loadStateFromDB).then(saved => {
   if (saved) {
     if (saved.exercises)    exercises    = saved.exercises;
@@ -3472,6 +3566,8 @@ Target around 600 words. If nothing new was learned, return the profile unchange
     const thinkingEl = addMsg('assistant thinking', '…');
 
     const shortTermText = getShortTermText();
+    const rehabRules = (await window._idbGet('rehab_rules')) || '';
+    const aiModelRules = (await window._idbGet('ai_model_rules')) || '';
 
     const systemPrompt = `You are a physiotherapy assistant built into the Rehab Planner app. You help stroke rehabilitation patients.
 
@@ -3482,6 +3578,8 @@ For general questions — be concise. Maximum 3-4 short paragraphs. No lists lon
 Always use the memories below — never say you don't know something already in the profile or history.
 
 ${fullMemory ? `=== PERMANENT USER PROFILE ===\n${fullMemory}\n` : '=== USER PROFILE ===\nNew user — learn about them naturally.\n'}
+${rehabRules ? `=== REHAB RULES ===\n${rehabRules}\n` : ''}
+${aiModelRules ? `=== AI MODEL RULES ===\n${aiModelRules}\n` : ''}
 ${getAppContext()}`;
 
     // Last 4 messages as active window — always includes current user message
