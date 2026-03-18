@@ -3758,19 +3758,30 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
     // Last 4 messages as active window — always includes current user message
     const windowedHistory = chatHistory.slice(-CHAT_WINDOW);
 
+    // Route to Haiku for simple queries, Sonnet for scheduling/planning/tool use
+    const complexKeywords = /\b(plan|schedule|add|remove|clear|create|move|swap|balance|organise|organize|week|today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|exercise|workout|session|implement)\b/i;
+    const needsSonnet = complexKeywords.test(userText);
+    const selectedModel = needsSonnet ? 'claude-sonnet-4-20250514' : 'claude-haiku-4-5-20251001';
+    const selectedMaxTokens = needsSonnet ? 4000 : 1500;
+
     try {
       // ── All turns stream — Worker passes chunks through without buffering ──
       let loopMessages = [...windowedHistory];
       let finalText = null;
       const actionsDone = [];
+      let isFirstTurn = true;
 
       while (true) {
+        // Always use Sonnet for tool loop turns (not first turn)
+        const model = (isFirstTurn ? selectedModel : 'claude-sonnet-4-20250514');
+        const maxTok = (isFirstTurn ? selectedMaxTokens : 4000);
+        isFirstTurn = false;
         const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 4000,
+            model: model,
+            max_tokens: maxTok,
             system: systemBlocks,
             tools: AI_TOOLS,
             messages: loopMessages,
