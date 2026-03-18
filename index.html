@@ -3792,7 +3792,8 @@ ${getAppContext()}`;
               if (evt.delta.type === 'text_delta') {
                 streamText += evt.delta.text;
                 if (fullContent[evt.index]) fullContent[evt.index].text += evt.delta.text;
-                thinkingEl.innerHTML = renderMd(streamText);
+                const liveDisplay = streamText.replace(/\nCHIPS:\[.*$/s, '').trim();
+                thinkingEl.innerHTML = renderMd(liveDisplay);
                 msgsEl.scrollTop = msgsEl.scrollHeight;
               } else if (evt.delta.type === 'input_json_delta' && currentTool) {
                 currentTool.input += evt.delta.partial_json;
