@@ -3230,13 +3230,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
       <button id="aiCloseBtn">×</button>
     </div>
     <div id="aiMessages"></div>
-    <div id="aiSuggestRow">
-      <button class="ai-suggest-chip" data-q="Plan a balanced week using my exercises">Plan my week</button>
-      <button class="ai-suggest-chip" data-q="Put all leg exercises on Monday, Wednesday and Friday">Leg days MWF</button>
-      <button class="ai-suggest-chip" data-q="Clear the whole week and start fresh">Clear week</button>
-      <button class="ai-suggest-chip" data-q="What exercises do I have scheduled today?">Today's plan</button>
-      <button class="ai-suggest-chip" data-q="Spread my exercises evenly across the week with rest days">Balance week</button>
-    </div>
+    <div id="aiSuggestRow"></div>
     <div id="aiInputRow">
       <textarea id="aiInput" placeholder="Ask about your rehab plan…" rows="1"></textarea>
       <button id="aiSendBtn">
@@ -3728,8 +3722,8 @@ When asked about exercises for a muscle/condition — use web_search first, then
 For general questions — be concise. Maximum 3-4 short paragraphs. No lists longer than 5 items. Plain text only, no markdown, no asterisks.
 Always use the memories below — never say you don't know something already in the profile or history.
 
-After EVERY response, append exactly this on a new line — 3 short follow-up suggestion chips relevant to the conversation, plus always include "Up to you" as the last one. Format strictly as: CHIPS:["label1","label2","Up to you"]
-Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS:["Plan today","Add leg day","Up to you"]
+After EVERY response, append exactly this on a new line — 3 short context-relevant follow-up chips. Format strictly as: CHIPS:["label1","label2","label3"]
+Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS:["Plan today","Add leg day","View week"]
 
 ${fullMemory ? `=== ABOUT ME ===\n${fullMemory}\n` : '=== ABOUT ME ===\nNew user — learn about them naturally.\n'}
 ${exerciseMemory ? `=== EXERCISE MEMORY ===\n${exerciseMemory}\n` : ''}
@@ -3867,18 +3861,15 @@ ${getAppContext()}`;
 
       // Render chips
       suggestRow.innerHTML = '';
-      const chipQueries = {
-        'Up to you': 'Based on my profile and recent activity, what do you suggest I do next?'
-      };
-      const chipsToShow = parsedChips.length ? parsedChips : ['Plan my week', 'Today\'s plan', 'Up to you'];
+      const chipsToShow = parsedChips.length ? parsedChips : [];
       chipsToShow.forEach(label => {
         const btn = document.createElement('button');
         btn.className = 'ai-suggest-chip';
         btn.textContent = label;
-        btn.addEventListener('click', () => sendMessage(chipQueries[label] || label));
+        btn.addEventListener('click', () => sendMessage(label));
         suggestRow.appendChild(btn);
       });
-      suggestRow.style.display = 'flex';
+      suggestRow.style.display = chipsToShow.length ? 'flex' : 'none';
       suggestRow.scrollLeft = 0;
 
     } catch(e) {
@@ -3902,9 +3893,6 @@ ${getAppContext()}`;
   inputEl.addEventListener('input', () => {
     inputEl.style.height = 'auto';
     inputEl.style.height = Math.min(inputEl.scrollHeight, 100) + 'px';
-  });
-  suggestRow.querySelectorAll('.ai-suggest-chip').forEach(chip => {
-    chip.addEventListener('click', () => sendMessage(chip.dataset.q));
   });
 })();
 </script>
