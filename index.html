@@ -3496,28 +3496,6 @@ Target ~500 words. Return ONLY the exercise memory text.`,
       name: 'web_search'
     },
     {
-      name: 'schedule_week',
-      description: 'Schedule multiple exercises across multiple days in one call. Use this instead of add_exercise_to_day when scheduling more than 3 exercises. Pass the full week plan at once.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          schedule: {
-            type: 'array',
-            description: 'List of exercise+day pairs to add',
-            items: {
-              type: 'object',
-              properties: {
-                exercise_name: { type: 'string', description: 'Exact name of the exercise from the bank' },
-                day: { type: 'string', enum: ['MON','TUE','WED','THU','FRI','SAT','SUN'] }
-              },
-              required: ['exercise_name', 'day']
-            }
-          }
-        },
-        required: ['schedule']
-      }
-    },
-    {
       name: 'add_exercise_to_day',
       description: 'Add an exercise from the bank to a specific day of the current week. Only use exercise names that exist in the exercise bank.',
       input_schema: {
@@ -3577,33 +3555,6 @@ Target ~500 words. Return ONLY the exercise memory text.`,
   // ── Tool executor ─────────────────────────────────────────────────────
   function executeTool(name, input) {
     try {
-      if (name === 'schedule_week') {
-        const { schedule } = input;
-        if (!Array.isArray(schedule)) return { success: false, error: 'schedule must be an array' };
-        const added = [], skipped = [];
-        const cats = ['fav','arm','leg','alt', ...customCats.map(c=>c.id)];
-        const sched = currentSchedule();
-        for (const { exercise_name, day } of schedule) {
-          let found = null;
-          for (const cat of cats) {
-            const ex = (exercises[cat]||[]).find(e => e.name.toLowerCase() === exercise_name.toLowerCase());
-            if (ex) { found = { ...ex, cat }; break; }
-          }
-          if (!found) { skipped.push(`"${exercise_name}" not found`); continue; }
-          const alreadyThere = (sched[day]||[]).some(i => i.name.toLowerCase() === exercise_name.toLowerCase());
-          if (alreadyThere) { skipped.push(`${exercise_name} already on ${day}`); continue; }
-          sched[day].push({
-            name: found.name, cat: found.cat,
-            planned: { sets: found.sets||'', reps: found.reps||'', mins: found.mins||'' },
-            done: { sets:'', reps:'', mins:'' }, progress: 0
-          });
-          added.push(`${found.name} → ${day}`);
-        }
-        DAYS.forEach(d => renderDay(d)); updateTotal(); saveState();
-        const msg = `Scheduled ${added.length} exercises.` + (skipped.length ? ` Skipped: ${skipped.join(', ')}` : '');
-        return { success: true, message: msg };
-      }
-
       if (name === 'add_exercise_to_day') {
         const { exercise_name, day } = input;
         // Find exercise in bank
@@ -3719,8 +3670,6 @@ Target ~500 words. Return ONLY the exercise memory text.`,
     const systemPrompt = `You are a physiotherapy assistant built into the Rehab Planner app. You help stroke rehabilitation patients.
 
 When asked to schedule, add, move, or remove exercises — use tools directly. Summarise changes in 1-2 sentences.
-When scheduling more than 3 exercises (e.g. planning a full week) — always use schedule_week tool with the complete plan in one call, never call add_exercise_to_day repeatedly.
-When planning days — never clear existing days first. Only add exercises to days that are empty or as instructed. Preserve all existing scheduled exercises unless explicitly asked to remove them.
 When asked to create a new exercise — use create_exercise.
 When asked about exercises for a muscle/condition — use web_search first, then create_exercise.
 For general questions — be concise. Maximum 3-4 short paragraphs. No lists longer than 5 items. Plain text only, no markdown, no asterisks.
