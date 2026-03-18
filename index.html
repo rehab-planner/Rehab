@@ -3308,7 +3308,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 2000,
+          max_tokens: 3000,
           system: `You maintain the PERSONAL & MEDICAL section of a stroke rehabilitation patient's profile.
 If NO new information belonging to this section is found — return the profile UNCHANGED, word for word.
 Write as compact bullet points and short factual statements. No narrative, no opinions.
@@ -3343,7 +3343,7 @@ Target ~600 words. Return ONLY the profile text.`,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 2000,
+          max_tokens: 3000,
           system: `You maintain the EXERCISE MEMORY section of a stroke rehabilitation patient's profile.
 If NO new information belonging to this section is found — return the memory UNCHANGED, word for word.
 Write as compact bullet points and short factual statements. No narrative, no opinions.
@@ -3770,7 +3770,7 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 2000,
+            max_tokens: 4000,
             system: systemBlocks,
             tools: AI_TOOLS,
             messages: loopMessages,
