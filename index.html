@@ -3794,6 +3794,15 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
         });
 
         // ── Parse SSE stream ──────────────────────────────────────────
+        if (!res.ok) {
+          const errText = await res.text();
+          thinkingEl.textContent = 'API error ' + res.status + ': ' + errText.slice(0, 200);
+          thinkingEl.className = 'ai-msg assistant';
+          chatHistory.pop();
+          thinking = false;
+          sendBtn.style.opacity = '1';
+          return;
+        }
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buf = '';
