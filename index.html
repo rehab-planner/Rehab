@@ -3792,7 +3792,7 @@ ${getAppContext()}`;
               if (evt.delta.type === 'text_delta') {
                 streamText += evt.delta.text;
                 if (fullContent[evt.index]) fullContent[evt.index].text += evt.delta.text;
-                const liveDisplay = streamText.replace(/\nCHIPS:\[.*$/s, '').trim();
+                const liveDisplay = streamText.replace(/\nCHIPS: ?\[.*$/s, '').trim();
                 thinkingEl.innerHTML = renderMd(liveDisplay);
                 msgsEl.scrollTop = msgsEl.scrollHeight;
               } else if (evt.delta.type === 'input_json_delta' && currentTool) {
@@ -3838,9 +3838,9 @@ ${getAppContext()}`;
       // Parse dynamic chips from response
       let displayText = finalText;
       let parsedChips = [];
-      const chipsMatch = finalText.match(/CHIPS:\[([^\]]+)\]\s*$/);
+      const chipsMatch = finalText.match(/CHIPS: ?\[([^\]]+)\]\s*$/);
       if (chipsMatch) {
-        displayText = finalText.slice(0, finalText.lastIndexOf('CHIPS:')).trim();
+        displayText = finalText.slice(0, finalText.search(/\nCHIPS: ?\[/)).trim();
         try {
           parsedChips = JSON.parse('[' + chipsMatch[1] + ']');
         } catch(e) { parsedChips = []; }
