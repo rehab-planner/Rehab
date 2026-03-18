@@ -3712,7 +3712,8 @@ Target ~500 words. Return ONLY the exercise memory text.`,
     const rehabRules = (await window._idbGet('rehab_rules')) || '';
     const aiModelRules = (await window._idbGet('ai_model_rules')) || '';
 
-    const systemPrompt = `You are a physiotherapy assistant built into the Rehab Planner app. You help stroke rehabilitation patients.
+    // Static instructions — cached (never changes)
+    const staticInstructions = `You are a physiotherapy assistant built into the Rehab Planner app. You help stroke rehabilitation patients.
 
 When asked to schedule, add, move, or remove exercises — use tools directly. Summarise changes in 1-2 sentences.
 When scheduling more than 3 exercises — always use schedule_week with the full plan in one call. Never call add_exercise_to_day repeatedly for bulk scheduling.
@@ -3723,13 +3724,36 @@ For general questions — be concise. Maximum 3-4 short paragraphs. No lists lon
 Always use the memories below — never say you don't know something already in the profile or history.
 
 After EVERY response, append exactly this on a new line — 3 short context-relevant follow-up chips. Format strictly as: CHIPS:["label1","label2","label3"]
-Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS:["Plan today","Add leg day","View week"]
+Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS:["Plan today","Add leg day","View week"]`;
 
-${fullMemory ? `=== ABOUT ME ===\n${fullMemory}\n` : '=== ABOUT ME ===\nNew user — learn about them naturally.\n'}
-${exerciseMemory ? `=== EXERCISE MEMORY ===\n${exerciseMemory}\n` : ''}
-${rehabRules ? `=== REHAB RULES ===\n${rehabRules}\n` : ''}
-${aiModelRules ? `=== AI MODEL RULES ===\n${aiModelRules}\n` : ''}
-${getAppContext()}`;
+    // User memories — cached (changes infrequently)
+    const memoriesBlock = [
+      fullMemory ? `=== ABOUT ME ===\n${fullMemory}` : '=== ABOUT ME ===\nNew user — learn about them naturally.',
+      exerciseMemory ? `=== EXERCISE MEMORY ===\n${exerciseMemory}` : '',
+      rehabRules ? `=== REHAB RULES ===\n${rehabRules}` : '',
+      aiModelRules ? `=== AI MODEL RULES ===\n${aiModelRules}` : ''
+    ].filter(Boolean).join('\n\n');
+
+    // App context — NOT cached (changes every tool call)
+    const appContext = getAppContext();
+
+    // Build system as array of blocks with cache markers
+    const systemBlocks = [
+      {
+        type: 'text',
+        text: staticInstructions,
+        cache_control: { type: 'ephemeral' }
+      },
+      {
+        type: 'text',
+        text: memoriesBlock,
+        cache_control: { type: 'ephemeral' }
+      },
+      {
+        type: 'text',
+        text: appContext
+      }
+    ].filter(b => b.text.trim());
 
     // Last 4 messages as active window — always includes current user message
     const windowedHistory = chatHistory.slice(-CHAT_WINDOW);
@@ -3747,7 +3771,7 @@ ${getAppContext()}`;
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
             max_tokens: 2000,
-            system: systemPrompt,
+            system: systemBlocks,
             tools: AI_TOOLS,
             messages: loopMessages,
             stream: true
