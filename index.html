@@ -3913,7 +3913,7 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
       suggestRow.scrollLeft = 0;
 
     } catch(e) {
-      thinkingEl.textContent = 'Connection error. Make sure the app is running on GitHub Pages.';
+      thinkingEl.textContent = 'Error: ' + (e?.message || String(e));
       thinkingEl.className = 'ai-msg assistant';
       chatHistory.pop();
       suggestRow.style.display = 'flex';
