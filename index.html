@@ -220,7 +220,7 @@
   #aiSheetHeader .modal-title { margin: 0; font-size: 15px; }
   #aiCloseBtn { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; padding: 0; line-height: 1; }
   #aiMessages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
-  .ai-msg { max-width: 88%; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.55; padding: 10px 13px; border-radius: 12px; white-space: pre-wrap; }
+  .ai-msg { max-width: 88%; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.55; padding: 10px 13px; border-radius: 12px; white-space: pre-wrap; user-select: text; -webkit-user-select: text; }
   .ai-msg.user { background: rgba(106,136,24,0.18); border: 1px solid rgba(106,136,24,0.3); color: var(--text); align-self: flex-end; border-radius: 12px 12px 3px 12px; }
   .ai-msg.assistant { background: var(--card); border: 1px solid var(--border); color: var(--text); align-self: flex-start; border-radius: 12px 12px 12px 3px; }
   .ai-msg.thinking { color: var(--muted); font-style: italic; }
@@ -3913,7 +3913,7 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
   modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
   sendBtn.addEventListener('click', () => sendMessage(inputEl.value));
   inputEl.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(inputEl.value); }
+    if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); sendMessage(inputEl.value); }
   });
   inputEl.addEventListener('input', () => {
     inputEl.style.height = 'auto';
