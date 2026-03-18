@@ -3720,6 +3720,7 @@ Target ~500 words. Return ONLY the exercise memory text.`,
 
     const thinkingEl = addMsg('assistant thinking', '…');
 
+    try {
     const shortTermText = getShortTermText();
     const rehabRules = (await window._idbGet('rehab_rules')) || '';
     const aiModelRules = (await window._idbGet('ai_model_rules')) || '';
@@ -3770,7 +3771,6 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
     // Last 4 messages as active window — always includes current user message
     const windowedHistory = chatHistory.slice(-CHAT_WINDOW);
 
-    try {
       let loopMessages = [...windowedHistory];
       let finalText = null;
       const actionsDone = [];
