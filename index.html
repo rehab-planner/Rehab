@@ -3309,7 +3309,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 3000,
-          system: `You maintain the PERSONAL & MEDICAL section of a stroke rehabilitation patient's profile.
+          system: [{ type: 'text', text: `You maintain the PERSONAL & MEDICAL section of a stroke rehabilitation patient's profile.
 If NO new information belonging to this section is found — return the profile UNCHANGED, word for word.
 Write as compact bullet points and short factual statements. No narrative, no opinions.
 
@@ -3332,7 +3332,7 @@ DOES NOT BELONG HERE (goes in My Training instead):
 - Equipment preferences
 - Progression notes for specific exercises
 
-Target ~600 words. Return ONLY the profile text.`,
+Target ~600 words. Return ONLY the profile text.`, cache_control: { type: 'ephemeral' } }],
           messages: [{ role: 'user', content:
             `CURRENT PROFILE:\n${fullMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated profile (or unchanged if no new info belongs here):`
           }]
@@ -3344,7 +3344,7 @@ Target ~600 words. Return ONLY the profile text.`,
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 3000,
-          system: `You maintain the MY TRAINING section of a stroke rehabilitation patient's profile.
+          system: [{ type: 'text', text: `You maintain the MY TRAINING section of a stroke rehabilitation patient's profile.
 If NO new information belonging to this section is found — return the memory UNCHANGED, word for word.
 Write as compact bullet points and short factual statements. No narrative, no opinions.
 Rewrite entirely with most current info when updating — remove stale data.
@@ -3365,7 +3365,7 @@ DOES NOT BELONG HERE (goes in Personal & Medical instead):
 - Spasticity levels or tone baselines — unless directly linked to a specific exercise
 - Therapist names or therapy session types
 
-Target ~500 words. Return ONLY the my training text.`,
+Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'ephemeral' } }],
           messages: [{ role: 'user', content:
             `CURRENT MY TRAINING:\n${exerciseMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated my training (or unchanged if no new info belongs here):`
           }]
@@ -3744,11 +3744,13 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
     const systemBlocks = [
       {
         type: 'text',
-        text: staticInstructions
+        text: staticInstructions,
+        cache_control: { type: 'ephemeral' }
       },
       {
         type: 'text',
-        text: memoriesBlock
+        text: memoriesBlock,
+        cache_control: { type: 'ephemeral' }
       },
       {
         type: 'text',
