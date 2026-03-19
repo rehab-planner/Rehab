@@ -2392,20 +2392,26 @@ document.getElementById('daySummaryNote').addEventListener('blur',  e => e.targe
 
 // ── Mini Calendar ─────────────────────────────────────────────────────
 // ── Export / Import ───────────────────────────────────────────────────
-document.getElementById('exportBtn').addEventListener('click', () => {
-  const data = { exercises, allSchedules, weekOffset, dayNotes, customCats, builtInCatMeta, exportedAt: new Date().toISOString(), version: 2 };
+document.getElementById('exportBtn').addEventListener('click', async () => {
+  const rehabRules   = (await window._idbGet('rehab_rules'))   || '';
+  const aiModelRules = (await window._idbGet('ai_model_rules')) || '';
+  const data = {
+    exercises, allSchedules, weekOffset, dayNotes, customCats, builtInCatMeta,
+    rehabRules, aiModelRules,
+    exportedAt: new Date().toISOString(), version: 2
+  };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   const date = new Date().toISOString().slice(0,10);
-  a.href = url; a.download = `rehab-planner-${date}.json`;
+  a.href = url; a.download = `rehab-${date}.json`;
   a.click(); URL.revokeObjectURL(url);
 });
 
 document.getElementById('importFile').addEventListener('change', e => {
   const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
-  reader.onload = ev => {
+  reader.onload = async ev => {
     try {
       const data = JSON.parse(ev.target.result);
       const hasExercises = data.exercises && typeof data.exercises === 'object';
@@ -2417,17 +2423,18 @@ document.getElementById('importFile').addEventListener('change', e => {
       if (data.dayNotes) dayNotes = data.dayNotes;
       if (data.customCats) { customCats = data.customCats; customCats.forEach(cc=>{ if(!exercises[cc.id]) exercises[cc.id]=[]; }); }
       if (data.builtInCatMeta) builtInCatMeta = data.builtInCatMeta;
-      // v1 fallback: wrap single-week schedule into allSchedules
       if (!data.allSchedules && data.schedule) {
         const key = weekKey(data.weekOffset || 0);
         allSchedules[key] = data.schedule;
       }
       weekOffset = data.weekOffset || 0;
+      // Restore AI memory if present
+      if (data.rehabRules)   await window._idbSet('rehab_rules',   data.rehabRules);
+      if (data.aiModelRules) await window._idbSet('ai_model_rules', data.aiModelRules);
       renderAllDays();
       buildBank();
       updateTotal();
       saveState();
-      
       alert('✓ Import successful');
     } catch(err) {
       alert('Import failed — ' + err.message);
@@ -3309,10 +3316,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 3000,
-          system: [
-            {
-              type: 'text',
-              text: `You maintain the PERSONAL & MEDICAL section of a stroke rehabilitation patient's profile.
+          system: `You maintain the PERSONAL & MEDICAL section of a stroke rehabilitation patient's profile.
 If NO new information belonging to this section is found — return the profile UNCHANGED, word for word.
 Write as compact bullet points and short factual statements. No narrative, no opinions.
 
@@ -3336,9 +3340,6 @@ DOES NOT BELONG HERE (goes in Exercise Memory instead):
 - Progression notes for specific exercises
 
 Target ~600 words. Return ONLY the profile text.`,
-              cache_control: { type: 'ephemeral' }
-            }
-          ],
           messages: [{ role: 'user', content:
             `CURRENT PROFILE:\n${fullMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated profile (or unchanged if no new info belongs here):`
           }]
@@ -3350,10 +3351,7 @@ Target ~600 words. Return ONLY the profile text.`,
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 3000,
-          system: [
-            {
-              type: 'text',
-              text: `You maintain the EXERCISE MEMORY section of a stroke rehabilitation patient's profile.
+          system: `You maintain the EXERCISE MEMORY section of a stroke rehabilitation patient's profile.
 If NO new information belonging to this section is found — return the memory UNCHANGED, word for word.
 Write as compact bullet points and short factual statements. No narrative, no opinions.
 Rewrite entirely with most current info when updating — remove stale data.
@@ -3375,9 +3373,6 @@ DOES NOT BELONG HERE (goes in Personal & Medical instead):
 - Therapist names or therapy session types
 
 Target ~500 words. Return ONLY the exercise memory text.`,
-              cache_control: { type: 'ephemeral' }
-            }
-          ],
           messages: [{ role: 'user', content:
             `CURRENT EXERCISE MEMORY:\n${exerciseMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated exercise memory (or unchanged if no new info belongs here):`
           }]
@@ -3750,13 +3745,11 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
     const systemBlocks = [
       {
         type: 'text',
-        text: staticInstructions,
-        cache_control: { type: 'ephemeral' }
+        text: staticInstructions
       },
       {
         type: 'text',
-        text: memoriesBlock,
-        cache_control: { type: 'ephemeral' }
+        text: memoriesBlock
       },
       {
         type: 'text',
