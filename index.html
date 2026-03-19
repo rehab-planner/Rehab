@@ -340,20 +340,16 @@
 </div><!-- /page-wrap -->
 <div class="overlay hidden" id="aboutMeModal">
   <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px;width:100%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <div class="modal-title" style="font-family:'Syne',sans-serif;">ABOUT ME</div>
-      <button id="aboutMeClose" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0;">×</button>
+      <button id="aboutMeClear" style="background:none;border:none;color:#a01030;font-family:Arial,sans-serif;font-size:14px;letter-spacing:0.5px;cursor:pointer;padding:0;text-decoration:underline;text-transform:lowercase;">delete</button>
     </div>
-    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;">
-      <div>
-        <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:8px;">Permanent Profile</div>
-        <div id="aboutMeFullMemory" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;"></div>
-      </div>
-      
+    <div style="flex:1;overflow-y:auto;margin-top:12px;">
+      <div id="aboutMeFullMemory" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;"></div>
     </div>
-    <div style="display:flex;gap:10px;margin-top:16px;">
-      <button id="aboutMeClear" class="btn-cancel" style="flex:1;">Clear Memory</button>
-      <button id="aboutMeCloseBtn" class="btn-primary" style="flex:1;">Close</button>
+    <div class="modal-actions">
+      <button id="aboutMeCloseBtn" class="btn-cancel" style="flex:1;">Cancel</button>
+      <button id="aboutMeClose" class="btn-primary" style="flex:1;">Close</button>
     </div>
   </div>
 </div>
@@ -362,15 +358,14 @@
 <!-- Exercise Memory Modal -->
 <div class="overlay hidden" id="exerciseMemoryModal">
   <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px;width:100%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <div class="modal-title" style="font-family:'Syne',sans-serif;">EXERCISE MEMORY</div>
-      <button id="exerciseMemoryClose" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0;">×</button>
+      <button id="exerciseMemoryClear" style="background:none;border:none;color:#a01030;font-family:Arial,sans-serif;font-size:14px;letter-spacing:0.5px;cursor:pointer;padding:0;text-decoration:underline;text-transform:lowercase;">delete</button>
     </div>
-    <div style="font-family:Arial,sans-serif;font-size:11px;color:var(--muted);margin-bottom:12px;">Auto-built from conversations. What works, what to avoid, timing, technique notes.</div>
-    <div id="exerciseMemoryContent" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;flex:1;overflow-y:auto;"></div>
-    <div style="display:flex;gap:10px;margin-top:16px;">
-      <button id="exerciseMemoryClear" class="btn-cancel" style="flex:1;">Clear</button>
-      <button id="exerciseMemoryCloseBtn" class="btn-primary" style="flex:1;">Close</button>
+    <div id="exerciseMemoryContent" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;flex:1;overflow-y:auto;margin-top:12px;"></div>
+    <div class="modal-actions">
+      <button id="exerciseMemoryCloseBtn" class="btn-cancel" style="flex:1;">Cancel</button>
+      <button id="exerciseMemoryClose" class="btn-primary" style="flex:1;">Close</button>
     </div>
   </div>
 </div>
@@ -378,16 +373,15 @@
 <!-- Rehab Rules Modal -->
 <div class="overlay hidden" id="rehabRulesModal">
   <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px;width:100%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <div class="modal-title" style="font-family:'Syne',sans-serif;">REHAB RULES</div>
-      <button id="rehabRulesClose" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0;">×</button>
+      <button id="rehabRulesClear" style="background:none;border:none;color:#a01030;font-family:Arial,sans-serif;font-size:14px;letter-spacing:0.5px;cursor:pointer;padding:0;text-decoration:underline;text-transform:lowercase;">delete</button>
     </div>
-    <div style="font-family:Arial,sans-serif;font-size:11px;color:var(--muted);margin-bottom:12px;">Instructions about how to train, schedule exercises, and manage your rehab plan. Sent to AI on every message.</div>
-    <textarea id="rehabRulesText" placeholder="e.g. Don't create new exercises unless I ask. Always suggest rest days between leg sessions." style="flex:1;min-height:200px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-family:Arial,sans-serif;font-size:13px;line-height:1.6;resize:none;box-sizing:border-box;"></textarea>
+    <textarea id="rehabRulesText" placeholder="e.g. Don't create new exercises unless I ask. Always suggest rest days between leg sessions." style="flex:1;min-height:200px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-family:Arial,sans-serif;font-size:13px;line-height:1.6;resize:none;box-sizing:border-box;margin-top:12px;"></textarea>
     <div id="rehabRulesCount" style="font-family:Arial,sans-serif;font-size:10px;color:var(--muted);text-align:right;margin-top:4px;">0 / 800 chars</div>
-    <div style="display:flex;gap:10px;margin-top:12px;">
-      <button id="rehabRulesClear" class="btn-cancel" style="flex:1;">Clear</button>
-      <button id="rehabRulesSave" class="btn-primary" style="flex:1;">Save</button>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="rehabRulesClose">Cancel</button>
+      <button class="btn-primary" id="rehabRulesSave">Save</button>
     </div>
   </div>
 </div>
@@ -395,16 +389,15 @@
 <!-- AI Model Rules Modal -->
 <div class="overlay hidden" id="aiModelRulesModal">
   <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px;width:100%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <div class="modal-title" style="font-family:'Syne',sans-serif;">AI MODEL RULES</div>
-      <button id="aiModelRulesClose" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0;">×</button>
+      <button id="aiModelRulesClear" style="background:none;border:none;color:#a01030;font-family:Arial,sans-serif;font-size:14px;letter-spacing:0.5px;cursor:pointer;padding:0;text-decoration:underline;text-transform:lowercase;">delete</button>
     </div>
-    <div style="font-family:Arial,sans-serif;font-size:11px;color:var(--muted);margin-bottom:12px;">Instructions about how the AI responds — tone, length, format. Sent to AI on every message.</div>
-    <textarea id="aiModelRulesText" placeholder="e.g. Keep answers short. Never use bullet points. Always address me by name." style="flex:1;min-height:200px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-family:Arial,sans-serif;font-size:13px;line-height:1.6;resize:none;box-sizing:border-box;"></textarea>
+    <textarea id="aiModelRulesText" placeholder="e.g. Keep answers short. Never use bullet points. Always address me by name." style="flex:1;min-height:200px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-family:Arial,sans-serif;font-size:13px;line-height:1.6;resize:none;box-sizing:border-box;margin-top:12px;"></textarea>
     <div id="aiModelRulesCount" style="font-family:Arial,sans-serif;font-size:10px;color:var(--muted);text-align:right;margin-top:4px;">0 / 500 chars</div>
-    <div style="display:flex;gap:10px;margin-top:12px;">
-      <button id="aiModelRulesClear" class="btn-cancel" style="flex:1;">Clear</button>
-      <button id="aiModelRulesSave" class="btn-primary" style="flex:1;">Save</button>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="aiModelRulesClose">Cancel</button>
+      <button class="btn-primary" id="aiModelRulesSave">Save</button>
     </div>
   </div>
 </div>
