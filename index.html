@@ -3760,10 +3760,18 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
     const windowedHistory = chatHistory.slice(-CHAT_WINDOW);
 
     // Route: Haiku for simple chat, Sonnet for scheduling/tools
-    const complexKeywords = /\b(plan|schedule|add|remove|clear|create|move|swap|balance|organise|organize|week|today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|exercise|workout|session|implement)\b/i;
+    const complexKeywords = /\b(plan|schedule|add|remove|clear|create|move|swap|balance|organise|organize|week|today|tomorrow|monday|tuesday|wednesday||thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|exercise|workout|session|implement)\b/i;
     const firstMessageNeedsSonnet = complexKeywords.test(userText);
 
-      let loopMessages = [...windowedHistory];
+    // Inject live schedule into the last user message so AI can't miss it
+    const liveScheduleNote = `\n\n[LIVE SCHEDULE NOW: ${getAppContext().split('\n').filter(l => l.startsWith('MON:') || l.startsWith('TUE:') || l.startsWith('WED:') || l.startsWith('THU:') || l.startsWith('FRI:') || l.startsWith('SAT:') || l.startsWith('SUN:')).join(' | ')}]`;
+    const windowedWithSchedule = windowedHistory.map((m, i) =>
+      i === windowedHistory.length - 1 && m.role === 'user'
+        ? { ...m, content: m.content + liveScheduleNote }
+        : m
+    );
+
+      let loopMessages = [...windowedWithSchedule];
       let finalText = null;
       const actionsDone = [];
       let isFirstTurn = true;
