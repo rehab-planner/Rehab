@@ -332,9 +332,9 @@
   <div style="font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">AI Memory</div>
   <div style="display:flex;flex-direction:column;gap:8px;">
     <button id="aboutMeBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">About Me</button>
-    <button id="exerciseMemoryBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">Exercise Memory</button>
+    <button id="exerciseMemoryBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">My Training</button>
     <button id="rehabRulesBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">Rehab Rules</button>
-    <button id="aiModelRulesBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">AI Model Rules</button>
+    <button id="aiModelRulesBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">AI Rules</button>
   </div>
 </div>
 </div><!-- /page-wrap -->
@@ -355,11 +355,11 @@
 </div>
 
 
-<!-- Exercise Memory Modal -->
+<!-- My Training Modal -->
 <div class="overlay hidden" id="exerciseMemoryModal">
   <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px;width:100%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <div class="modal-title" style="font-family:'Syne',sans-serif;">EXERCISE MEMORY</div>
+      <div class="modal-title" style="font-family:'Syne',sans-serif;">MY TRAINING</div>
       <button id="exerciseMemoryClear" style="background:none;border:none;color:#a01030;font-family:Arial,sans-serif;font-size:14px;letter-spacing:0.5px;cursor:pointer;padding:0;text-decoration:underline;text-transform:lowercase;">delete</button>
     </div>
     <div id="exerciseMemoryContent" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;flex:1;overflow-y:auto;margin-top:12px;"></div>
@@ -386,11 +386,11 @@
   </div>
 </div>
 
-<!-- AI Model Rules Modal -->
+<!-- AI Rules Modal -->
 <div class="overlay hidden" id="aiModelRulesModal">
   <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px;width:100%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <div class="modal-title" style="font-family:'Syne',sans-serif;">AI MODEL RULES</div>
+      <div class="modal-title" style="font-family:'Syne',sans-serif;">AI RULES</div>
       <button id="aiModelRulesClear" style="background:none;border:none;color:#a01030;font-family:Arial,sans-serif;font-size:14px;letter-spacing:0.5px;cursor:pointer;padding:0;text-decoration:underline;text-transform:lowercase;">delete</button>
     </div>
     <textarea id="aiModelRulesText" placeholder="e.g. Keep answers short. Never use bullet points. Always address me by name." style="flex:1;min-height:200px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-family:Arial,sans-serif;font-size:13px;line-height:1.6;resize:none;box-sizing:border-box;margin-top:12px;"></textarea>
@@ -2464,17 +2464,17 @@ document.getElementById('aboutMeClear').addEventListener('click', async () => {
   document.getElementById('aboutMeFullMemory').textContent = '(cleared)';
 });
 
-// ── Exercise Memory Modal ─────────────────────────────────────────────
+// ── My Training Modal ─────────────────────────────────────────────
 document.getElementById('exerciseMemoryBtn').addEventListener('click', async () => {
   const val = (await window._idbGet('ai_exercise_memory')) || '';
-  document.getElementById('exerciseMemoryContent').textContent = val || '(no exercise memory yet — start chatting with the AI)';
+  document.getElementById('exerciseMemoryContent').textContent = val || '(no my training yet — start chatting with the AI)';
   document.getElementById('exerciseMemoryModal').classList.remove('hidden');
 });
 document.getElementById('exerciseMemoryClose').addEventListener('click', () => document.getElementById('exerciseMemoryModal').classList.add('hidden'));
 document.getElementById('exerciseMemoryCloseBtn').addEventListener('click', () => document.getElementById('exerciseMemoryModal').classList.add('hidden'));
 document.getElementById('exerciseMemoryModal').addEventListener('click', e => { if (e.target === document.getElementById('exerciseMemoryModal')) document.getElementById('exerciseMemoryModal').classList.add('hidden'); });
 document.getElementById('exerciseMemoryClear').addEventListener('click', async () => {
-  if (!confirm('Clear Exercise Memory?')) return;
+  if (!confirm('Clear My Training?')) return;
   await window._idbSet('ai_exercise_memory', '');
   exerciseMemory = '';
   document.getElementById('exerciseMemoryContent').textContent = '(cleared)';
@@ -2508,7 +2508,7 @@ document.getElementById('rehabRulesClear').addEventListener('click', async () =>
 document.getElementById('rehabRulesClose').addEventListener('click', () => document.getElementById('rehabRulesModal').classList.add('hidden'));
 document.getElementById('rehabRulesModal').addEventListener('click', e => { if (e.target === document.getElementById('rehabRulesModal')) document.getElementById('rehabRulesModal').classList.add('hidden'); });
 
-// ── AI Model Rules Modal ──────────────────────────────────────────────
+// ── AI Rules Modal ──────────────────────────────────────────────
 const AI_MODEL_RULES_LIMIT = 500;
 document.getElementById('aiModelRulesBtn').addEventListener('click', async () => {
   const val = (await window._idbGet('ai_model_rules')) || '';
@@ -2528,7 +2528,7 @@ document.getElementById('aiModelRulesSave').addEventListener('click', async () =
   document.getElementById('aiModelRulesModal').classList.add('hidden');
 });
 document.getElementById('aiModelRulesClear').addEventListener('click', async () => {
-  if (!confirm('Clear AI Model Rules?')) return;
+  if (!confirm('Clear AI Rules?')) return;
   document.getElementById('aiModelRulesText').value = '';
   document.getElementById('aiModelRulesCount').textContent = `0 / ${AI_MODEL_RULES_LIMIT} chars`;
   await window._idbSet('ai_model_rules', '');
@@ -3271,7 +3271,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
   const SHORT_TERM_WINDOW = 6; // messages 5-10 (older than active chat window, no overlap)
 
   let fullMemory = '';     // About Me — personal, medical, physical
-  let exerciseMemory = ''; // Exercise Memory — what works, preferences, observations
+  let exerciseMemory = ''; // My Training — what works, preferences, observations
 
   // ── Load from IndexedDB ───────────────────────────────────────────────
   async function loadMemory() {
@@ -3325,7 +3325,7 @@ BELONGS HERE:
 - Recovery timeline and milestones
 - Goals
 
-DOES NOT BELONG HERE (goes in Exercise Memory instead):
+DOES NOT BELONG HERE (goes in My Training instead):
 - Which exercises work well or poorly
 - Session timing preferences (morning vs evening)
 - Fatigue patterns during workouts
@@ -3344,7 +3344,7 @@ Target ~600 words. Return ONLY the profile text.`,
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 3000,
-          system: `You maintain the EXERCISE MEMORY section of a stroke rehabilitation patient's profile.
+          system: `You maintain the MY TRAINING section of a stroke rehabilitation patient's profile.
 If NO new information belonging to this section is found — return the memory UNCHANGED, word for word.
 Write as compact bullet points and short factual statements. No narrative, no opinions.
 Rewrite entirely with most current info when updating — remove stale data.
@@ -3365,9 +3365,9 @@ DOES NOT BELONG HERE (goes in Personal & Medical instead):
 - Spasticity levels or tone baselines — unless directly linked to a specific exercise
 - Therapist names or therapy session types
 
-Target ~500 words. Return ONLY the exercise memory text.`,
+Target ~500 words. Return ONLY the my training text.`,
           messages: [{ role: 'user', content:
-            `CURRENT EXERCISE MEMORY:\n${exerciseMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated exercise memory (or unchanged if no new info belongs here):`
+            `CURRENT MY TRAINING:\n${exerciseMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated my training (or unchanged if no new info belongs here):`
           }]
         })
       })
@@ -3726,9 +3726,9 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
     // User memories — cached (changes infrequently)
     const memoriesBlock = [
       fullMemory ? `=== ABOUT ME ===\n${fullMemory}` : '=== ABOUT ME ===\nNew user — learn about them naturally.',
-      exerciseMemory ? `=== EXERCISE MEMORY ===\n${exerciseMemory}` : '',
+      exerciseMemory ? `=== MY TRAINING ===\n${exerciseMemory}` : '',
       rehabRules ? `=== REHAB RULES ===\n${rehabRules}` : '',
-      aiModelRules ? `=== AI MODEL RULES ===\n${aiModelRules}` : ''
+      aiModelRules ? `=== AI RULES ===\n${aiModelRules}` : ''
     ].filter(Boolean).join('\n\n');
 
     // App context — NOT cached (changes every tool call)
