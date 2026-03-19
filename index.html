@@ -3498,10 +3498,6 @@ Target ~500 words. Return ONLY the exercise memory text.`,
   // ── Tool definitions ──────────────────────────────────────────────────
   const AI_TOOLS = [
     {
-      type: 'web_search_20250305',
-      name: 'web_search'
-    },
-    {
       name: 'schedule_week',
       description: 'Schedule multiple exercises across multiple days in one call. Use this instead of add_exercise_to_day whenever scheduling more than 3 exercises at once. Pass the entire plan as one array.',
       input_schema: {
@@ -3732,7 +3728,7 @@ When asked to schedule, add, move, or remove exercises — use tools directly. S
 When scheduling more than 3 exercises — always use schedule_week with the full plan in one call. Never call add_exercise_to_day repeatedly for bulk scheduling.
 Never clear existing days before scheduling. Only add to days, preserve what is already there unless explicitly told to remove.
 When asked to create a new exercise — use create_exercise.
-When asked about exercises for a muscle/condition — use web_search first, then create_exercise.
+When asked about exercises for a muscle/condition — answer from your knowledge, then use create_exercise if needed.
 For general questions — be concise. Maximum 3-4 short paragraphs. No lists longer than 5 items. Plain text only, no markdown, no asterisks.
 Always use the memories below — never say you don't know something already in the profile or history.
 
