@@ -3404,6 +3404,7 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
 
   fab.addEventListener('click', async () => {
     modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
     // Wait for memory if not ready yet
     if (!_memoryReady) {
       await waitForDB();
@@ -3714,7 +3715,7 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
 
     chatHistory.push({ role: 'user', content: userText.trim() });
 
-    const thinkingEl = addMsg('assistant thinking', '…');
+    const thinkingEl = addMsg('assistant thinking', 'Thinking…');
 
     try {
     const shortTermText = getShortTermText();
@@ -3919,6 +3920,11 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
         thinkingEl.className = 'ai-msg assistant';
       }
 
+      // Scroll to show the start of this response (the user message before it)
+      const allMsgs = msgsEl.querySelectorAll('.ai-msg');
+      const lastUserMsg = [...allMsgs].filter(m => m.classList.contains('user')).slice(-1)[0];
+      if (lastUserMsg) lastUserMsg.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
       chatHistory.push({ role: 'assistant', content: displayText });
       await saveLayer('ai_chat_history', JSON.stringify(chatHistory));
       updateMemories();
@@ -3948,8 +3954,8 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
   }
 
   // ── Event listeners ───────────────────────────────────────────────────
-  closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
-  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
+  closeBtn.addEventListener('click', () => { modal.classList.add('hidden'); document.body.style.overflow = ''; });
+  modal.addEventListener('click', e => { if (e.target === modal) { modal.classList.add('hidden'); document.body.style.overflow = ''; } });
   sendBtn.addEventListener('click', () => sendMessage(inputEl.value));
   inputEl.addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); sendMessage(inputEl.value); }
