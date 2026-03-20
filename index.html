@@ -3770,9 +3770,11 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
     // Last 4 messages as active window — always includes current user message
     const windowedHistory = chatHistory.slice(-CHAT_WINDOW);
 
-    // Route: Haiku for simple chat, Sonnet for scheduling/tools
-    const complexKeywords = /\b(plan|schedule|add|remove|clear|create|move|swap|balance|organise|organize|week|today|tomorrow|monday|tuesday|wednesday||thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|exercise|workout|session|implement)\b/i;
-    const firstMessageNeedsSonnet = complexKeywords.test(userText);
+    // Always use Haiku
+    const useHaiku = true;
+    const model = 'claude-haiku-4-5-20251001';
+    const maxTok = 4000;
+    const toolsParam = AI_TOOLS;
 
     // Inject live schedule into the last user message so AI can't miss it
     const liveScheduleNote = `\n\n[LIVE SCHEDULE NOW: ${getAppContext().split('\n').filter(l => l.startsWith('MON:') || l.startsWith('TUE:') || l.startsWith('WED:') || l.startsWith('THU:') || l.startsWith('FRI:') || l.startsWith('SAT:') || l.startsWith('SUN:')).join(' | ')}]`;
@@ -3788,12 +3790,6 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
       let isFirstTurn = true;
 
       while (true) {
-        // First turn: use Haiku for simple queries; always Sonnet for tool loops
-        const useHaiku = isFirstTurn && !firstMessageNeedsSonnet;
-        const model = useHaiku ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-20250514';
-        const maxTok = useHaiku ? 1500 : 4000;
-        // Haiku doesn't support tools — omit for Haiku calls
-        const toolsParam = useHaiku ? [] : AI_TOOLS;
         isFirstTurn = false;
         const fetchBody = {
             model: model,
