@@ -3487,8 +3487,9 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
 
       const now = new Date();
       const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const weekInfo = `DISPLAYED WEEK: ${weekKey(weekOffset)} (offset ${weekOffset}, 0=current week, 1=next week etc)`;
       const todayStr = `TODAY: ${dayNames[now.getDay()]}, ${now.toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric'})}`;
-      return `${todayStr}\n\nEXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}\n\nCALENDAR HISTORY (last 8 weeks):\n${allWeeksStr}`;
+      return `${todayStr}\n${weekInfo}\n\nEXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}\n\nCALENDAR HISTORY (last 8 weeks):\n${allWeeksStr}`;
     } catch(e) { return 'Unable to read app data.'; }
   }
 
@@ -3500,7 +3501,7 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
     },
     {
       name: 'schedule_week',
-      description: 'Schedule multiple exercises across multiple days in one call. Use this instead of add_exercise_to_day whenever scheduling more than 3 exercises at once. Pass the entire plan as one array.',
+      description: 'Schedule multiple exercises across multiple days. Use this instead of add_exercise_to_day whenever scheduling more than 3 exercises at once. Pass the entire plan as one array. Use week_offset: 0 for current displayed week, 1 for next week, -1 for last week.',
       input_schema: {
         type: 'object',
         properties: {
@@ -3515,7 +3516,8 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
               },
               required: ['exercise_name', 'day']
             }
-          }
+          },
+          week_offset: { type: 'number', description: 'Which week: 0=currently displayed, 1=next week, -1=last week. Default 0.' }
         },
         required: ['schedule']
       }
@@ -3581,10 +3583,11 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
   function executeTool(name, input) {
     try {
       if (name === 'schedule_week') {
-        const { schedule } = input;
+        const { schedule, week_offset } = input;
         if (!Array.isArray(schedule)) return { success: false, error: 'schedule must be an array' };
         const cats = ['fav','arm','leg','alt', ...customCats.map(c=>c.id)];
-        const sched = currentSchedule();
+        const targetOffset = weekOffset + (week_offset || 0);
+        const sched = getSchedule(targetOffset);
         const added = [], skipped = [];
         for (const item of schedule) {
           const exercise_name = item.exercise_name;
