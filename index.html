@@ -3697,11 +3697,12 @@ Target ~500 words. Return ONLY the my training text.` }],
         const targetOffset = Math.max(0, Math.min(1, relOffset));
         const sched = getSchedule(targetOffset);
         DAYS.forEach(d => { sched[d] = []; });
-        // Navigate to the cleared week so user sees it immediately
-        weekOffset = targetOffset;
-        renderWeek(); updateTotal(); saveState();
-        const label = targetOffset === 0 ? 'this week' : 'next week';
-        return { success: true, message: `Cleared ${label}` };
+        // Re-render if the cleared week is currently displayed
+        if (targetOffset === weekOffset) {
+          renderWeek();
+        }
+        updateTotal(); saveState();
+        return { success: true, message: `Cleared ${targetOffset === 0 ? 'this' : 'next'} week` };
       }
 
       if (name === 'create_exercise') {
