@@ -3501,7 +3501,7 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
     },
     {
       name: 'schedule_week',
-      description: 'Schedule multiple exercises across multiple days. Use this instead of add_exercise_to_day whenever scheduling more than 3 exercises at once. Pass the entire plan as one array. Use week_offset: 0 for current displayed week, 1 for next week, -1 for last week.',
+      description: 'Schedule multiple exercises across multiple days. Use this instead of add_exercise_to_day whenever scheduling more than 3 exercises at once. Pass the entire plan as one array. Use week_offset: 0 for currently displayed week, 1 for next week only. Cannot schedule further than next week.',
       input_schema: {
         type: 'object',
         properties: {
@@ -3517,7 +3517,7 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
               required: ['exercise_name', 'day']
             }
           },
-          week_offset: { type: 'number', description: 'Which week: 0=currently displayed, 1=next week, -1=last week. Default 0.' }
+          week_offset: { type: 'number', description: 'Which week: 0=currently displayed week, 1=next week. Maximum 1, minimum 0.' }
         },
         required: ['schedule']
       }
@@ -3585,8 +3585,10 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
       if (name === 'schedule_week') {
         const { schedule, week_offset } = input;
         if (!Array.isArray(schedule)) return { success: false, error: 'schedule must be an array' };
+        const relOffset = week_offset || 0;
+        if (relOffset < 0 || relOffset > 1) return { success: false, error: 'Can only schedule current week (0) or next week (1).' };
         const cats = ['fav','arm','leg','alt', ...customCats.map(c=>c.id)];
-        const targetOffset = weekOffset + (week_offset || 0);
+        const targetOffset = weekOffset + relOffset;
         const sched = getSchedule(targetOffset);
         const added = [], skipped = [];
         for (const item of schedule) {
@@ -3732,6 +3734,11 @@ CRITICAL: The CURRENT WEEK SCHEDULE and EXERCISE BANK at the bottom of this prom
 
 When asked to schedule, add, move, or remove exercises — use tools directly. Summarise changes in 1-2 sentences.
 When scheduling more than 3 exercises — always use schedule_week with the full plan in one call. Never call add_exercise_to_day repeatedly for bulk scheduling.
+You can only schedule the current displayed week (week_offset: 0) or next week (week_offset: 1). If asked to plan further ahead, explain you can only plan up to next week.
+You can only schedule for the currently displayed week (week_offset: 0) or next week (week_offset: 1). If asked to schedule further ahead, politely decline and explain you can only plan up to next week.
+You can only schedule for the currently displayed week (week_offset: 0) or next week (week_offset: 1). If asked to plan further ahead, politely decline and explain you can only plan up to next week.
+Never schedule more than 1 week ahead. If asked to plan further than next week, explain you can only schedule the current week and next week.
+You can only schedule the currently displayed week (week_offset: 0) or next week (week_offset: 1). If asked to plan further ahead, politely decline and explain you can only plan up to next week.
 Never clear existing days before scheduling. Only add to days, preserve what is already there unless explicitly told to remove.
 When asked to create a new exercise — use create_exercise.
 When asked about exercises for a muscle/condition — use web_search first, then create_exercise if needed.
