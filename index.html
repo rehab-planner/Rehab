@@ -825,25 +825,18 @@ const DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 // ── Week navigation ───────────────────────────────────────────────────
 let weekOffset = 0;
 let viewMode = 'week'; // 'week' or 'day'
-let currentDayOffset = 0; // days from base date (2026-03-09 = Mon)
-// Set to current week on every load
-(function(){
-  const base = new Date(2026, 2, 9);
-  const today = new Date();
-  const todayMon = new Date(today); const dow = todayMon.getDay();
-  todayMon.setDate(todayMon.getDate() - (dow===0?6:dow-1));
-  const diffMs = Date.UTC(todayMon.getFullYear(), todayMon.getMonth(), todayMon.getDate())
-               - Date.UTC(base.getFullYear(), base.getMonth(), base.getDate());
-  weekOffset = Math.round(diffMs / (7*86400000));
-})();
+let currentDayOffset = 0;
 let allSchedules = {};
 let dayNotes     = {}; // key: "YYYY-MM-DD-DAY" e.g. "2026-03-09-MON"
 
 function getMonday(offset) {
-  const base = new Date(2026, 2, 9);
-  const d = new Date(base);
-  d.setDate(d.getDate() + offset * 7);
-  return d;
+  const today = new Date();
+  const day = today.getDay(); // 0=Sun, 1=Mon ... 6=Sat
+  const daysToMonday = (day === 0) ? -6 : 1 - day; // go back to this week's Monday
+  const mon = new Date(today);
+  mon.setHours(0,0,0,0);
+  mon.setDate(today.getDate() + daysToMonday + offset * 7);
+  return mon;
 }
 function weekKey(offset) { return getMonday(offset).toISOString().slice(0,10); }
 function getSchedule(offset) {
@@ -3491,18 +3484,30 @@ Target ~500 words. Return ONLY the my training text.` }],
       });
       const bankStr = allEx.length ? allEx.join('\n') : 'Empty bank';
 
-      const sched = currentSchedule();
-      const schedLines = DAYS.map(d => {
+      const now = new Date();
+      const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const fmt = d => d.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+
+      // Always use real current week (offset 0) and next week (offset 1) — never displayed week
+      const thisWeekSched = getSchedule(0);
+      const nextWeekSched = getSchedule(1);
+      const mon0 = getMonday(0), sun0 = new Date(mon0); sun0.setDate(mon0.getDate()+6);
+      const mon1 = getMonday(1), sun1 = new Date(mon1); sun1.setDate(mon1.getDate()+6);
+
+      const buildSchedLines = (sched) => DAYS.map(d => {
         const items = (sched[d] || []).filter(i => i.name);
-        if (!items.length) return `${d}: -`;
+        if (!items.length) return `  ${d}: -`;
         const itemStrs = items.map(i => {
           const pct = calcProgress(i);
           if (pct >= 1) return `${i.name}[DONE]`;
           if (pct > 0) return `${i.name}[${Math.round(pct*100)}%]`;
-          return `${i.name}`;
+          return i.name;
         });
-        return `${d}: ${itemStrs.join(', ')}`;
-      });
+        return `  ${d}: ${itemStrs.join(', ')}`;
+      }).join('\n');
+
+      const thisWeekStr = `THIS WEEK (${fmt(mon0)} — ${fmt(sun0)}) [week_offset 0]:\n${buildSchedLines(thisWeekSched)}`;
+      const nextWeekStr = `NEXT WEEK (${fmt(mon1)} — ${fmt(sun1)}) [week_offset 1]:\n${buildSchedLines(nextWeekSched)}`;
 
       // All weeks — sorted by date, skip empty, cap to last 8
       const allWeeksStr = Object.entries(allSchedules)
@@ -3517,15 +3522,8 @@ Target ~500 words. Return ONLY the my training text.` }],
           return `Week ${key}:\n${lines.join('\n')}`;
         }).join('\n\n') || '(no history yet)';
 
-      const now = new Date();
-      const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-      const fmt = d => d.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
-      const mon0 = getMonday(0), mon1 = getMonday(1);
-      const sun0 = new Date(mon0); sun0.setDate(mon0.getDate()+6);
-      const sun1 = new Date(mon1); sun1.setDate(mon1.getDate()+6);
-      const weekInfo = `THIS WEEK (week_offset 0): ${fmt(mon0)} — ${fmt(sun0)}\nNEXT WEEK (week_offset 1): ${fmt(mon1)} — ${fmt(sun1)}\nDO NOT calculate dates yourself — use these exact values.`;
       const todayStr = `TODAY: ${dayNames[now.getDay()]}, ${now.toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric'})}`;
-      return `${todayStr}\n${weekInfo}\n\nEXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}\n\nCALENDAR HISTORY (last 8 weeks):\n${allWeeksStr}`;
+      return `${todayStr}\n\nEXERCISE BANK:\n${bankStr}\n\n${thisWeekStr}\n\n${nextWeekStr}\n\nCALENDAR HISTORY (last 8 weeks):\n${allWeeksStr}`;
     } catch(e) { return 'Unable to read app data.'; }
   }
 
@@ -3805,7 +3803,11 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
     const toolsParam = AI_TOOLS;
 
     // Inject live schedule into the last user message so AI can't miss it
-    const liveScheduleNote = `\n\n[LIVE SCHEDULE NOW: ${getAppContext().split('\n').filter(l => l.startsWith('MON:') || l.startsWith('TUE:') || l.startsWith('WED:') || l.startsWith('THU:') || l.startsWith('FRI:') || l.startsWith('SAT:') || l.startsWith('SUN:')).join(' | ')}]`;
+    const thisWeekLive = getSchedule(0);
+    const liveScheduleNote = `\n\n[TODAY: ${new Date().toLocaleDateString('en-GB')} | THIS WEEK LIVE: ${DAYS.map(d => {
+      const items = (thisWeekLive[d]||[]).filter(i=>i.name);
+      return `${d}:${items.length ? items.map(i=>{const p=calcProgress(i);return i.name+(p>=1?'[DONE]':p>0?`[${Math.round(p*100)}%]`:'');}).join(',') : '-'}`;
+    }).join(' | ')}]`;
     const windowedWithSchedule = windowedHistory.map((m, i) =>
       i === windowedHistory.length - 1 && m.role === 'user'
         ? { ...m, content: m.content + liveScheduleNote }
