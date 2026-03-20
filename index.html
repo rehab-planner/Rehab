@@ -3463,10 +3463,10 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
         const items = (sched[d] || []).filter(i => i.name);
         if (!items.length) return `${d}: -`;
         const itemStrs = items.map(i => {
-          const pct = i.progress || 0;
-          if (pct >= 100) return `${i.name}[DONE]`;
-          if (pct > 0) return `${i.name}[${pct}%]`;
-          return `${i.name}[not done]`;
+          const pct = calcProgress(i);
+          if (pct >= 1) return `${i.name}[DONE]`;
+          if (pct > 0) return `${i.name}[${Math.round(pct*100)}%]`;
+          return `${i.name}`;
         });
         return `${d}: ${itemStrs.join(', ')}`;
       });
@@ -3486,7 +3486,7 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
 
       const now = new Date();
       const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-      const todayStr = `TODAY: ${dayNames[now.getDay()]}, ${now.toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric'})} — local time ${now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;
+      const todayStr = `TODAY: ${dayNames[now.getDay()]}, ${now.toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric'})}`;
       return `${todayStr}\n\nEXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}\n\nCALENDAR HISTORY (last 8 weeks):\n${allWeeksStr}`;
     } catch(e) { return 'Unable to read app data.'; }
   }
