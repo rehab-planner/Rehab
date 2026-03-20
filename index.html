@@ -3479,7 +3479,10 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
           return `Week ${key}:\n${lines.join('\n')}`;
         }).join('\n\n') || '(no history yet)';
 
-      return `EXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}\n\nCALENDAR HISTORY (last 8 weeks):\n${allWeeksStr}`;
+      const now = new Date();
+      const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const todayStr = `TODAY: ${dayNames[now.getDay()]}, ${now.toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric'})} — local time ${now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;
+      return `${todayStr}\n\nEXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}\n\nCALENDAR HISTORY (last 8 weeks):\n${allWeeksStr}`;
     } catch(e) { return 'Unable to read app data.'; }
   }
 
