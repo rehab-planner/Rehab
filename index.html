@@ -333,6 +333,7 @@
   <div style="font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;">Data Backup</div>
   <button id="exportBtn" class="btn-primary" style="background:none;border:1px solid var(--accent);color:var(--accent);">↓ Export Data</button>
   <label id="importLabel" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);text-align:center;cursor:pointer;">↑ Import Data<input type="file" id="importFile" accept=".json" style="display:none;"></label>
+  <button id="clearAllDataBtn" class="btn-primary" style="background:none;border:1px solid #a01030;color:#a01030;">⚠ Clear All App Data</button>
 </div>
 
 </div><!-- /page-wrap -->
@@ -2435,7 +2436,38 @@ document.getElementById('importFile').addEventListener('change', e => {
   reader.readAsText(file);
 });
 
-// ── About Me Modal ────────────────────────────────────────────────────
+// ── Clear All App Data ────────────────────────────────────────────────
+document.getElementById('clearAllDataBtn').addEventListener('click', async () => {
+  if (!confirm('This will delete ALL app data including exercises, schedule, and AI memory. This cannot be undone.\n\nContinue?')) return;
+  try {
+    // Clear IndexedDB
+    const dbs = await indexedDB.databases();
+    for (const db of dbs) {
+      indexedDB.deleteDatabase(db.name);
+    }
+    // Clear localStorage
+    localStorage.clear();
+    // Clear service worker caches
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      for (const key of keys) { await caches.delete(key); }
+    }
+    alert('✓ All app data cleared. The page will now reload.');
+    location.reload();
+  } catch(e) {
+    // Fallback: just clear what we can via known keys
+    try { await window._idbSet('ai_full_memory', ''); } catch(e2){}
+    try { await window._idbSet('ai_exercise_memory', ''); } catch(e2){}
+    try { await window._idbSet('ai_chat_history', '[]'); } catch(e2){}
+    try { await window._idbSet('rehab_rules', ''); } catch(e2){}
+    try { await window._idbSet('ai_model_rules', ''); } catch(e2){}
+    localStorage.clear();
+    alert('✓ Data cleared. The page will now reload.');
+    location.reload();
+  }
+});
+
+
 document.getElementById('aboutMeBtn').addEventListener('click', async () => {
   const modal = document.getElementById('aboutMeModal');
   const fullEl = document.getElementById('aboutMeFullMemory');
