@@ -3645,7 +3645,10 @@ Target ~500 words. Return ONLY the my training text.` }],
           });
           added.push(found.name + ' to ' + day);
         }
-        DAYS.forEach(d => renderDay(d)); updateTotal(); saveState();
+        if (targetOffset === weekOffset) {
+          DAYS.forEach(d => renderDay(d));
+        }
+        updateTotal(); saveState();
         return { success: true, message: 'Scheduled ' + added.length + ' exercises.' + (skipped.length ? ' Skipped: ' + skipped.join(', ') : '') };
       }
 
@@ -3694,7 +3697,11 @@ Target ~500 words. Return ONLY the my training text.` }],
         const targetOffset = Math.max(0, Math.min(1, relOffset));
         const sched = getSchedule(targetOffset);
         DAYS.forEach(d => { sched[d] = []; });
-        renderWeek(); updateTotal(); saveState();
+        // Re-render if the cleared week is currently displayed
+        if (targetOffset === weekOffset) {
+          renderWeek();
+        }
+        updateTotal(); saveState();
         return { success: true, message: `Cleared ${targetOffset === 0 ? 'this' : 'next'} week` };
       }
 
