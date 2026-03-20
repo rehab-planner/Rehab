@@ -3591,8 +3591,10 @@ Target ~500 words. Return ONLY the my training text.` }],
     },
     {
       name: 'clear_week',
-      description: 'Remove all exercises from all days of the current week.',
-      input_schema: { type: 'object', properties: {} }
+      description: 'Remove all exercises from all days of a week. Use week_offset 0 for this week, 1 for next week.',
+      input_schema: { type: 'object', properties: {
+        week_offset: { type: 'number', description: '0=this week, 1=next week. Default 0.' }
+      }}
     },
     {
       name: 'create_exercise',
@@ -3688,10 +3690,12 @@ Target ~500 words. Return ONLY the my training text.` }],
       }
 
       if (name === 'clear_week') {
-        const sched = currentSchedule();
-        DAYS.forEach(d => { sched[d] = []; renderDay(d); });
-        updateTotal(); saveState();
-        return { success: true, message: 'Cleared entire week' };
+        const relOffset = typeof input.week_offset === 'number' ? Math.round(input.week_offset) : 0;
+        const targetOffset = Math.max(0, Math.min(1, relOffset));
+        const sched = getSchedule(targetOffset);
+        DAYS.forEach(d => { sched[d] = []; });
+        renderWeek(); updateTotal(); saveState();
+        return { success: true, message: `Cleared ${targetOffset === 0 ? 'this' : 'next'} week` };
       }
 
       if (name === 'create_exercise') {
