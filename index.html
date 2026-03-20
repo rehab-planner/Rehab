@@ -3519,7 +3519,7 @@ Target ~500 words. Return ONLY the my training text.` }],
 
       const now = new Date();
       const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-      const weekInfo = `DISPLAYED WEEK: ${weekKey(weekOffset)} (offset ${weekOffset}, 0=current week, 1=next week etc)`;
+      const weekInfo = `DISPLAYED WEEK: ${weekKey(weekOffset)} (you are viewing offset ${weekOffset} from today). For schedule_week tool: week_offset 0 = REAL current week (${weekKey(0)}), week_offset 1 = next week (${weekKey(1)}). Use TODAY's date to determine which is "this week" and "next week".`;
       const todayStr = `TODAY: ${dayNames[now.getDay()]}, ${now.toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric'})}`;
       return `${todayStr}\n${weekInfo}\n\nEXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}\n\nCALENDAR HISTORY (last 8 weeks):\n${allWeeksStr}`;
     } catch(e) { return 'Unable to read app data.'; }
@@ -3530,7 +3530,7 @@ Target ~500 words. Return ONLY the my training text.` }],
 
     {
       name: 'schedule_week',
-      description: 'Schedule multiple exercises across multiple days. Use this instead of add_exercise_to_day whenever scheduling more than 3 exercises at once. Pass the entire plan as one array. Use week_offset: 0 for current displayed week, 1 for next week, -1 for last week.',
+      description: 'Schedule multiple exercises across multiple days. Use this instead of add_exercise_to_day whenever scheduling more than 3 exercises at once. Pass the entire plan as one array. Use week_offset: 0 for THIS week (real current week based on today), 1 for next week. Maximum 1.',
       input_schema: {
         type: 'object',
         properties: {
@@ -3546,7 +3546,7 @@ Target ~500 words. Return ONLY the my training text.` }],
               required: ['exercise_name', 'day']
             }
           },
-          week_offset: { type: 'number', description: 'Which week: 0=currently displayed, 1=next week, -1=last week. Default 0.' }
+          week_offset: { type: 'number', description: 'Which week relative to TODAY: 0=current real week, 1=next week. Maximum 1, minimum 0.' }
         },
         required: ['schedule']
       }
@@ -3615,7 +3615,10 @@ Target ~500 words. Return ONLY the my training text.` }],
         const { schedule, week_offset } = input;
         if (!Array.isArray(schedule)) return { success: false, error: 'schedule must be an array' };
         const cats = ['fav','arm','leg','alt', ...customCats.map(c=>c.id)];
-        const targetOffset = weekOffset + (week_offset || 0);
+        const relOffset = typeof week_offset === 'number' ? Math.round(week_offset) : 0;
+        if (relOffset < 0 || relOffset > 1) return { success: false, error: 'Can only schedule current week (0) or next week (1).' };
+        // Always relative to real current week (absolute offset), not displayed week
+        const targetOffset = relOffset;
         const sched = getSchedule(targetOffset);
         const added = [], skipped = [];
         for (const item of schedule) {
