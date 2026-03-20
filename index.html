@@ -3769,7 +3769,7 @@ Target ~500 words. Return ONLY the my training text.` }],
 
 CRITICAL: The CURRENT WEEK SCHEDULE and EXERCISE BANK at the bottom of this prompt reflect the LIVE state of the app RIGHT NOW. Always read them before answering any question about what is scheduled, what is planned, or what exists. NEVER rely on what you said in previous messages — the user may have manually changed things. If a day appears empty in CURRENT WEEK SCHEDULE, it IS empty, regardless of what was discussed earlier.
 
-When asked to schedule, add, move, or remove exercises — use tools directly. Summarise changes in 1-2 sentences.
+When asked to schedule, add, move, remove, or clear exercises — you MUST call the appropriate tool. NEVER describe what you would do or say you have done it without actually calling the tool. If you say "scheduled", "cleared", "added", or "removed" — a tool call MUST have happened in that same response. No exceptions.
 When scheduling more than 3 exercises — always use schedule_week with the full plan in one call. Never call add_exercise_to_day repeatedly for bulk scheduling.
 Never clear existing days before scheduling. Only add to days, preserve what is already there unless explicitly told to remove.
 When asked to create a new exercise — use create_exercise.
