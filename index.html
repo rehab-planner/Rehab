@@ -3770,32 +3770,22 @@ Always use the memories below — never say you don't know something already in 
 After EVERY response, append exactly this on a new line — 3 short context-relevant follow-up chips. Format strictly as: CHIPS:["label1","label2","label3"]
 Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS:["Plan today","Add leg day","View week"]`;
 
-    // User memories — cached (changes infrequently)
+    // User memories
     const memoriesBlock = [
       fullMemory ? `=== ABOUT ME ===\n${fullMemory}` : '=== ABOUT ME ===\nNew user — learn about them naturally.',
       exerciseMemory ? `=== MY TRAINING ===\n${exerciseMemory}` : '',
       rehabRules ? `=== REHAB RULES ===\n${rehabRules}` : '',
-      aiModelRules ? `=== AI RULES ===\n${aiModelRules}` : ''
     ].filter(Boolean).join('\n\n');
 
-    // App context — NOT cached (changes every tool call)
+    // App context
     const appContext = getAppContext();
 
-    // Build system as array of blocks with cache markers
-    const systemBlocks = [
-      {
-        type: 'text',
-        text: staticInstructions
-      },
-      {
-        type: 'text',
-        text: memoriesBlock
-      },
-      {
-        type: 'text',
-        text: appContext
-      }
-    ].filter(b => b.text.trim());
+    // AI Rules injected last for highest priority
+    const aiRulesBlock = aiModelRules
+      ? `\n\n=== AI RULES — FOLLOW THESE STRICTLY, THEY OVERRIDE DEFAULT BEHAVIOR ===\n${aiModelRules}`
+      : '';
+
+    const systemPrompt = [staticInstructions, memoriesBlock, appContext].filter(Boolean).join('\n\n') + aiRulesBlock;
 
     // Last 4 messages as active window — always includes current user message
     const windowedHistory = chatHistory.slice(-CHAT_WINDOW);
@@ -3824,7 +3814,7 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
         const fetchBody = {
             model: model,
             max_tokens: maxTok,
-            system: systemBlocks,
+            system: systemPrompt,
             messages: loopMessages,
             stream: true
           };
