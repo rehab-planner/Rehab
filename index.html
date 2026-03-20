@@ -3461,7 +3461,14 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
       const sched = currentSchedule();
       const schedLines = DAYS.map(d => {
         const items = (sched[d] || []).filter(i => i.name);
-        return items.length ? `${d}: ${items.map(i=>i.name).join(', ')}` : `${d}: -`;
+        if (!items.length) return `${d}: -`;
+        const itemStrs = items.map(i => {
+          const pct = i.progress || 0;
+          if (pct >= 100) return `${i.name}[DONE]`;
+          if (pct > 0) return `${i.name}[${pct}%]`;
+          return `${i.name}[not done]`;
+        });
+        return `${d}: ${itemStrs.join(', ')}`;
       });
 
       // All weeks — sorted by date, skip empty, cap to last 8
