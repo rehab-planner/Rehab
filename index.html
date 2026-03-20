@@ -3330,7 +3330,7 @@ DOES NOT BELONG HERE (goes in My Training instead):
 - Equipment preferences
 - Progression notes for specific exercises
 
-Target ~600 words. Return ONLY the profile text.`, cache_control: { type: 'ephemeral' } }],
+Target ~600 words. Return ONLY the profile text.` }],
           messages: [{ role: 'user', content:
             `CURRENT PROFILE:\n${fullMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated profile (or unchanged if no new info belongs here):`
           }]
@@ -3363,7 +3363,7 @@ DOES NOT BELONG HERE (goes in Personal & Medical instead):
 - Spasticity levels or tone baselines — unless directly linked to a specific exercise
 - Therapist names or therapy session types
 
-Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'ephemeral' } }],
+Target ~500 words. Return ONLY the my training text.` }],
           messages: [{ role: 'user', content:
             `CURRENT MY TRAINING:\n${exerciseMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated my training (or unchanged if no new info belongs here):`
           }]
@@ -3495,10 +3495,7 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
 
   // ── Tool definitions ──────────────────────────────────────────────────
   const AI_TOOLS = [
-    {
-      type: 'web_search_20250305',
-      name: 'web_search'
-    },
+
     {
       name: 'schedule_week',
       description: 'Schedule multiple exercises across multiple days. Use this instead of add_exercise_to_day whenever scheduling more than 3 exercises at once. Pass the entire plan as one array. Use week_offset: 0 for current displayed week, 1 for next week, -1 for last week.',
@@ -3734,7 +3731,7 @@ When asked to schedule, add, move, or remove exercises — use tools directly. S
 When scheduling more than 3 exercises — always use schedule_week with the full plan in one call. Never call add_exercise_to_day repeatedly for bulk scheduling.
 Never clear existing days before scheduling. Only add to days, preserve what is already there unless explicitly told to remove.
 When asked to create a new exercise — use create_exercise.
-When asked about exercises for a muscle/condition — use web_search first, then create_exercise if needed.
+When asked about exercises for a muscle/condition — answer from your knowledge, then use create_exercise if needed.
 For general questions — be concise. Maximum 3-4 short paragraphs. No lists longer than 5 items. Plain text only, no markdown, no asterisks.
 Always use the memories below — never say you don't know something already in the profile or history.
 
@@ -3756,13 +3753,11 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
     const systemBlocks = [
       {
         type: 'text',
-        text: staticInstructions,
-        cache_control: { type: 'ephemeral' }
+        text: staticInstructions
       },
       {
         type: 'text',
-        text: memoriesBlock,
-        cache_control: { type: 'ephemeral' }
+        text: memoriesBlock
       },
       {
         type: 'text',
