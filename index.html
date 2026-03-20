@@ -241,12 +241,23 @@
 </head>
 <body>
 <div id="page-wrap">
-<h1>REHAB</h1>
+<h1>REHAB PLANNER</h1>
 <div style="height:10px"></div>
 <div style="display:flex;gap:8px;margin-bottom:10px;">
   <button class="week-nav-btn" id="changeViewBtn" style="flex:1;border-color:var(--accent);color:var(--accent);">Week View</button>
   <button class="week-nav-btn" id="calendarBtn" style="flex:1;">Calendar</button>
   <button class="week-nav-btn" id="reportBtn" style="flex:1;">Report</button>
+</div>
+<div style="padding:10px 16px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span style="font-size:14px;opacity:0.5;">☀</span>
+    <div id="brightnessSlider" style="flex:1;position:relative;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;cursor:ew-resize;touch-action:none;margin:8px 0;">
+      <div style="position:absolute;left:0;right:0;top:-20px;bottom:-20px;"></div>
+      <div id="brightnessFill" style="position:absolute;left:0;top:0;height:100%;background:var(--accent);border-radius:3px;width:0%;pointer-events:none;"></div>
+      <div id="brightnessThumb" style="position:absolute;top:50%;width:18px;height:18px;background:var(--accent);border-radius:50%;transform:translate(-50%,-50%);left:0%;pointer-events:none;box-shadow:0 0 0 3px rgba(0,0,0,0.4);"></div>
+    </div>
+    <span style="font-size:22px;opacity:0.5;">☀</span>
+  </div>
 </div>
 <div style="height:6px"></div>
 <div class="week-nav">
@@ -308,26 +319,6 @@
   </div>
 </div>
 
-
-<div style="margin-top:12px;padding:16px;border:1px solid var(--border);border-radius:12px;">
-  <div style="font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Display</div>
-  <div style="display:flex;align-items:center;gap:10px;">
-    <span style="font-size:14px;opacity:0.5;">☀</span>
-    <div id="brightnessSlider" style="flex:1;position:relative;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;cursor:ew-resize;touch-action:none;margin:14px 0;">
-      <div style="position:absolute;left:0;right:0;top:-20px;bottom:-20px;"></div>
-      <div id="brightnessFill" style="position:absolute;left:0;top:0;height:100%;background:var(--accent);border-radius:3px;width:0%;pointer-events:none;"></div>
-      <div id="brightnessThumb" style="position:absolute;top:50%;width:18px;height:18px;background:var(--accent);border-radius:50%;transform:translate(-50%,-50%);left:0%;pointer-events:none;box-shadow:0 0 0 3px rgba(0,0,0,0.4);"></div>
-    </div>
-    <span style="font-size:22px;opacity:0.5;">☀</span>
-  </div>
-</div>
-
-<div style="margin-top:12px;padding:16px;border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:10px;">
-  <div style="font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;">Data Backup</div>
-  <button id="exportBtn" class="btn-primary" style="background:none;border:1px solid var(--accent);color:var(--accent);">↓ Export Data</button>
-  <label id="importLabel" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);text-align:center;cursor:pointer;">↑ Import Data<input type="file" id="importFile" accept=".json" style="display:none;"></label>
-</div>
-
 <div style="margin-top:12px;padding:16px;border:1px solid var(--border);border-radius:12px;">
   <div style="font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">AI Memory</div>
   <div style="display:flex;flex-direction:column;gap:8px;">
@@ -337,6 +328,13 @@
     <button id="aiModelRulesBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">AI Rules</button>
   </div>
 </div>
+
+<div style="margin-top:12px;padding:16px;border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:10px;">
+  <div style="font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;">Data Backup</div>
+  <button id="exportBtn" class="btn-primary" style="background:none;border:1px solid var(--accent);color:var(--accent);">↓ Export Data</button>
+  <label id="importLabel" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);text-align:center;cursor:pointer;">↑ Import Data<input type="file" id="importFile" accept=".json" style="display:none;"></label>
+</div>
+
 </div><!-- /page-wrap -->
 <div class="overlay hidden" id="aboutMeModal">
   <div style="background:var(--dark);border:1px solid var(--border);border-radius:14px;padding:24px 20px;width:100%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
