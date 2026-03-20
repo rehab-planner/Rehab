@@ -2667,7 +2667,7 @@ function openBatchAddModal(day) {
       });
       exItems.sort((a,b)=>a.ex.name.localeCompare(b.ex.name));
     } else {
-      exItems = (exercises[cat]||[]).map((ex,i)=>({ex, realCat:cat, idx:i}));
+      exItems = (exercises[cat]||[]).map((ex,i)=>({ex, realCat:cat, idx:i})).sort((a,b)=>a.ex.name.localeCompare(b.ex.name));
     }
     const color = catColors[cat];
 
