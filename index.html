@@ -3519,7 +3519,11 @@ Target ~500 words. Return ONLY the my training text.` }],
 
       const now = new Date();
       const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-      const weekInfo = `DISPLAYED WEEK: ${weekKey(weekOffset)} (you are viewing offset ${weekOffset} from today). For schedule_week tool: week_offset 0 = REAL current week (${weekKey(0)}), week_offset 1 = next week (${weekKey(1)}). Use TODAY's date to determine which is "this week" and "next week".`;
+      const fmt = d => d.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+      const mon0 = getMonday(0), mon1 = getMonday(1);
+      const sun0 = new Date(mon0); sun0.setDate(mon0.getDate()+6);
+      const sun1 = new Date(mon1); sun1.setDate(mon1.getDate()+6);
+      const weekInfo = `THIS WEEK (week_offset 0): ${fmt(mon0)} — ${fmt(sun0)}\nNEXT WEEK (week_offset 1): ${fmt(mon1)} — ${fmt(sun1)}\nDO NOT calculate dates yourself — use these exact values.`;
       const todayStr = `TODAY: ${dayNames[now.getDay()]}, ${now.toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric'})}`;
       return `${todayStr}\n${weekInfo}\n\nEXERCISE BANK:\n${bankStr}\n\nCURRENT WEEK SCHEDULE:\n${schedLines.join('\n')}\n\nCALENDAR HISTORY (last 8 weeks):\n${allWeeksStr}`;
     } catch(e) { return 'Unable to read app data.'; }
