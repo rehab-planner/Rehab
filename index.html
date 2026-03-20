@@ -3305,7 +3305,7 @@ document.getElementById('timerModal').addEventListener('click', e => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 3000,
           system: [{ type: 'text', text: `You maintain the PERSONAL & MEDICAL section of a stroke rehabilitation patient's profile.
 If NO new information belonging to this section is found — return the profile UNCHANGED, word for word.
@@ -3340,7 +3340,7 @@ Target ~600 words. Return ONLY the profile text.` }],
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 3000,
           system: [{ type: 'text', text: `You maintain the MY TRAINING section of a stroke rehabilitation patient's profile.
 If NO new information belonging to this section is found — return the memory UNCHANGED, word for word.
@@ -3770,7 +3770,7 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
 
     // Always use Haiku
     const useHaiku = true;
-    const model = 'claude-haiku-4-5-20251001';
+    const model = 'claude-sonnet-4-20250514';
     const maxTok = 4000;
     const toolsParam = AI_TOOLS;
 
