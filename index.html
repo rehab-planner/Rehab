@@ -457,7 +457,11 @@
     <!-- ═══ EDIT VIEW (form) ═══ -->
     <div id="cpEditView" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
     <div style="flex:1;overflow-y:auto;padding:16px 20px 24px;-webkit-overflow-scrolling:touch;" id="cpScroll">
-      <div style="font-family:Arial,sans-serif;font-size:10px;color:var(--muted);letter-spacing:0.5px;margin-bottom:16px;line-height:1.5;">Fields from VISTA · GWTG-Stroke · SITS · RES-Q · KBRD registries. Fill what you know — blank fields are ignored.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-family:Arial,sans-serif;font-size:10px;color:var(--muted);letter-spacing:0.5px;line-height:1.5;flex:1;">Fields from VISTA · GWTG-Stroke · SITS · RES-Q · KBRD registries. Fill what you know — blank fields are ignored.</div>
+      </div>
+      <button id="cpAutoFillBtn" style="width:100%;background:none;border:1px dashed var(--accent);color:var(--accent);font-family:Arial,sans-serif;font-size:12px;letter-spacing:0.5px;padding:12px;border-radius:8px;cursor:pointer;margin-bottom:18px;transition:all 0.15s;">⚡ Auto-fill from AI Memory</button>
+      <div id="cpAutoFillStatus" style="display:none;font-family:Arial,sans-serif;font-size:11px;color:var(--muted);text-align:center;padding:8px;margin-bottom:12px;background:var(--card);border-radius:6px;"></div>
 
       <!-- DEMOGRAPHICS -->
       <div class="cp-section">
@@ -2982,7 +2986,7 @@ function buildClinicalSummary(data) {
 
 // Build readable HTML summary for display
 function buildClinicalSummaryHTML(data) {
-  const emptyMsg = '<div class="cp-sum-empty">No clinical profile yet.<br>Tap "Edit Profile" to add your stroke details, severity scores, spasticity levels, and more.<br><br>The AI uses this data to give you specific, evidence-based prognoses matched against stroke research databases.</div>';
+  const emptyMsg = '<div class="cp-sum-empty">No clinical profile yet.<br>Tap "Edit Profile" to add your stroke details manually, or use the auto-fill button to extract data from your AI conversations.<br><br>The AI uses this data to give you specific, evidence-based prognoses matched against stroke research databases.</div>';
   if (!data) return emptyMsg;
   const v = (id) => data[id] || '';
   const has = (id) => !!data[id];
@@ -3123,6 +3127,192 @@ document.getElementById('cpClear').addEventListener('click', async () => {
 });
 document.getElementById('clinicalProfileModal').addEventListener('click', e => {
   if (e.target === document.getElementById('clinicalProfileModal')) document.getElementById('clinicalProfileModal').classList.add('hidden');
+});
+
+// ── Auto-fill Clinical Profile from AI Memory ──────────────────────
+document.getElementById('cpAutoFillBtn').addEventListener('click', async () => {
+  const statusEl = document.getElementById('cpAutoFillStatus');
+  const btn = document.getElementById('cpAutoFillBtn');
+
+  // Gather all available memory
+  let aboutMe = '';
+  let exerciseMem = '';
+  let chatHist = '';
+  try { aboutMe = (await window._idbGet('ai_full_memory')) || ''; } catch(e) {}
+  try { exerciseMem = (await window._idbGet('ai_exercise_memory')) || ''; } catch(e) {}
+  try {
+    const h = await window._idbGet('ai_chat_history');
+    if (h) {
+      const msgs = JSON.parse(h);
+      // Take last 20 messages for additional context
+      chatHist = msgs.slice(-20).map(m => `${m.role}: ${typeof m.content === 'string' ? m.content : ''}`).join('\n');
+    }
+  } catch(e) {}
+
+  const allContext = [aboutMe, exerciseMem, chatHist].filter(Boolean).join('\n\n---\n\n');
+  if (!allContext.trim()) {
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'No AI memory found. Chat with the AI first to build up your profile.';
+    statusEl.style.color = '#f13570';
+    return;
+  }
+
+  btn.style.opacity = '0.4';
+  btn.style.pointerEvents = 'none';
+  statusEl.style.display = 'block';
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Extracting clinical data from AI memory…';
+
+  try {
+    const extractionPrompt = `You are a clinical data extraction tool. Extract structured patient data from the text below and return ONLY a JSON object. No explanation, no markdown, no backticks — pure JSON only.
+
+FIELD DEFINITIONS — use these exact keys. Leave as empty string "" if not found. For checkboxes use true/false.
+
+{
+  "cp_name": "patient first name",
+  "cp_age": "number or empty",
+  "cp_sex": "Male|Female or empty",
+  "cp_handedness": "Right|Left|Ambidextrous or empty",
+  "cp_stroke_type": "Ischemic|Hemorrhagic (ICH)|Hemorrhagic (SAH)|TIA or empty",
+  "cp_onset_date": "YYYY-MM-DD format or empty",
+  "cp_ocsp": "TACI|PACI|LACI|POCI or empty",
+  "cp_toast": "Large artery atherosclerosis|Cardioembolic|Small vessel occlusion|Other determined|Undetermined or empty",
+  "cp_hemisphere": "Left|Right|Bilateral|Brainstem/Cerebellar or empty",
+  "cp_affected_side": "Left|Right|Bilateral or empty",
+  "cp_lesion": "exact match from: MCA — total territory|MCA — superior division|MCA — inferior division|MCA — deep/basal ganglia|MCA — corona radiata|MCA — internal capsule|ACA territory|PCA territory|Vertebrobasilar|Pontine|Cerebellar|Thalamic|Watershed zone|Multiple territories|Unknown — or empty",
+  "cp_tpa": false,
+  "cp_thrombectomy": false,
+  "cp_craniotomy": false,
+  "cp_nihss_adm": "number 0-42 or empty",
+  "cp_nihss_cur": "number 0-42 or empty",
+  "cp_mrs_pre": "0|1|2|3|4|5 or empty",
+  "cp_mrs_cur": "0|1|2|3|4|5 or empty",
+  "cp_barthel": "number 0-100 or empty",
+  "cp_fim": "number 18-126 or empty",
+  "cp_brunn_arm": "I — Flaccid|II — Synergies appearing|III — Synergies dominant|IV — Some out-of-synergy|V — Relative independence|VI — Near normal or empty",
+  "cp_brunn_hand": "same scale as arm or empty",
+  "cp_brunn_leg": "same scale as arm or empty",
+  "cp_mas_shoulder": "0|1|1+|2|3|4 or empty",
+  "cp_mas_elbow": "same scale or empty",
+  "cp_mas_pronators": "same scale or empty",
+  "cp_mas_wrist": "same scale or empty",
+  "cp_mas_fingers": "same scale or empty",
+  "cp_mas_thumb": "same scale or empty",
+  "cp_mas_hip": "same scale or empty",
+  "cp_mas_quads": "same scale or empty",
+  "cp_mas_hamstrings": "same scale or empty",
+  "cp_mas_gastroc": "same scale or empty",
+  "cp_mas_soleus": "same scale or empty",
+  "cp_mas_tibpost": "same scale or empty",
+  "cp_fac": "0 — Non-functional / Cannot walk|1 — Dependent (continuous manual contact)|2 — Dependent (intermittent support)|3 — Supervision needed|4 — Independent on level ground|5 — Independent everywhere or empty",
+  "cp_walking_aid": "None|Single-point cane|Quad cane|Hemi-walker|Walker/Rollator|Wheelchair only or empty",
+  "cp_afo": "None|Rigid AFO|Hinged AFO|Dynamic/Carbon AFO|Knee brace or empty",
+  "cp_berg": "number 0-56 or empty",
+  "cp_fma_ue": "number 0-66 or empty",
+  "cp_arat": "number 0-57 or empty",
+  "cp_box_block": "number or empty",
+  "cp_grip": "number or empty",
+  "cp_finger_ext": "None — no visible movement|Trace — flicker, no ROM|Partial — some range, synergy-bound|Against gravity — but weak|Functional — usable grip-release|Normal or empty",
+  "cp_co_htn": false,
+  "cp_co_dm": false,
+  "cp_co_af": false,
+  "cp_co_lipid": false,
+  "cp_co_prior": false,
+  "cp_co_heart": false,
+  "cp_co_dep": false,
+  "cp_co_epilepsy": false,
+  "cp_co_shoulder": false,
+  "cp_co_pain": false,
+  "cp_co_aphasia": false,
+  "cp_co_neglect": false,
+  "cp_co_dysphagia": false,
+  "cp_co_cognitive": false,
+  "cp_moca": "number 0-30 or empty",
+  "cp_phq9": "number 0-27 or empty",
+  "cp_aphasia_type": "None|Broca's (expressive)|Wernicke's (receptive)|Global|Anomic|Conduction|Transcortical or empty",
+  "cp_meds": "free text, list all medications with doses or empty",
+  "cp_botox": "free text, all Botox sessions with dates, muscles, units or empty",
+  "cp_therapy": "free text, current therapy services or empty",
+  "cp_goals_short": "free text, short-term goals or empty",
+  "cp_goals_long": "free text, long-term goals or empty",
+  "cp_notes": "free text, any other important clinical notes not covered above or empty"
+}
+
+IMPORTANT:
+- For Brunnstrom, infer from described abilities if not explicitly stated. Use the EXACT option text including the roman numeral and description.
+- For MAS, infer from tone descriptions (e.g. "<MAS 2" → use "1+" or "1"). Use the closest match.
+- For FAC, infer from gait description (e.g. walks independently without cane, climbs stairs → "5 — Independent everywhere").
+- For finger extension, match to the closest option from the available choices.
+- For lesion location, map "basal ganglia" to "MCA — deep/basal ganglia".
+- Be conservative — only fill fields where you have clear evidence.`;
+
+    const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4000,
+        system: [{ type: 'text', text: extractionPrompt }],
+        messages: [{ role: 'user', content: `Extract clinical profile from this patient data:\n\n${allContext}` }]
+      })
+    });
+
+    if (!res.ok) throw new Error('API error ' + res.status);
+    const data = await res.json();
+    const rawText = data.content?.[0]?.text?.trim() || '';
+
+    // Parse JSON — strip any markdown fences
+    const clean = rawText.replace(/```json|```/g, '').trim();
+    const extracted = JSON.parse(clean);
+
+    // Count how many fields were filled
+    let filled = 0;
+
+    // Apply to form fields
+    CP_FIELDS.text.forEach(id => {
+      if (extracted[id] && extracted[id] !== '') {
+        document.getElementById(id).value = extracted[id];
+        filled++;
+      }
+    });
+    CP_FIELDS.select.forEach(id => {
+      if (extracted[id] && extracted[id] !== '') {
+        const el = document.getElementById(id);
+        // Try exact match first
+        const opts = [...el.options].map(o => o.value);
+        if (opts.includes(extracted[id])) {
+          el.value = extracted[id];
+          filled++;
+        } else {
+          // Try partial match
+          const match = opts.find(o => o && extracted[id].toLowerCase().includes(o.toLowerCase().split(' — ')[0]));
+          if (match) { el.value = match; filled++; }
+        }
+      }
+    });
+    CP_FIELDS.check.forEach(id => {
+      if (extracted[id] === true) {
+        document.getElementById(id).checked = true;
+        filled++;
+      }
+    });
+    CP_FIELDS.textarea.forEach(id => {
+      if (extracted[id] && extracted[id] !== '') {
+        document.getElementById(id).value = extracted[id];
+        filled++;
+      }
+    });
+
+    statusEl.textContent = `✓ Extracted ${filled} fields. Review and edit before saving.`;
+    statusEl.style.color = 'var(--accent)';
+
+  } catch(e) {
+    statusEl.textContent = 'Extraction failed: ' + (e?.message || String(e));
+    statusEl.style.color = '#f13570';
+  }
+
+  btn.style.opacity = '1';
+  btn.style.pointerEvents = 'auto';
 });
 
 
@@ -3890,8 +4080,8 @@ document.getElementById('timerModal').addEventListener('click', e => {
       .map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`)
       .join('\n');
 
-    // Run both in parallel
-    const [aboutRes, exRes] = await Promise.allSettled([
+    // Run all three in parallel
+    const [aboutRes, exRes, cpRes] = await Promise.allSettled([
       fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3959,7 +4149,66 @@ Target ~500 words. Return ONLY the my training text.` }],
             `CURRENT MY TRAINING:\n${exerciseMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated my training (or unchanged if no new info belongs here):`
           }]
         })
-      })
+      }),
+      // Clinical Profile auto-sync
+      (async () => {
+        let currentCP = {};
+        try { const raw = await window._idbGet('clinical_profile'); if (raw) currentCP = JSON.parse(raw); } catch(e) {}
+        const currentSummary = buildClinicalSummary(currentCP);
+        return fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 4000,
+            system: [{ type: 'text', text: `You update a structured clinical profile for a stroke patient. You receive the CURRENT profile fields and RECENT CONVERSATION. Extract any NEW or CHANGED clinical data from the conversation and return a JSON object with ONLY the fields that need updating. Return ONLY valid JSON — no markdown, no backticks, no explanation.
+
+If the conversation contains NO new clinical information, return exactly: {}
+
+FIELD KEYS AND VALID VALUES:
+- cp_name: string
+- cp_age: number string
+- cp_sex: "Male"|"Female"
+- cp_handedness: "Right"|"Left"|"Ambidextrous"
+- cp_stroke_type: "Ischemic"|"Hemorrhagic (ICH)"|"Hemorrhagic (SAH)"|"TIA"
+- cp_onset_date: "YYYY-MM-DD"
+- cp_ocsp: "TACI"|"PACI"|"LACI"|"POCI"
+- cp_toast: "Large artery atherosclerosis"|"Cardioembolic"|"Small vessel occlusion"|"Other determined"|"Undetermined"
+- cp_hemisphere: "Left"|"Right"|"Bilateral"|"Brainstem/Cerebellar"
+- cp_affected_side: "Left"|"Right"|"Bilateral"
+- cp_lesion: "MCA — deep/basal ganglia"|"MCA — total territory"|"MCA — superior division"|"MCA — inferior division"|"MCA — corona radiata"|"MCA — internal capsule"|"ACA territory"|"PCA territory"|"Vertebrobasilar"|"Pontine"|"Cerebellar"|"Thalamic"|"Watershed zone"|"Multiple territories"|"Unknown"
+- cp_tpa/cp_thrombectomy/cp_craniotomy: true|false
+- cp_nihss_adm/cp_nihss_cur: "0"-"42"
+- cp_mrs_pre/cp_mrs_cur: "0"-"5"
+- cp_barthel: "0"-"100"
+- cp_fim: "18"-"126"
+- cp_brunn_arm/cp_brunn_hand/cp_brunn_leg: "I — Flaccid"|"II — Synergies appearing"|"III — Synergies dominant"|"IV — Some out-of-synergy"|"V — Relative independence"|"VI — Near normal"
+- cp_mas_*: "0"|"1"|"1+"|"2"|"3"|"4" (shoulder/elbow/pronators/wrist/fingers/thumb/hip/quads/hamstrings/gastroc/soleus/tibpost)
+- cp_fac: "0 — Non-functional / Cannot walk"|"1 — Dependent (continuous manual contact)"|"2 — Dependent (intermittent support)"|"3 — Supervision needed"|"4 — Independent on level ground"|"5 — Independent everywhere"
+- cp_walking_aid: "None"|"Single-point cane"|"Quad cane"|"Hemi-walker"|"Walker/Rollator"|"Wheelchair only"
+- cp_afo: "None"|"Rigid AFO"|"Hinged AFO"|"Dynamic/Carbon AFO"|"Knee brace"
+- cp_berg: "0"-"56"
+- cp_fma_ue: "0"-"66"
+- cp_arat: "0"-"57"
+- cp_box_block/cp_grip: number string
+- cp_finger_ext: "None — no visible movement"|"Trace — flicker, no ROM"|"Partial — some range, synergy-bound"|"Against gravity — but weak"|"Functional — usable grip-release"|"Normal"
+- cp_co_*: true|false (htn/dm/af/lipid/prior/heart/dep/epilepsy/shoulder/pain/aphasia/neglect/dysphagia/cognitive)
+- cp_moca: "0"-"30"
+- cp_phq9: "0"-"27"
+- cp_aphasia_type: "None"|"Broca's (expressive)"|"Wernicke's (receptive)"|"Global"|"Anomic"|"Conduction"|"Transcortical"
+- cp_meds/cp_botox/cp_therapy/cp_goals_short/cp_goals_long/cp_notes: free text
+
+RULES:
+- ONLY include fields with genuinely new or updated info from the conversation
+- For Brunnstrom/MAS/FAC, infer from described abilities if not explicitly scored
+- Be conservative — don't guess fields without evidence
+- For text fields (meds, botox, therapy, goals, notes): if adding new info, include the FULL updated text (merge with existing)` }],
+            messages: [{ role: 'user', content:
+              `CURRENT CLINICAL PROFILE:\n${currentSummary || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn JSON with fields to update (or {} if no new clinical data):`
+            }]
+          })
+        });
+      })()
     ]);
 
     if (aboutRes.status === 'fulfilled') {
@@ -3974,6 +4223,29 @@ Target ~500 words. Return ONLY the my training text.` }],
         const data = await exRes.value.json();
         const updated = data.content?.[0]?.text?.trim();
         if (updated && updated !== exerciseMemory) { exerciseMemory = updated; await saveLayer('ai_exercise_memory', exerciseMemory); }
+      } catch(e) {}
+    }
+    // Auto-update clinical profile
+    if (cpRes.status === 'fulfilled') {
+      try {
+        const data = await cpRes.value.json();
+        const rawText = data.content?.[0]?.text?.trim() || '';
+        const clean = rawText.replace(/```json|```/g, '').trim();
+        if (clean && clean !== '{}') {
+          const updates = JSON.parse(clean);
+          const keys = Object.keys(updates);
+          if (keys.length > 0) {
+            let currentCP = {};
+            try { const raw = await window._idbGet('clinical_profile'); if (raw) currentCP = JSON.parse(raw); } catch(e) {}
+            // Merge updates into current profile
+            keys.forEach(k => {
+              if (updates[k] !== '' && updates[k] !== null && updates[k] !== undefined) {
+                currentCP[k] = updates[k];
+              }
+            });
+            await window._idbSet('clinical_profile', JSON.stringify(currentCP));
+          }
+        }
       } catch(e) {}
     }
   }
