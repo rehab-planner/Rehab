@@ -237,6 +237,36 @@
   #aiSendBtn { background: var(--accent); border: none; border-radius: 10px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: opacity 0.15s; }
   #aiSendBtn:active { opacity: 0.8; }
   #aiSendBtn svg { width: 18px; height: 18px; }
+
+  /* Clinical Profile */
+  .cp-section { margin-bottom: 20px; }
+  .cp-section-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); letter-spacing: 0.3px; }
+  .cp-section-sub { font-family: Arial, sans-serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 10px 0 6px; }
+  .cp-row { margin-bottom: 10px; }
+  .cp-label { font-family: Arial, sans-serif; font-size: 10px; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 4px; display: block; }
+  .cp-input { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 9px 10px; color: var(--text); font-family: Arial, sans-serif; font-size: 13px; outline: none; transition: border-color 0.15s; box-sizing: border-box; }
+  .cp-input:focus { border-color: var(--accent); }
+  .cp-input::placeholder { color: var(--muted); opacity: 0.5; }
+  select.cp-input { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+  .cp-textarea { min-height: 56px; resize: vertical; line-height: 1.5; }
+  .cp-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .cp-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .cp-check { display: inline-flex; align-items: center; gap: 5px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; cursor: pointer; transition: border-color 0.15s; }
+  .cp-check:has(input:checked) { border-color: var(--accent); background: rgba(106,136,24,0.1); }
+  .cp-check input { accent-color: var(--accent); margin: 0; width: 14px; height: 14px; }
+  .cp-check span { font-family: Arial, sans-serif; font-size: 11px; color: var(--text); white-space: nowrap; }
+  @media (max-width: 400px) { .cp-grid3 { grid-template-columns: 1fr 1fr; } }
+
+  /* Clinical Profile Summary View */
+  .cp-sum-section { margin-bottom: 16px; }
+  .cp-sum-title { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+  .cp-sum-row { display: flex; justify-content: space-between; align-items: baseline; padding: 3px 0; gap: 8px; }
+  .cp-sum-label { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+  .cp-sum-value { font-size: 12px; color: var(--text); text-align: right; word-break: break-word; }
+  .cp-sum-pills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .cp-sum-pill { font-size: 10px; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); color: var(--text); background: var(--card); }
+  .cp-sum-text { font-size: 12px; color: var(--text); line-height: 1.5; white-space: pre-wrap; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; margin-top: 4px; }
+  .cp-sum-empty { font-size: 13px; color: var(--muted); text-align: center; padding: 40px 20px; line-height: 1.7; }
 </style>
 </head>
 <body>
@@ -322,6 +352,7 @@
 <div style="margin-top:12px;padding:16px;border:1px solid var(--border);border-radius:12px;">
   <div style="font-family:Arial, sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">AI Memory</div>
   <div style="display:flex;flex-direction:column;gap:8px;">
+    <button id="clinicalProfileBtn" class="btn-primary" style="background:none;border:1px solid var(--accent);color:var(--accent);width:100%;font-weight:700;">Clinical Profile</button>
     <button id="aboutMeBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">About Me</button>
     <button id="exerciseMemoryBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">My Training</button>
     <button id="rehabRulesBtn" class="btn-primary" style="background:none;border:1px solid var(--border);color:var(--muted);width:100%;">Rehab Rules</button>
@@ -398,6 +429,249 @@
       <button class="btn-cancel" id="aiModelRulesClose">Cancel</button>
       <button class="btn-primary" id="aiModelRulesSave">Save</button>
     </div>
+  </div>
+</div>
+
+<!-- Clinical Profile Modal -->
+<div class="overlay hidden" id="clinicalProfileModal" style="align-items:stretch;padding:0;">
+  <div id="cpSheet" style="background:var(--dark);width:100%;max-width:520px;margin:0 auto;height:100%;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <div class="modal-title" style="font-family:'Syne',sans-serif;font-size:15px;">CLINICAL PROFILE</div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <button id="cpClear" style="background:none;border:none;color:#a01030;font-family:Arial,sans-serif;font-size:12px;cursor:pointer;padding:0;text-decoration:underline;">clear all</button>
+        <button id="cpClose" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:0;line-height:1;">✕</button>
+      </div>
+    </div>
+
+    <!-- ═══ SUMMARY VIEW (default) ═══ -->
+    <div id="cpSummaryView" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="flex:1;overflow-y:auto;padding:16px 20px 24px;-webkit-overflow-scrolling:touch;">
+        <div id="cpSummaryContent" style="font-family:Arial,sans-serif;font-size:13px;color:var(--text);line-height:1.7;"></div>
+      </div>
+      <div style="padding:12px 20px 16px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:10px;">
+        <button class="btn-cancel" id="cpSummaryCloseBtn" style="flex:1;">Close</button>
+        <button class="btn-primary" id="cpEditBtn" style="flex:1;">Edit Profile</button>
+      </div>
+    </div>
+
+    <!-- ═══ EDIT VIEW (form) ═══ -->
+    <div id="cpEditView" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
+    <div style="flex:1;overflow-y:auto;padding:16px 20px 24px;-webkit-overflow-scrolling:touch;" id="cpScroll">
+      <div style="font-family:Arial,sans-serif;font-size:10px;color:var(--muted);letter-spacing:0.5px;margin-bottom:16px;line-height:1.5;">Fields from VISTA · GWTG-Stroke · SITS · RES-Q · KBRD registries. Fill what you know — blank fields are ignored.</div>
+
+      <!-- DEMOGRAPHICS -->
+      <div class="cp-section">
+        <div class="cp-section-title">Demographics</div>
+        <div class="cp-row">
+          <label class="cp-label">Name</label>
+          <input class="cp-input" id="cp_name" placeholder="Patient name">
+        </div>
+        <div class="cp-grid2">
+          <div><label class="cp-label">Age</label><input class="cp-input" id="cp_age" type="number" min="0" max="120" placeholder="—"></div>
+          <div><label class="cp-label">Sex</label><select class="cp-input" id="cp_sex"><option value="">—</option><option>Male</option><option>Female</option></select></div>
+        </div>
+        <div class="cp-row">
+          <label class="cp-label">Handedness (pre-stroke)</label>
+          <select class="cp-input" id="cp_handedness"><option value="">—</option><option>Right</option><option>Left</option><option>Ambidextrous</option></select>
+        </div>
+      </div>
+
+      <!-- STROKE DETAILS -->
+      <div class="cp-section">
+        <div class="cp-section-title" style="color:var(--arm);">Stroke Details</div>
+        <div class="cp-grid2">
+          <div><label class="cp-label">Stroke Type</label><select class="cp-input" id="cp_stroke_type"><option value="">—</option><option>Ischemic</option><option>Hemorrhagic (ICH)</option><option>Hemorrhagic (SAH)</option><option>TIA</option></select></div>
+          <div><label class="cp-label">Date of Onset</label><input class="cp-input" id="cp_onset_date" type="date"></div>
+        </div>
+        <div class="cp-grid2">
+          <div><label class="cp-label">OCSP Classification</label><select class="cp-input" id="cp_ocsp"><option value="">—</option><option>TACI</option><option>PACI</option><option>LACI</option><option>POCI</option></select></div>
+          <div><label class="cp-label">TOAST Etiology</label><select class="cp-input" id="cp_toast"><option value="">—</option><option>Large artery atherosclerosis</option><option>Cardioembolic</option><option>Small vessel occlusion</option><option>Other determined</option><option>Undetermined</option></select></div>
+        </div>
+        <div class="cp-grid2">
+          <div><label class="cp-label">Affected Hemisphere</label><select class="cp-input" id="cp_hemisphere"><option value="">—</option><option>Left</option><option>Right</option><option>Bilateral</option><option>Brainstem/Cerebellar</option></select></div>
+          <div><label class="cp-label">Affected Body Side</label><select class="cp-input" id="cp_affected_side"><option value="">—</option><option>Left</option><option>Right</option><option>Bilateral</option></select></div>
+        </div>
+        <div class="cp-row">
+          <label class="cp-label">Lesion Territory / Location</label>
+          <select class="cp-input" id="cp_lesion"><option value="">—</option><option>MCA — total territory</option><option>MCA — superior division</option><option>MCA — inferior division</option><option>MCA — deep/basal ganglia</option><option>MCA — corona radiata</option><option>MCA — internal capsule</option><option>ACA territory</option><option>PCA territory</option><option>Vertebrobasilar</option><option>Pontine</option><option>Cerebellar</option><option>Thalamic</option><option>Watershed zone</option><option>Multiple territories</option><option>Unknown</option></select>
+        </div>
+        <div class="cp-row">
+          <label class="cp-label">Acute Treatment Received</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <label class="cp-check"><input type="checkbox" id="cp_tpa"><span>IV tPA / Thrombolysis</span></label>
+            <label class="cp-check"><input type="checkbox" id="cp_thrombectomy"><span>Thrombectomy</span></label>
+            <label class="cp-check"><input type="checkbox" id="cp_craniotomy"><span>Craniotomy</span></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEVERITY & FUNCTIONAL SCORES -->
+      <div class="cp-section">
+        <div class="cp-section-title" style="color:var(--leg);">Severity & Functional Scores</div>
+        <div class="cp-grid2">
+          <div><label class="cp-label">NIHSS — Admission</label><input class="cp-input" id="cp_nihss_adm" type="number" min="0" max="42" placeholder="0–42"></div>
+          <div><label class="cp-label">NIHSS — Current</label><input class="cp-input" id="cp_nihss_cur" type="number" min="0" max="42" placeholder="0–42"></div>
+        </div>
+        <div class="cp-grid2">
+          <div><label class="cp-label">mRS — Pre-Stroke</label><select class="cp-input" id="cp_mrs_pre"><option value="">—</option><option value="0">0 — No symptoms</option><option value="1">1 — No significant disability</option><option value="2">2 — Slight disability</option><option value="3">3 — Moderate disability</option><option value="4">4 — Moderately severe</option><option value="5">5 — Severe disability</option></select></div>
+          <div><label class="cp-label">mRS — Current</label><select class="cp-input" id="cp_mrs_cur"><option value="">—</option><option value="0">0 — No symptoms</option><option value="1">1 — No significant disability</option><option value="2">2 — Slight disability</option><option value="3">3 — Moderate disability</option><option value="4">4 — Moderately severe</option><option value="5">5 — Severe disability</option></select></div>
+        </div>
+        <div class="cp-grid2">
+          <div><label class="cp-label">Barthel Index</label><input class="cp-input" id="cp_barthel" type="number" min="0" max="100" step="5" placeholder="0–100"></div>
+          <div><label class="cp-label">FIM Total</label><input class="cp-input" id="cp_fim" type="number" min="18" max="126" placeholder="18–126"></div>
+        </div>
+      </div>
+
+      <!-- MOTOR — BRUNNSTROM -->
+      <div class="cp-section">
+        <div class="cp-section-title" style="color:var(--alt);">Motor Recovery — Brunnstrom Stages</div>
+        <div class="cp-grid3">
+          <div><label class="cp-label">Arm</label><select class="cp-input" id="cp_brunn_arm"><option value="">—</option><option>I — Flaccid</option><option>II — Synergies appearing</option><option>III — Synergies dominant</option><option>IV — Some out-of-synergy</option><option>V — Relative independence</option><option>VI — Near normal</option></select></div>
+          <div><label class="cp-label">Hand</label><select class="cp-input" id="cp_brunn_hand"><option value="">—</option><option>I — Flaccid</option><option>II — Minimal flexion</option><option>III — Mass grasp</option><option>IV — Lateral pinch, partial ext</option><option>V — Spherical/cylindrical grasp</option><option>VI — Near normal</option></select></div>
+          <div><label class="cp-label">Leg</label><select class="cp-input" id="cp_brunn_leg"><option value="">—</option><option>I — Flaccid</option><option>II — Synergies appearing</option><option>III — Synergies dominant</option><option>IV — Some out-of-synergy</option><option>V — Relative independence</option><option>VI — Near normal</option></select></div>
+        </div>
+      </div>
+
+      <!-- SPASTICITY -->
+      <div class="cp-section">
+        <div class="cp-section-title" style="color:#f13570;">Spasticity — Modified Ashworth Scale</div>
+        <div style="font-family:Arial,sans-serif;font-size:10px;color:var(--muted);margin-bottom:10px;">0 = no increase · 1 = slight · 1+ = slight catch then release · 2 = marked through ROM · 3 = considerable · 4 = rigid</div>
+        <div class="cp-section-sub">Upper Limb</div>
+        <div class="cp-grid3">
+          <div><label class="cp-label">Shoulder adductors</label><select class="cp-input cp-mas" id="cp_mas_shoulder"><option value="">—</option><option>0</option><option>1</option><option>1+</option><option>2</option><option>3</option><option>4</option></select></div>
+          <div><label class="cp-label">Elbow flexors</label><select class="cp-input cp-mas" id="cp_mas_elbow"><option value="">—</option><option>0</option><option>1</option><option>1+</option><option>2</option><option>3</option><option>4</option></select></div>
+          <div><label class="cp-label">Forearm pronators</label><select class="cp-input cp-mas" id="cp_mas_pronators"><option value="">—</option><option>0</option><option>1</option><option>1+</option><option>2</option><option>3</option><option>4</option></select></div>
+        </div>
+        <div class="cp-grid3">
+          <div><label class="cp-label">Wrist flexors</label><select class="cp-input cp-mas" id="cp_mas_wrist"><option value="">—</option><option>0</option><option>1</option><option>1+</option><option>2</option><option>3</option><option>4</option></select></div>
+          <div><label class="cp-label">Finger flexors</label><select class="cp-input cp-mas" id="cp_mas_fingers"><option value="">—</option><option>0</option><option>1</option><option>1+</option><option>2</option><option>3</option><option>4</option></select></div>
+          <div><label class="cp-label">Thumb adductor</label><select class="cp-input cp-mas" id="cp_mas_thumb"><option value="">—</option><option>0</option><option>1</option><option>1+</option><option>2</option><option>3</option><option>4</option></select></div>
+        </div>
+        <div class="cp-section-sub">Lower Limb</div>
+        <div class="cp-grid3">
+          <div><label class="cp-label">Hip adductors</label><select class="cp-input cp-mas" id="cp_mas_hip"><option value="">—</option><option>0</option><option>1</option><option>1+</option><option>2</option><option>3</option><option>4</option></select></div>
+          <div><label class="cp-label">Quadriceps</label><select class="cp-input cp-mas" id="cp_mas_quads"><option value="">—</option><option>0</option><option>1</option><option>1+</option><option>2</option><option>3</option><option>4</option></select></div>
+          <div><label class="cp-label">Hamstrings</label><select class="cp-input cp-mas" id="cp_mas_hamstrings"><option value="">—</option><option>0</option><option>1</option><option>1+</option><option>2</option><option>3</option><option>4</option></select></div>
+        </div>
+        <div class="cp-grid3">
+          <div><label class="cp-label">Gastrocnemius</label><select class="cp-input cp-mas" id="cp_mas_gastroc"><option value="">—</option><option>0</option><option>1</option><option>1+</option><option>2</option><option>3</option><option>4</option></select></div>
+          <div><label class="cp-label">Soleus</label><select class="cp-input cp-mas" id="cp_mas_soleus"><option value="">—</option><option>0</option><option>1</option><option>1+</option><option>2</option><option>3</option><option>4</option></select></div>
+          <div><label class="cp-label">Tibialis posterior</label><select class="cp-input cp-mas" id="cp_mas_tibpost"><option value="">—</option><option>0</option><option>1</option><option>1+</option><option>2</option><option>3</option><option>4</option></select></div>
+        </div>
+      </div>
+
+      <!-- GAIT & MOBILITY -->
+      <div class="cp-section">
+        <div class="cp-section-title" style="color:var(--leg);">Gait & Mobility</div>
+        <div class="cp-row">
+          <label class="cp-label">Functional Ambulation Category (FAC)</label>
+          <select class="cp-input" id="cp_fac"><option value="">—</option><option value="0">0 — Non-functional / Cannot walk</option><option value="1">1 — Dependent (continuous manual contact)</option><option value="2">2 — Dependent (intermittent support)</option><option value="3">3 — Supervision needed</option><option value="4">4 — Independent on level ground</option><option value="5">5 — Independent everywhere</option></select>
+        </div>
+        <div class="cp-grid2">
+          <div><label class="cp-label">Walking Aid</label><select class="cp-input" id="cp_walking_aid"><option value="">—</option><option>None</option><option>Single-point cane</option><option>Quad cane</option><option>Hemi-walker</option><option>Walker/Rollator</option><option>Wheelchair only</option></select></div>
+          <div><label class="cp-label">AFO / Orthotic</label><select class="cp-input" id="cp_afo"><option value="">—</option><option>None</option><option>Rigid AFO</option><option>Hinged AFO</option><option>Dynamic/Carbon AFO</option><option>Knee brace</option></select></div>
+        </div>
+        <div class="cp-row">
+          <label class="cp-label">Berg Balance Scale</label>
+          <input class="cp-input" id="cp_berg" type="number" min="0" max="56" placeholder="0–56">
+        </div>
+      </div>
+
+      <!-- UPPER EXTREMITY FUNCTION -->
+      <div class="cp-section">
+        <div class="cp-section-title" style="color:var(--arm);">Upper Extremity Function</div>
+        <div class="cp-grid2">
+          <div><label class="cp-label">Fugl-Meyer UE</label><input class="cp-input" id="cp_fma_ue" type="number" min="0" max="66" placeholder="0–66"></div>
+          <div><label class="cp-label">ARAT</label><input class="cp-input" id="cp_arat" type="number" min="0" max="57" placeholder="0–57"></div>
+        </div>
+        <div class="cp-grid2">
+          <div><label class="cp-label">Box & Block (affected)</label><input class="cp-input" id="cp_box_block" type="number" min="0" placeholder="blocks/min"></div>
+          <div><label class="cp-label">Grip Strength (kg)</label><input class="cp-input" id="cp_grip" type="number" min="0" step="0.1" placeholder="kg"></div>
+        </div>
+        <div class="cp-row">
+          <label class="cp-label">Voluntary Finger Extension</label>
+          <select class="cp-input" id="cp_finger_ext"><option value="">—</option><option>None — no visible movement</option><option>Trace — flicker, no ROM</option><option>Partial — some range, synergy-bound</option><option>Against gravity — but weak</option><option>Functional — usable grip-release</option><option>Normal</option></select>
+        </div>
+      </div>
+
+      <!-- COMORBIDITIES -->
+      <div class="cp-section">
+        <div class="cp-section-title">Comorbidities & Risk Factors</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <label class="cp-check"><input type="checkbox" id="cp_co_htn"><span>Hypertension</span></label>
+          <label class="cp-check"><input type="checkbox" id="cp_co_dm"><span>Diabetes</span></label>
+          <label class="cp-check"><input type="checkbox" id="cp_co_af"><span>Atrial fibrillation</span></label>
+          <label class="cp-check"><input type="checkbox" id="cp_co_lipid"><span>Hyperlipidemia</span></label>
+          <label class="cp-check"><input type="checkbox" id="cp_co_prior"><span>Prior stroke/TIA</span></label>
+          <label class="cp-check"><input type="checkbox" id="cp_co_heart"><span>Heart disease</span></label>
+          <label class="cp-check"><input type="checkbox" id="cp_co_dep"><span>Depression</span></label>
+          <label class="cp-check"><input type="checkbox" id="cp_co_epilepsy"><span>Post-stroke seizures</span></label>
+          <label class="cp-check"><input type="checkbox" id="cp_co_shoulder"><span>Shoulder subluxation</span></label>
+          <label class="cp-check"><input type="checkbox" id="cp_co_pain"><span>Central post-stroke pain</span></label>
+          <label class="cp-check"><input type="checkbox" id="cp_co_aphasia"><span>Aphasia</span></label>
+          <label class="cp-check"><input type="checkbox" id="cp_co_neglect"><span>Hemispatial neglect</span></label>
+          <label class="cp-check"><input type="checkbox" id="cp_co_dysphagia"><span>Dysphagia</span></label>
+          <label class="cp-check"><input type="checkbox" id="cp_co_cognitive"><span>Cognitive impairment</span></label>
+        </div>
+      </div>
+
+      <!-- COGNITION & MOOD -->
+      <div class="cp-section">
+        <div class="cp-section-title">Cognition & Mood</div>
+        <div class="cp-grid2">
+          <div><label class="cp-label">MoCA / MMSE Score</label><input class="cp-input" id="cp_moca" type="number" min="0" max="30" placeholder="0–30"></div>
+          <div><label class="cp-label">PHQ-9 (Depression)</label><input class="cp-input" id="cp_phq9" type="number" min="0" max="27" placeholder="0–27"></div>
+        </div>
+        <div class="cp-row">
+          <label class="cp-label">Aphasia Type</label>
+          <select class="cp-input" id="cp_aphasia_type"><option value="">—</option><option>None</option><option>Broca's (expressive)</option><option>Wernicke's (receptive)</option><option>Global</option><option>Anomic</option><option>Conduction</option><option>Transcortical</option></select>
+        </div>
+      </div>
+
+      <!-- TREATMENTS -->
+      <div class="cp-section">
+        <div class="cp-section-title" style="color:var(--alt);">Treatments & Medications</div>
+        <div class="cp-row">
+          <label class="cp-label">Current Medications</label>
+          <textarea class="cp-input cp-textarea" id="cp_meds" placeholder="e.g. Baclofen 10mg TID, Aspirin 100mg OD, Atorvastatin 40mg..."></textarea>
+        </div>
+        <div class="cp-row">
+          <label class="cp-label">Botox History</label>
+          <textarea class="cp-input cp-textarea" id="cp_botox" placeholder="e.g. Mar 2025: biceps 50U, FCR 25U, FDS 50U, gastroc 100U..."></textarea>
+        </div>
+        <div class="cp-row">
+          <label class="cp-label">Current Therapy Services</label>
+          <textarea class="cp-input cp-textarea" id="cp_therapy" placeholder="e.g. PT 2x/week, OT 1x/week, FES sessions, SLT..."></textarea>
+        </div>
+      </div>
+
+      <!-- GOALS -->
+      <div class="cp-section">
+        <div class="cp-section-title" style="color:var(--accent);">Rehabilitation Goals</div>
+        <div class="cp-row">
+          <label class="cp-label">Short-term Goals (1–3 months)</label>
+          <textarea class="cp-input cp-textarea" id="cp_goals_short" placeholder="e.g. Improve voluntary finger extension to functional grasp-release..."></textarea>
+        </div>
+        <div class="cp-row">
+          <label class="cp-label">Long-term Goals (6–12 months)</label>
+          <textarea class="cp-input cp-textarea" id="cp_goals_long" placeholder="e.g. Independent community ambulation without AFO..."></textarea>
+        </div>
+      </div>
+
+      <!-- NOTES -->
+      <div class="cp-section">
+        <div class="cp-section-title">Additional Clinical Notes</div>
+        <div class="cp-row">
+          <textarea class="cp-input" id="cp_notes" style="min-height:80px;resize:vertical;" placeholder="Any other relevant clinical information..."></textarea>
+        </div>
+      </div>
+
+    </div>
+    <div style="padding:12px 20px 16px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:10px;">
+      <button class="btn-cancel" id="cpCancelBtn" style="flex:1;">Cancel</button>
+      <button class="btn-primary" id="cpSaveBtn" style="flex:1;">Save Profile</button>
+    </div>
+    </div><!-- /cpEditView -->
   </div>
 </div>
 
@@ -2380,9 +2654,10 @@ document.getElementById('daySummaryNote').addEventListener('blur',  e => e.targe
 document.getElementById('exportBtn').addEventListener('click', async () => {
   const rehabRules   = (await window._idbGet('rehab_rules'))   || '';
   const aiModelRules = (await window._idbGet('ai_model_rules')) || '';
+  const clinicalProfile = (await window._idbGet('clinical_profile')) || '';
   const data = {
     exercises, allSchedules, weekOffset, dayNotes, customCats, builtInCatMeta,
-    rehabRules, aiModelRules,
+    rehabRules, aiModelRules, clinicalProfile,
     exportedAt: new Date().toISOString(), version: 2
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -2416,6 +2691,7 @@ document.getElementById('importFile').addEventListener('change', e => {
       // Restore AI memory if present
       if (data.rehabRules)   await window._idbSet('rehab_rules',   data.rehabRules);
       if (data.aiModelRules) await window._idbSet('ai_model_rules', data.aiModelRules);
+      if (data.clinicalProfile) await window._idbSet('clinical_profile', data.clinicalProfile);
       renderAllDays();
       buildBank();
       updateTotal();
@@ -2454,6 +2730,7 @@ document.getElementById('clearAllDataBtn').addEventListener('click', async () =>
     try { await window._idbSet('ai_chat_history', '[]'); } catch(e2){}
     try { await window._idbSet('rehab_rules', ''); } catch(e2){}
     try { await window._idbSet('ai_model_rules', ''); } catch(e2){}
+    try { await window._idbSet('clinical_profile', ''); } catch(e2){}
     localStorage.clear();
     alert('✓ Data cleared. The page will now reload.');
     location.reload();
@@ -2558,6 +2835,294 @@ document.getElementById('aiModelRulesClear').addEventListener('click', async () 
 });
 document.getElementById('aiModelRulesClose').addEventListener('click', () => document.getElementById('aiModelRulesModal').classList.add('hidden'));
 document.getElementById('aiModelRulesModal').addEventListener('click', e => { if (e.target === document.getElementById('aiModelRulesModal')) document.getElementById('aiModelRulesModal').classList.add('hidden'); });
+
+// ── Clinical Profile Modal ──────────────────────────────────────
+const CP_FIELDS = {
+  // text/number inputs
+  text: ['cp_name','cp_age','cp_onset_date','cp_nihss_adm','cp_nihss_cur','cp_barthel','cp_fim','cp_berg','cp_fma_ue','cp_arat','cp_box_block','cp_grip','cp_moca','cp_phq9'],
+  // selects
+  select: ['cp_sex','cp_handedness','cp_stroke_type','cp_ocsp','cp_toast','cp_hemisphere','cp_affected_side','cp_lesion','cp_mrs_pre','cp_mrs_cur','cp_brunn_arm','cp_brunn_hand','cp_brunn_leg','cp_mas_shoulder','cp_mas_elbow','cp_mas_pronators','cp_mas_wrist','cp_mas_fingers','cp_mas_thumb','cp_mas_hip','cp_mas_quads','cp_mas_hamstrings','cp_mas_gastroc','cp_mas_soleus','cp_mas_tibpost','cp_fac','cp_walking_aid','cp_afo','cp_finger_ext','cp_aphasia_type'],
+  // checkboxes
+  check: ['cp_tpa','cp_thrombectomy','cp_craniotomy','cp_co_htn','cp_co_dm','cp_co_af','cp_co_lipid','cp_co_prior','cp_co_heart','cp_co_dep','cp_co_epilepsy','cp_co_shoulder','cp_co_pain','cp_co_aphasia','cp_co_neglect','cp_co_dysphagia','cp_co_cognitive'],
+  // textareas
+  textarea: ['cp_meds','cp_botox','cp_therapy','cp_goals_short','cp_goals_long','cp_notes']
+};
+
+function getClinicalProfile() {
+  const data = {};
+  CP_FIELDS.text.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
+  CP_FIELDS.select.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
+  CP_FIELDS.check.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.checked; });
+  CP_FIELDS.textarea.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
+  return data;
+}
+
+function setClinicalProfile(data) {
+  if (!data) return;
+  CP_FIELDS.text.forEach(id => { const el = document.getElementById(id); if (el && data[id] != null) el.value = data[id]; });
+  CP_FIELDS.select.forEach(id => { const el = document.getElementById(id); if (el && data[id] != null) el.value = data[id]; });
+  CP_FIELDS.check.forEach(id => { const el = document.getElementById(id); if (el && data[id] != null) el.checked = !!data[id]; });
+  CP_FIELDS.textarea.forEach(id => { const el = document.getElementById(id); if (el && data[id] != null) el.value = data[id]; });
+}
+
+function clearClinicalProfileForm() {
+  CP_FIELDS.text.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  CP_FIELDS.select.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  CP_FIELDS.check.forEach(id => { const el = document.getElementById(id); if (el) el.checked = false; });
+  CP_FIELDS.textarea.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+}
+
+// Build structured clinical summary for AI context
+function buildClinicalSummary(data) {
+  if (!data) return '';
+  const lines = [];
+  const v = (id) => data[id] || '';
+  const has = (id) => !!data[id];
+
+  // Time since stroke
+  let timeSinceStroke = '';
+  if (v('cp_onset_date')) {
+    const onset = new Date(v('cp_onset_date'));
+    const now = new Date();
+    const months = Math.round((now - onset) / (1000*60*60*24*30.44));
+    if (months < 6) timeSinceStroke = `${months} months post-stroke (EARLY subacute)`;
+    else if (months < 12) timeSinceStroke = `${months} months post-stroke (LATE subacute)`;
+    else { const yrs = (months/12).toFixed(1); timeSinceStroke = `${yrs} years post-stroke (CHRONIC phase)`; }
+  }
+
+  // Demographics
+  const demo = [v('cp_name'), v('cp_age') ? v('cp_age')+'yo' : '', v('cp_sex'), v('cp_handedness') ? v('cp_handedness')+'-handed pre-stroke' : ''].filter(Boolean);
+  if (demo.length) lines.push('PATIENT: ' + demo.join(', '));
+
+  // Stroke
+  const stroke = [];
+  if (v('cp_stroke_type')) stroke.push('Type: ' + v('cp_stroke_type'));
+  if (v('cp_ocsp')) stroke.push('OCSP: ' + v('cp_ocsp'));
+  if (v('cp_toast')) stroke.push('TOAST: ' + v('cp_toast'));
+  if (v('cp_hemisphere')) stroke.push('Hemisphere: ' + v('cp_hemisphere'));
+  if (v('cp_affected_side')) stroke.push('Affected side: ' + v('cp_affected_side'));
+  if (v('cp_lesion')) stroke.push('Lesion: ' + v('cp_lesion'));
+  if (v('cp_onset_date')) stroke.push('Onset: ' + v('cp_onset_date'));
+  if (timeSinceStroke) stroke.push(timeSinceStroke);
+  const acuteTx = [];
+  if (data.cp_tpa) acuteTx.push('IV tPA');
+  if (data.cp_thrombectomy) acuteTx.push('Thrombectomy');
+  if (data.cp_craniotomy) acuteTx.push('Craniotomy');
+  if (acuteTx.length) stroke.push('Acute treatment: ' + acuteTx.join(', '));
+  if (stroke.length) lines.push('STROKE: ' + stroke.join(' | '));
+
+  // Severity scores
+  const scores = [];
+  if (v('cp_nihss_adm')) scores.push('NIHSS admission: ' + v('cp_nihss_adm') + '/42');
+  if (v('cp_nihss_cur')) scores.push('NIHSS current: ' + v('cp_nihss_cur') + '/42');
+  if (v('cp_mrs_pre')) scores.push('mRS pre-stroke: ' + v('cp_mrs_pre'));
+  if (v('cp_mrs_cur')) scores.push('mRS current: ' + v('cp_mrs_cur'));
+  if (v('cp_barthel')) scores.push('Barthel: ' + v('cp_barthel') + '/100');
+  if (v('cp_fim')) scores.push('FIM: ' + v('cp_fim') + '/126');
+  if (scores.length) lines.push('SEVERITY: ' + scores.join(' | '));
+
+  // Brunnstrom
+  const brunn = [];
+  if (v('cp_brunn_arm')) brunn.push('Arm: ' + v('cp_brunn_arm'));
+  if (v('cp_brunn_hand')) brunn.push('Hand: ' + v('cp_brunn_hand'));
+  if (v('cp_brunn_leg')) brunn.push('Leg: ' + v('cp_brunn_leg'));
+  if (brunn.length) lines.push('BRUNNSTROM: ' + brunn.join(' | '));
+
+  // MAS
+  const masFields = [
+    ['cp_mas_shoulder','Shoulder add.'],['cp_mas_elbow','Elbow flex.'],['cp_mas_pronators','Forearm pron.'],
+    ['cp_mas_wrist','Wrist flex.'],['cp_mas_fingers','Finger flex.'],['cp_mas_thumb','Thumb add.'],
+    ['cp_mas_hip','Hip add.'],['cp_mas_quads','Quads'],['cp_mas_hamstrings','Hamstrings'],
+    ['cp_mas_gastroc','Gastroc'],['cp_mas_soleus','Soleus'],['cp_mas_tibpost','Tib.post.']
+  ];
+  const masEntries = masFields.filter(([id]) => v(id)).map(([id,label]) => label+':'+v(id));
+  if (masEntries.length) lines.push('SPASTICITY (MAS): ' + masEntries.join(', '));
+
+  // UE function
+  const ue = [];
+  if (v('cp_fma_ue')) ue.push('FMA-UE: ' + v('cp_fma_ue') + '/66');
+  if (v('cp_arat')) ue.push('ARAT: ' + v('cp_arat') + '/57');
+  if (v('cp_box_block')) ue.push('Box&Block: ' + v('cp_box_block') + ' blocks/min');
+  if (v('cp_grip')) ue.push('Grip: ' + v('cp_grip') + 'kg');
+  if (v('cp_finger_ext')) ue.push('Finger ext: ' + v('cp_finger_ext'));
+  if (ue.length) lines.push('UPPER EXTREMITY: ' + ue.join(' | '));
+
+  // Gait
+  const gait = [];
+  if (v('cp_fac')) gait.push('FAC: ' + v('cp_fac'));
+  if (v('cp_walking_aid')) gait.push('Aid: ' + v('cp_walking_aid'));
+  if (v('cp_afo')) gait.push('AFO: ' + v('cp_afo'));
+  if (v('cp_berg')) gait.push('Berg: ' + v('cp_berg') + '/56');
+  if (gait.length) lines.push('GAIT & MOBILITY: ' + gait.join(' | '));
+
+  // Cognition
+  const cog = [];
+  if (v('cp_moca')) cog.push('MoCA: ' + v('cp_moca') + '/30');
+  if (v('cp_phq9')) cog.push('PHQ-9: ' + v('cp_phq9') + '/27');
+  if (v('cp_aphasia_type')) cog.push('Aphasia: ' + v('cp_aphasia_type'));
+  if (cog.length) lines.push('COGNITION & MOOD: ' + cog.join(' | '));
+
+  // Comorbidities
+  const coLabels = {cp_co_htn:'HTN',cp_co_dm:'DM',cp_co_af:'AF',cp_co_lipid:'Hyperlipidemia',cp_co_prior:'Prior stroke/TIA',cp_co_heart:'Heart disease',cp_co_dep:'Depression',cp_co_epilepsy:'Post-stroke seizures',cp_co_shoulder:'Shoulder subluxation',cp_co_pain:'Central pain',cp_co_aphasia:'Aphasia',cp_co_neglect:'Hemispatial neglect',cp_co_dysphagia:'Dysphagia',cp_co_cognitive:'Cognitive impairment'};
+  const coActive = Object.entries(coLabels).filter(([id]) => data[id]).map(([,label]) => label);
+  if (coActive.length) lines.push('COMORBIDITIES: ' + coActive.join(', '));
+
+  // Treatments
+  if (v('cp_meds')) lines.push('MEDICATIONS: ' + v('cp_meds'));
+  if (v('cp_botox')) lines.push('BOTOX HISTORY: ' + v('cp_botox'));
+  if (v('cp_therapy')) lines.push('THERAPY SERVICES: ' + v('cp_therapy'));
+
+  // Goals
+  if (v('cp_goals_short')) lines.push('GOALS (short-term): ' + v('cp_goals_short'));
+  if (v('cp_goals_long')) lines.push('GOALS (long-term): ' + v('cp_goals_long'));
+  if (v('cp_notes')) lines.push('NOTES: ' + v('cp_notes'));
+
+  return lines.join('\n');
+}
+
+// Build readable HTML summary for display
+function buildClinicalSummaryHTML(data) {
+  if (!data) return '';
+  const v = (id) => data[id] || '';
+  const has = (id) => !!data[id];
+
+  // Check if anything is filled
+  const allEmpty = [...CP_FIELDS.text, ...CP_FIELDS.select, ...CP_FIELDS.textarea].every(id => !v(id))
+    && CP_FIELDS.check.every(id => !data[id]);
+  if (allEmpty) return '<div class="cp-sum-empty">No clinical profile yet.<br>Tap "Edit Profile" to add your stroke details, severity scores, spasticity levels, and more.<br><br>The AI uses this data to give you specific, evidence-based prognoses matched against stroke research databases.</div>';
+
+  let html = '';
+  const section = (title, color, content) => {
+    if (!content) return '';
+    return `<div class="cp-sum-section"><div class="cp-sum-title" style="color:${color||'var(--text)'}">${title}</div>${content}</div>`;
+  };
+  const row = (label, value) => value ? `<div class="cp-sum-row"><span class="cp-sum-label">${label}</span><span class="cp-sum-value">${value}</span></div>` : '';
+
+  // Time since stroke
+  let timeSince = '';
+  if (v('cp_onset_date')) {
+    const onset = new Date(v('cp_onset_date'));
+    const now = new Date();
+    const months = Math.round((now - onset) / (1000*60*60*24*30.44));
+    if (months < 1) timeSince = 'Less than 1 month ago';
+    else if (months < 6) timeSince = `${months} months (early subacute)`;
+    else if (months < 12) timeSince = `${months} months (late subacute)`;
+    else { const yrs = (months/12).toFixed(1); timeSince = `${yrs} years (chronic phase)`; }
+  }
+
+  // Demographics
+  let demoRows = row('Name', v('cp_name')) + row('Age', v('cp_age') ? v('cp_age') + ' years' : '') + row('Sex', v('cp_sex')) + row('Handedness', v('cp_handedness'));
+  html += section('Demographics', null, demoRows);
+
+  // Stroke
+  let strokeRows = row('Type', v('cp_stroke_type')) + row('Date of Onset', v('cp_onset_date')) + (timeSince ? row('Time Since Stroke', timeSince) : '') + row('OCSP', v('cp_ocsp')) + row('TOAST Etiology', v('cp_toast')) + row('Hemisphere', v('cp_hemisphere')) + row('Affected Side', v('cp_affected_side')) + row('Lesion Territory', v('cp_lesion'));
+  const acuteTx = [];
+  if (data.cp_tpa) acuteTx.push('IV tPA / Thrombolysis');
+  if (data.cp_thrombectomy) acuteTx.push('Thrombectomy');
+  if (data.cp_craniotomy) acuteTx.push('Craniotomy');
+  if (acuteTx.length) strokeRows += row('Acute Treatment', acuteTx.join(', '));
+  html += section('Stroke Details', 'var(--arm)', strokeRows);
+
+  // Severity
+  let sevRows = row('NIHSS — Admission', v('cp_nihss_adm') ? v('cp_nihss_adm') + ' / 42' : '') + row('NIHSS — Current', v('cp_nihss_cur') ? v('cp_nihss_cur') + ' / 42' : '') + row('mRS — Pre-Stroke', v('cp_mrs_pre') !== '' ? v('cp_mrs_pre') : '') + row('mRS — Current', v('cp_mrs_cur') !== '' ? v('cp_mrs_cur') : '') + row('Barthel Index', v('cp_barthel') ? v('cp_barthel') + ' / 100' : '') + row('FIM Total', v('cp_fim') ? v('cp_fim') + ' / 126' : '');
+  html += section('Severity & Functional Scores', 'var(--leg)', sevRows);
+
+  // Brunnstrom
+  let brunnRows = row('Arm', v('cp_brunn_arm')) + row('Hand', v('cp_brunn_hand')) + row('Leg', v('cp_brunn_leg'));
+  html += section('Motor Recovery — Brunnstrom', 'var(--alt)', brunnRows);
+
+  // MAS
+  const masMap = [['cp_mas_shoulder','Shoulder adductors'],['cp_mas_elbow','Elbow flexors'],['cp_mas_pronators','Forearm pronators'],['cp_mas_wrist','Wrist flexors'],['cp_mas_fingers','Finger flexors'],['cp_mas_thumb','Thumb adductor'],['cp_mas_hip','Hip adductors'],['cp_mas_quads','Quadriceps'],['cp_mas_hamstrings','Hamstrings'],['cp_mas_gastroc','Gastrocnemius'],['cp_mas_soleus','Soleus'],['cp_mas_tibpost','Tibialis posterior']];
+  let masRows = '';
+  masMap.forEach(([id, label]) => { masRows += row(label, v(id)); });
+  html += section('Spasticity — Modified Ashworth', '#f13570', masRows);
+
+  // Gait
+  let gaitRows = row('FAC', v('cp_fac')) + row('Walking Aid', v('cp_walking_aid')) + row('AFO / Orthotic', v('cp_afo')) + row('Berg Balance', v('cp_berg') ? v('cp_berg') + ' / 56' : '');
+  html += section('Gait & Mobility', 'var(--leg)', gaitRows);
+
+  // UE
+  let ueRows = row('Fugl-Meyer UE', v('cp_fma_ue') ? v('cp_fma_ue') + ' / 66' : '') + row('ARAT', v('cp_arat') ? v('cp_arat') + ' / 57' : '') + row('Box & Block', v('cp_box_block') ? v('cp_box_block') + ' blocks/min' : '') + row('Grip Strength', v('cp_grip') ? v('cp_grip') + ' kg' : '') + row('Finger Extension', v('cp_finger_ext'));
+  html += section('Upper Extremity Function', 'var(--arm)', ueRows);
+
+  // Comorbidities
+  const coMap = {cp_co_htn:'Hypertension',cp_co_dm:'Diabetes',cp_co_af:'Atrial fibrillation',cp_co_lipid:'Hyperlipidemia',cp_co_prior:'Prior stroke/TIA',cp_co_heart:'Heart disease',cp_co_dep:'Depression',cp_co_epilepsy:'Post-stroke seizures',cp_co_shoulder:'Shoulder subluxation',cp_co_pain:'Central pain',cp_co_aphasia:'Aphasia',cp_co_neglect:'Hemispatial neglect',cp_co_dysphagia:'Dysphagia',cp_co_cognitive:'Cognitive impairment'};
+  const activeComorbidities = Object.entries(coMap).filter(([id]) => data[id]).map(([,label]) => label);
+  let coContent = '';
+  if (activeComorbidities.length) coContent = '<div class="cp-sum-pills">' + activeComorbidities.map(l => `<span class="cp-sum-pill">${l}</span>`).join('') + '</div>';
+  html += section('Comorbidities', null, coContent);
+
+  // Cognition
+  let cogRows = row('MoCA / MMSE', v('cp_moca') ? v('cp_moca') + ' / 30' : '') + row('PHQ-9', v('cp_phq9') ? v('cp_phq9') + ' / 27' : '') + row('Aphasia Type', v('cp_aphasia_type'));
+  html += section('Cognition & Mood', null, cogRows);
+
+  // Treatments
+  let txContent = '';
+  if (v('cp_meds')) txContent += `<div class="cp-sum-label" style="margin-top:4px;">Medications</div><div class="cp-sum-text">${v('cp_meds')}</div>`;
+  if (v('cp_botox')) txContent += `<div class="cp-sum-label" style="margin-top:8px;">Botox History</div><div class="cp-sum-text">${v('cp_botox')}</div>`;
+  if (v('cp_therapy')) txContent += `<div class="cp-sum-label" style="margin-top:8px;">Therapy Services</div><div class="cp-sum-text">${v('cp_therapy')}</div>`;
+  html += section('Treatments & Medications', 'var(--alt)', txContent);
+
+  // Goals
+  let goalsContent = '';
+  if (v('cp_goals_short')) goalsContent += `<div class="cp-sum-label" style="margin-top:4px;">Short-term (1–3 months)</div><div class="cp-sum-text">${v('cp_goals_short')}</div>`;
+  if (v('cp_goals_long')) goalsContent += `<div class="cp-sum-label" style="margin-top:8px;">Long-term (6–12 months)</div><div class="cp-sum-text">${v('cp_goals_long')}</div>`;
+  html += section('Rehabilitation Goals', 'var(--accent)', goalsContent);
+
+  // Notes
+  if (v('cp_notes')) html += section('Additional Notes', null, `<div class="cp-sum-text">${v('cp_notes')}</div>`);
+
+  // Strip empty sections (sections with no rows)
+  return html.replace(/<div class="cp-sum-section"><div class="cp-sum-title"[^>]*>[^<]*<\/div><\/div>/g, '');
+}
+
+function showCPSummary() {
+  document.getElementById('cpSummaryView').style.display = 'flex';
+  document.getElementById('cpEditView').style.display = 'none';
+}
+function showCPEdit() {
+  document.getElementById('cpSummaryView').style.display = 'none';
+  document.getElementById('cpEditView').style.display = 'flex';
+  document.getElementById('cpScroll').scrollTop = 0;
+}
+
+// Event listeners
+document.getElementById('clinicalProfileBtn').addEventListener('click', async () => {
+  let cpData = null;
+  try {
+    const raw = await window._idbGet('clinical_profile');
+    if (raw) { cpData = JSON.parse(raw); setClinicalProfile(cpData); }
+  } catch(e) {}
+  document.getElementById('cpSummaryContent').innerHTML = buildClinicalSummaryHTML(cpData);
+  showCPSummary();
+  document.getElementById('clinicalProfileModal').classList.remove('hidden');
+});
+document.getElementById('cpEditBtn').addEventListener('click', () => showCPEdit());
+document.getElementById('cpSummaryCloseBtn').addEventListener('click', () => {
+  document.getElementById('clinicalProfileModal').classList.add('hidden');
+});
+document.getElementById('cpSaveBtn').addEventListener('click', async () => {
+  const data = getClinicalProfile();
+  await window._idbSet('clinical_profile', JSON.stringify(data));
+  document.getElementById('cpSummaryContent').innerHTML = buildClinicalSummaryHTML(data);
+  showCPSummary();
+});
+document.getElementById('cpCancelBtn').addEventListener('click', () => {
+  showCPSummary();
+});
+document.getElementById('cpClose').addEventListener('click', () => {
+  document.getElementById('clinicalProfileModal').classList.add('hidden');
+});
+document.getElementById('cpClear').addEventListener('click', async () => {
+  if (!confirm('Clear entire clinical profile? This cannot be undone.')) return;
+  clearClinicalProfileForm();
+  await window._idbSet('clinical_profile', '');
+  document.getElementById('cpSummaryContent').innerHTML = buildClinicalSummaryHTML(null);
+  showCPSummary();
+});
+document.getElementById('clinicalProfileModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('clinicalProfileModal')) document.getElementById('clinicalProfileModal').classList.add('hidden');
+});
 
 
 openDB().then(loadStateFromDB).then(saved => {
@@ -3439,20 +4004,31 @@ Target ~500 words. Return ONLY the my training text.` }],
     if (!_chatRendered) {
       _chatRendered = true;
       if (chatHistory.length === 0) {
-        // Extract name from full memory if available
+        // Extract name from clinical profile or full memory
         let userName = '';
-        if (fullMemory) {
+        try {
+          const cpRaw = await window._idbGet('clinical_profile');
+          if (cpRaw) {
+            const cpData = JSON.parse(cpRaw);
+            if (cpData.cp_name) userName = cpData.cp_name.split(/\s/)[0];
+          }
+        } catch(e) {}
+        if (!userName && fullMemory) {
           const nameMatch = fullMemory.match(/(?:my name is|I(?:'m| am) ([A-Z][a-z]+)|Name[:\s]+([A-Z][a-z]+)|Patient[:\s]+([A-Z][a-z]+))/i);
           if (nameMatch) userName = nameMatch[1] || nameMatch[2] || nameMatch[3] || '';
-          // Also try "Mladen" style direct name extraction
           if (!userName) {
             const directMatch = fullMemory.match(/—\s*([A-Z][a-z]+),|\*\*.*?([A-Z][a-z]{3,}),\s*\d+\s*years/);
             if (directMatch) userName = directMatch[1] || directMatch[2] || '';
           }
         }
-        const greeting = fullMemory
-          ? `Hello${userName ? ' ' + userName : ''}! How can I help with your rehab today?`
-          : `Hi! I'm your Rehab AI assistant. To personalise your experience, could you tell me about your stroke — type, when it happened, and which side is affected?`;
+        // Check if clinical profile exists
+        let hasCP = false;
+        try { const cp = await window._idbGet('clinical_profile'); hasCP = !!(cp && JSON.parse(cp).cp_stroke_type); } catch(e) {}
+        const greeting = hasCP
+          ? `Hello${userName ? ' ' + userName : ''}! Your clinical profile is loaded — I can give you evidence-based prognoses matched against VISTA, GWTG-Stroke, and other stroke registries. How can I help today?`
+          : fullMemory
+          ? `Hello${userName ? ' ' + userName : ''}! For the most accurate clinical guidance, fill in your Clinical Profile (button on main screen). How can I help today?`
+          : `Hi! I'm your neurorehab AI assistant. For evidence-based prognoses matched to stroke research databases, tap "Clinical Profile" on the main screen and fill in your details. Or just tell me about your stroke to get started.`;
         addMsg('assistant', greeting);
       } else {
         chatHistory.slice(-CHAT_WINDOW).forEach(m => {
@@ -3771,26 +4347,57 @@ Target ~500 words. Return ONLY the my training text.` }],
     const rehabRules = (await window._idbGet('rehab_rules')) || '';
     const aiModelRules = (await window._idbGet('ai_model_rules')) || '';
 
+    // Load clinical profile
+    let clinicalSummary = '';
+    try {
+      const cpRaw = await window._idbGet('clinical_profile');
+      if (cpRaw) clinicalSummary = buildClinicalSummary(JSON.parse(cpRaw));
+    } catch(e) {}
+
     // Static instructions — cached (never changes)
-    const staticInstructions = `You are a physiotherapy assistant built into the Rehab Planner app. You help stroke rehabilitation patients.
+    const staticInstructions = `You are a specialist neurorehabilitation AI assistant built into the Rehab Planner app. You combine the roles of a physiotherapy assistant AND a clinical stroke rehabilitation consultant who synthesizes evidence from major stroke registries and databases.
 
+YOUR CLINICAL KNOWLEDGE BASE — you must actively cross-reference these when giving prognoses, recommendations, or clinical opinions:
+- VISTA / VISTA-ICH (Virtual International Stroke Trials Archive): Recovery trajectories, motor outcome predictors, ICH vs ischemic recovery patterns, late-phase gains
+- GWTG-Stroke (Get With The Guidelines-Stroke): Real-world post-stroke complication patterns, functional recovery timelines, spasticity outcomes
+- SITS (Safe Implementation of Treatments in Stroke): Treatment response patterns, thrombolysis outcomes, early recovery predictors
+- RES-Q (Registry of Stroke Care Quality): Rehabilitation quality metrics, recovery benchmarks by stroke subtype
+- KBRD (Korean Brain Rehabilitation Database): Detailed motor recovery staging, Brunnstrom/FMA progression data, spasticity evolution patterns
+- Key trial datasets: CLEAR-III, MISTIE-III, EXCITE, ICARE, AVERT — for specific intervention evidence
+- Published meta-analyses on: spasticity timeline by lesion location, Brunnstrom/Chedoke staging trajectories, Fugl-Meyer recovery curves, motor recovery predictors (PREP/PREP2 algorithm), constraint-induced movement therapy evidence, FES efficacy
+
+CLINICAL REASONING RULES:
+1. When a CLINICAL PROFILE is provided below, ALWAYS use it as the primary patient reference. Match the patient's specific combination of variables (stroke type, lesion location, time since onset, Brunnstrom stage, MAS scores, functional scores) against known subgroup patterns in the registries above.
+2. Give SPECIFIC prognoses with timelines, not vague encouragement. For example: "Based on your basal ganglia ICH with Brunnstrom arm stage IV at 7 months, VISTA-ICH data shows patients in this subgroup typically reach stage V-VI by 12-18 months" — not "keep working hard and you'll improve."
+3. When discussing spasticity, reference MAS trajectory patterns by muscle group and lesion location. Cite expected reduction timelines based on the patient's current profile.
+4. When discussing motor recovery, use Brunnstrom staging, Fugl-Meyer scores, and PREP2 algorithm logic to give evidence-grounded predictions.
+5. Quantify probabilities where the literature supports it (e.g., ">60% of patients with this profile achieve...", "the favorable subgroup in VISTA-ICH shows...").
+6. Distinguish between ICH and ischemic stroke recovery patterns — ICH often has delayed but potentially greater late gains in subcortical cases.
+7. When the patient's markers match a known favorable or unfavorable subgroup, state this explicitly with the specific markers that drive the classification.
+8. If asked where your information comes from, explain the specific registries/databases/studies you are drawing from (VISTA, GWTG, published meta-analyses, etc.) and how the patient's profile maps to studied subgroups.
+
+SCHEDULING & APP RULES:
 CRITICAL: The CURRENT WEEK SCHEDULE and EXERCISE BANK at the bottom of this prompt reflect the LIVE state of the app RIGHT NOW. Always read them before answering any question about what is scheduled, what is planned, or what exists. NEVER rely on what you said in previous messages — the user may have manually changed things. If a day appears empty in CURRENT WEEK SCHEDULE, it IS empty, regardless of what was discussed earlier.
-
-When asked to schedule, add, move, remove, or clear exercises — you MUST call the appropriate tool. NEVER describe what you would do or say you have done it without actually calling the tool. If you say "scheduled", "cleared", "added", or "removed" — a tool call MUST have happened in that same response. No exceptions.
-When scheduling more than 3 exercises — always use schedule_week with the full plan in one call. Never call add_exercise_to_day repeatedly for bulk scheduling.
-Never clear existing days before scheduling. Only add to days, preserve what is already there unless explicitly told to remove.
+When asked to schedule, add, move, remove, or clear exercises — you MUST call the appropriate tool. NEVER describe what you would do or say you have done it without actually calling the tool. No exceptions.
+When scheduling more than 3 exercises — always use schedule_week with the full plan in one call.
+Never clear existing days before scheduling unless explicitly told to remove.
 When asked to create a new exercise — use create_exercise.
 When asked about exercises for a muscle/condition — answer from your knowledge, then use create_exercise if needed.
-For general questions — be concise. Maximum 3-4 short paragraphs. No lists longer than 5 items. Plain text only, no markdown, no asterisks.
 When reporting what is scheduled for a day or week, always include completion status: show [DONE], [X%], or "not done" for each exercise based on the schedule data.
 Always use the memories below — never say you don't know something already in the profile or history.
-If the ABOUT ME section is empty or has little information — your first priority is to get to know the patient. Ask 1-2 specific questions about their stroke (type, date, affected side, current abilities) naturally in conversation. Build the profile gradually over multiple exchanges.
+If both the CLINICAL PROFILE and ABOUT ME are empty — your first priority is to ask the patient to fill in their Clinical Profile (accessible from the main screen) for the best possible clinical guidance. Alternatively, ask 1-2 specific questions about their stroke naturally.
+
+RESPONSE STYLE:
+- For clinical/prognostic questions: Be detailed and specific. Use paragraph form. Reference the evidence base. No character limit for clinical discussions.
+- For scheduling/exercise questions: Be concise. Maximum 3-4 short paragraphs.
+- Plain text only, no markdown, no asterisks.
 
 After EVERY response, append exactly this on a new line — 3 short context-relevant follow-up chips. Format strictly as: CHIPS:["label1","label2","label3"]
-Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS:["Plan today","Add leg day","View week"]`;
+Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS:["My prognosis","Plan today","Spasticity outlook"]`;
 
-    // User memories
+    // User memories + clinical profile
     const memoriesBlock = [
+      clinicalSummary ? `=== CLINICAL PROFILE (STRUCTURED — from stroke registries VISTA/GWTG/SITS/RES-Q/KBRD field set) ===\n${clinicalSummary}` : '',
       fullMemory ? `=== ABOUT ME ===\n${fullMemory}` : '=== ABOUT ME ===\nNew user — learn about them naturally.',
       exerciseMemory ? `=== MY TRAINING ===\n${exerciseMemory}` : '',
       rehabRules ? `=== REHAB RULES ===\n${rehabRules}` : '',
