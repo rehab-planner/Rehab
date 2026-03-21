@@ -2746,7 +2746,7 @@ document.getElementById('aboutMeBtn').addEventListener('click', async () => {
   const modal = document.getElementById('aboutMeModal');
   const fullEl = document.getElementById('aboutMeFullMemory');
   const full = (await window._idbGet('ai_full_memory')) || '';
-  fullEl.textContent = full || '(no profile yet — start chatting with the AI)';
+  fullEl.textContent = full || '(no personal profile yet — the AI builds this from your conversations: personality, routine, preferences, qualitative observations)';
   modal.classList.remove('hidden');
 });
 document.getElementById('aboutMeClose').addEventListener('click', () => {
@@ -3252,7 +3252,7 @@ IMPORTANT:
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 4000,
-        system: [{ type: 'text', text: extractionPrompt }],
+        system: [{ type: 'text', text: extractionPrompt, cache_control: { type: 'ephemeral' } }],
         messages: [{ role: 'user', content: `Extract clinical profile from this patient data:\n\n${allContext}` }]
       })
     });
@@ -4088,30 +4088,41 @@ document.getElementById('timerModal').addEventListener('click', e => {
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 3000,
-          system: [{ type: 'text', text: `You maintain the PERSONAL & MEDICAL section of a stroke rehabilitation patient's profile.
+          system: [{ type: 'text', text: `You maintain the ABOUT ME section of a stroke rehabilitation patient's profile. This captures PERSONAL and QUALITATIVE information only — all structured clinical/medical data is stored separately in the Clinical Profile.
+
 If NO new information belonging to this section is found — return the profile UNCHANGED, word for word.
 Write as compact bullet points and short factual statements. No narrative, no opinions.
 
 BELONGS HERE:
-- Identity: name, age, occupation
-- Stroke: type, brain location, date, size
-- Affected side and specific limbs
-- Symptoms: initial and current (weakness, spasticity, co-contraction, tone levels)
-- Physical abilities and limitations (e.g. can climb 6 flights, walks without cane, cannot extend fingers voluntarily)
-- Medical procedures: Botox sessions (date, location, muscles injected, units), surgeries, hospitalizations
-- Medications and doses
-- Therapist names, therapy types (PT, OT, SDE), session frequency and duration
-- Recovery timeline and milestones
-- Goals
+- Identity: name, age, occupation, family situation
+- Personality and communication preferences (e.g. prefers direct answers, dislikes vague encouragement)
+- Daily routine and lifestyle (e.g. trains 3hrs daily including weekends, morning person)
+- Motivation and mindset (e.g. highly driven, gets frustrated on low-progress days)
+- Personal goals beyond clinical (e.g. wants to return to playing guitar, carry child)
+- Qualitative observations about their condition (e.g. "fingers curl more after long typing sessions", "tone worse in cold weather", "good days after swimming")
+- Therapist names and relationship notes (e.g. "PT is Dr. Kim, meets Thursdays")
+- Living situation relevant to rehab (e.g. 3rd floor walk-up, has home gym setup)
+- Caregiver/support context
+- Preferences about how AI should respond
 
-DOES NOT BELONG HERE (goes in My Training instead):
+DOES NOT BELONG HERE (stored in Clinical Profile instead):
+- Stroke type, date, hemisphere, lesion location, OCSP/TOAST
+- NIHSS, mRS, Barthel, FIM scores
+- Brunnstrom stages, MAS scores
+- FAC level, walking aid, AFO type
+- Medications and doses
+- Botox sessions (dates, muscles, units)
+- Comorbidities (HTN, DM, AF, etc.)
+- Formal therapy service schedule
+
+DOES NOT BELONG HERE (stored in My Training instead):
 - Which exercises work well or poorly
-- Session timing preferences (morning vs evening)
+- Session timing preferences
 - Fatigue patterns during workouts
 - Equipment preferences
 - Progression notes for specific exercises
 
-Target ~600 words. Return ONLY the profile text.` }],
+Target ~300 words. Return ONLY the profile text.`, cache_control: { type: 'ephemeral' } }],
           messages: [{ role: 'user', content:
             `CURRENT PROFILE:\n${fullMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated profile (or unchanged if no new info belongs here):`
           }]
@@ -4144,7 +4155,7 @@ DOES NOT BELONG HERE (goes in Personal & Medical instead):
 - Spasticity levels or tone baselines — unless directly linked to a specific exercise
 - Therapist names or therapy session types
 
-Target ~500 words. Return ONLY the my training text.` }],
+Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'ephemeral' } }],
           messages: [{ role: 'user', content:
             `CURRENT MY TRAINING:\n${exerciseMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated my training (or unchanged if no new info belongs here):`
           }]
@@ -4202,7 +4213,7 @@ RULES:
 - ONLY include fields with genuinely new or updated info from the conversation
 - For Brunnstrom/MAS/FAC, infer from described abilities if not explicitly scored
 - Be conservative — don't guess fields without evidence
-- For text fields (meds, botox, therapy, goals, notes): if adding new info, include the FULL updated text (merge with existing)` }],
+- For text fields (meds, botox, therapy, goals, notes): if adding new info, include the FULL updated text (merge with existing)`, cache_control: { type: 'ephemeral' } }],
             messages: [{ role: 'user', content:
               `CURRENT CLINICAL PROFILE:\n${currentSummary || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn JSON with fields to update (or {} if no new clinical data):`
             }]
@@ -4658,7 +4669,12 @@ When asked to create a new exercise — use create_exercise.
 When asked about exercises for a muscle/condition — answer from your knowledge, then use create_exercise if needed.
 When reporting what is scheduled for a day or week, always include completion status: show [DONE], [X%], or "not done" for each exercise based on the schedule data.
 Always use the memories below — never say you don't know something already in the profile or history.
-If both the CLINICAL PROFILE and ABOUT ME are empty — your first priority is to ask the patient to fill in their Clinical Profile (accessible from the main screen) for the best possible clinical guidance. Alternatively, ask 1-2 specific questions about their stroke naturally.
+MEMORY SECTIONS — what lives where:
+- CLINICAL PROFILE: All structured medical data (stroke type, scores, MAS, Brunnstrom, Botox, medications, comorbidities). This is your primary clinical reference for prognoses.
+- ABOUT ME: Personal context only (personality, daily routine, motivation, lifestyle, qualitative observations). NOT clinical data.
+- MY TRAINING: Exercise-specific observations (what works, fatigue patterns, technique notes).
+Never duplicate clinical data across sections. If asked about medical facts, always reference the Clinical Profile first.
+If the CLINICAL PROFILE is empty — ask the patient to fill it in (button on main screen). If ABOUT ME is also empty, ask 1-2 personal questions naturally.
 
 RESPONSE STYLE:
 - For clinical/prognostic questions: Be detailed and specific. Use paragraph form. Reference the evidence base. No character limit for clinical discussions.
@@ -4670,9 +4686,9 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
 
     // User memories + clinical profile
     const memoriesBlock = [
-      clinicalSummary ? `=== CLINICAL PROFILE (STRUCTURED — from stroke registries VISTA/GWTG/SITS/RES-Q/KBRD field set) ===\n${clinicalSummary}` : '',
-      fullMemory ? `=== ABOUT ME ===\n${fullMemory}` : '=== ABOUT ME ===\nNew user — learn about them naturally.',
-      exerciseMemory ? `=== MY TRAINING ===\n${exerciseMemory}` : '',
+      clinicalSummary ? `=== CLINICAL PROFILE (STRUCTURED — stroke registries VISTA/GWTG/SITS/RES-Q/KBRD) ===\n${clinicalSummary}` : '',
+      fullMemory ? `=== ABOUT ME (personal context, preferences, qualitative observations — NOT clinical data) ===\n${fullMemory}` : '',
+      exerciseMemory ? `=== MY TRAINING (exercise-specific observations and preferences) ===\n${exerciseMemory}` : '',
       rehabRules ? `=== REHAB RULES ===\n${rehabRules}` : '',
     ].filter(Boolean).join('\n\n');
 
@@ -4684,7 +4700,12 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
       ? `\n\n=== AI RULES — FOLLOW THESE STRICTLY, THEY OVERRIDE DEFAULT BEHAVIOR ===\n${aiModelRules}`
       : '';
 
-    const systemPrompt = [staticInstructions, memoriesBlock, appContext].filter(Boolean).join('\n\n') + aiRulesBlock;
+    const dynamicContent = [memoriesBlock, appContext].filter(Boolean).join('\n\n') + aiRulesBlock;
+
+    const systemPrompt = [
+      { type: 'text', text: staticInstructions, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: dynamicContent }
+    ];
 
     // Last 4 messages as active window — always includes current user message
     const windowedHistory = chatHistory.slice(-CHAT_WINDOW);
@@ -4693,7 +4714,10 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
     const useHaiku = true;
     const model = 'claude-haiku-4-5-20251001';
     const maxTok = 4000;
-    const toolsParam = AI_TOOLS;
+    // Cache tool definitions (add cache_control to last tool)
+    const toolsParam = AI_TOOLS.map((t, i) =>
+      i === AI_TOOLS.length - 1 ? { ...t, cache_control: { type: 'ephemeral' } } : t
+    );
 
     // Inject live schedule into the last user message so AI can't miss it
     const thisWeekLive = getSchedule(0);
