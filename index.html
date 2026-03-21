@@ -2982,14 +2982,15 @@ function buildClinicalSummary(data) {
 
 // Build readable HTML summary for display
 function buildClinicalSummaryHTML(data) {
-  if (!data) return '';
+  const emptyMsg = '<div class="cp-sum-empty">No clinical profile yet.<br>Tap "Edit Profile" to add your stroke details, severity scores, spasticity levels, and more.<br><br>The AI uses this data to give you specific, evidence-based prognoses matched against stroke research databases.</div>';
+  if (!data) return emptyMsg;
   const v = (id) => data[id] || '';
   const has = (id) => !!data[id];
 
   // Check if anything is filled
   const allEmpty = [...CP_FIELDS.text, ...CP_FIELDS.select, ...CP_FIELDS.textarea].every(id => !v(id))
     && CP_FIELDS.check.every(id => !data[id]);
-  if (allEmpty) return '<div class="cp-sum-empty">No clinical profile yet.<br>Tap "Edit Profile" to add your stroke details, severity scores, spasticity levels, and more.<br><br>The AI uses this data to give you specific, evidence-based prognoses matched against stroke research databases.</div>';
+  if (allEmpty) return emptyMsg;
 
   let html = '';
   const section = (title, color, content) => {
