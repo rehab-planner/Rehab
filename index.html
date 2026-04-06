@@ -217,6 +217,10 @@
   #aiModal.hidden { display: none; }
   #aiSheet { background: var(--dark); border: 1px solid var(--border); border-radius: 18px 18px 0 0; width: 100%; max-width: 520px; height: 75vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
   #aiSheetHeader { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  #dsKeyBar { display: none; flex-shrink: 0; padding: 8px 16px; background: rgba(106,136,24,0.07); border-bottom: 1px solid var(--border); gap: 8px; align-items: center; }
+  #dsKeyInput { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px; outline: none; }
+  #dsKeyInput:focus { border-color: var(--accent); }
+  #dsKeySave { background: var(--accent); color: var(--black); border: none; border-radius: 7px; padding: 8px 14px; font-family: Arial, sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
   #aiSheetHeader .modal-title { margin: 0; font-size: 15px; }
   #aiCloseBtn { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; padding: 0; line-height: 1; }
   #aiMessages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
@@ -2746,7 +2750,7 @@ document.getElementById('aboutMeBtn').addEventListener('click', async () => {
   const modal = document.getElementById('aboutMeModal');
   const fullEl = document.getElementById('aboutMeFullMemory');
   const full = (await window._idbGet('ai_full_memory')) || '';
-  fullEl.textContent = full || '(no personal profile yet — the AI builds this from your conversations: personality, routine, preferences, qualitative observations)';
+  fullEl.textContent = full || '(no profile yet — start chatting with the AI)';
   modal.classList.remove('hidden');
 });
 document.getElementById('aboutMeClose').addEventListener('click', () => {
@@ -3246,20 +3250,24 @@ IMPORTANT:
 - For lesion location, map "basal ganglia" to "MCA — deep/basal ganglia".
 - Be conservative — only fill fields where you have clear evidence.`;
 
-    const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
+    const dsKey = (await window._idbGet('ds_api_key')) || 'sk-6590b637b1ec4481b664acca330b64e4';
+
+    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + dsKey },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'deepseek-chat',
         max_tokens: 4000,
-        system: [{ type: 'text', text: extractionPrompt, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: `Extract clinical profile from this patient data:\n\n${allContext}` }]
+        messages: [
+          { role: 'system', content: extractionPrompt },
+          { role: 'user', content: `Extract clinical profile from this patient data:\n\n${allContext}` }
+        ]
       })
     });
 
     if (!res.ok) throw new Error('API error ' + res.status);
     const data = await res.json();
-    const rawText = data.content?.[0]?.text?.trim() || '';
+    const rawText = data.choices?.[0]?.message?.content?.trim() || '';
 
     // Parse JSON — strip any markdown fences
     const clean = rawText.replace(/```json|```/g, '').trim();
@@ -4005,8 +4013,15 @@ document.getElementById('timerModal').addEventListener('click', e => {
 <div id="aiModal" class="hidden">
   <div id="aiSheet">
     <div id="aiSheetHeader">
-      <div class="modal-title">REHAB AI</div>
+      <div class="modal-title">REHAB AI <span style="font-family:Arial,sans-serif;font-size:9px;color:var(--muted);font-weight:400;letter-spacing:1px;text-transform:uppercase;margin-left:4px;">DeepSeek</span></div>
       <button id="aiCloseBtn">×</button>
+    </div>
+    <div id="dsKeyBar" style="display:none;flex-shrink:0;padding:8px 16px;background:rgba(106,136,24,0.07);border-bottom:1px solid var(--border);gap:8px;align-items:center;flex-direction:column;">
+      <div style="font-family:Arial,sans-serif;font-size:10px;color:var(--muted);letter-spacing:0.5px;width:100%;">Enter your DeepSeek API key to enable AI features</div>
+      <div style="display:flex;gap:8px;width:100%;">
+        <input id="dsKeyInput" type="password" placeholder="sk-..." style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none;">
+        <button id="dsKeySave" style="background:var(--accent);color:var(--black);border:none;border-radius:7px;padding:8px 14px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Save</button>
+      </div>
     </div>
     <div id="aiMessages"></div>
     <div id="aiSuggestRow"></div>
@@ -4024,13 +4039,38 @@ document.getElementById('timerModal').addEventListener('click', e => {
 <script>
 // ── Rehab AI with Tool Bridge ─────────────────────────────────────────────────
 (function(){
-  const fab      = document.getElementById('aiFab');
-  const modal    = document.getElementById('aiModal');
-  const closeBtn = document.getElementById('aiCloseBtn');
-  const msgsEl   = document.getElementById('aiMessages');
-  const inputEl  = document.getElementById('aiInput');
-  const sendBtn  = document.getElementById('aiSendBtn');
+  const fab        = document.getElementById('aiFab');
+  const modal      = document.getElementById('aiModal');
+  const closeBtn   = document.getElementById('aiCloseBtn');
+  const msgsEl     = document.getElementById('aiMessages');
+  const inputEl    = document.getElementById('aiInput');
+  const sendBtn    = document.getElementById('aiSendBtn');
   const suggestRow = document.getElementById('aiSuggestRow');
+  const dsKeyBar   = document.getElementById('dsKeyBar');
+  const dsKeyInput = document.getElementById('dsKeyInput');
+  const dsKeySave  = document.getElementById('dsKeySave');
+
+  // ── DeepSeek API key management ───────────────────────────────────────
+  const DS_ENDPOINT = 'https://api.deepseek.com/v1/chat/completions';
+  const DS_DEFAULT_KEY = 'sk-6590b637b1ec4481b664acca330b64e4';
+  let _dsKey = DS_DEFAULT_KEY;
+
+  async function loadDsKey() {
+    try {
+      const stored = await window._idbGet('ds_api_key');
+      _dsKey = stored || DS_DEFAULT_KEY;
+    } catch(e) { _dsKey = DS_DEFAULT_KEY; }
+    dsKeyBar.style.display = _dsKey ? 'none' : 'flex';
+  }
+
+  dsKeySave.addEventListener('click', async () => {
+    const val = dsKeyInput.value.trim();
+    if (!val) return;
+    _dsKey = val;
+    try { await window._idbSet('ds_api_key', val); } catch(e) {}
+    dsKeyBar.style.display = 'none';
+    dsKeyInput.value = '';
+  });
 
   let chatHistory = [];
   let thinking = false;
@@ -4073,68 +4113,61 @@ document.getElementById('timerModal').addEventListener('click', e => {
     try { await window._idbSet(key, value); } catch(e) {}
   }
 
-  // ── Memory Updates: two focused Haiku calls every 4 messages ─────────
+  // ── Memory Updates: three focused DeepSeek calls every 4 messages ──────
   async function updateMemories() {
     if (chatHistory.length % 4 !== 0) return;
+    if (!_dsKey) return;
     const recentConvo = chatHistory.slice(-CHAT_WINDOW)
       .map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${typeof m.content === 'string' ? m.content : ''}`)
       .join('\n');
 
+    const dsHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _dsKey };
+
     // Run all three in parallel
     const [aboutRes, exRes, cpRes] = await Promise.allSettled([
-      fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
+      fetch(DS_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: dsHeaders,
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'deepseek-chat',
           max_tokens: 3000,
-          system: [{ type: 'text', text: `You maintain the ABOUT ME section of a stroke rehabilitation patient's profile. This captures PERSONAL and QUALITATIVE information only — all structured clinical/medical data is stored separately in the Clinical Profile.
-
+          messages: [
+            { role: 'system', content: `You maintain the PERSONAL & MEDICAL section of a stroke rehabilitation patient's profile.
 If NO new information belonging to this section is found — return the profile UNCHANGED, word for word.
 Write as compact bullet points and short factual statements. No narrative, no opinions.
 
 BELONGS HERE:
-- Identity: name, age, occupation, family situation
-- Personality and communication preferences (e.g. prefers direct answers, dislikes vague encouragement)
-- Daily routine and lifestyle (e.g. trains 3hrs daily including weekends, morning person)
-- Motivation and mindset (e.g. highly driven, gets frustrated on low-progress days)
-- Personal goals beyond clinical (e.g. wants to return to playing guitar, carry child)
-- Qualitative observations about their condition (e.g. "fingers curl more after long typing sessions", "tone worse in cold weather", "good days after swimming")
-- Therapist names and relationship notes (e.g. "PT is Dr. Kim, meets Thursdays")
-- Living situation relevant to rehab (e.g. 3rd floor walk-up, has home gym setup)
-- Caregiver/support context
-- Preferences about how AI should respond
-
-DOES NOT BELONG HERE (stored in Clinical Profile instead):
-- Stroke type, date, hemisphere, lesion location, OCSP/TOAST
-- NIHSS, mRS, Barthel, FIM scores
-- Brunnstrom stages, MAS scores
-- FAC level, walking aid, AFO type
+- Identity: name, age, occupation
+- Stroke: type, brain location, date, size
+- Affected side and specific limbs
+- Symptoms: initial and current (weakness, spasticity, co-contraction, tone levels)
+- Physical abilities and limitations (e.g. can climb 6 flights, walks without cane, cannot extend fingers voluntarily)
+- Medical procedures: Botox sessions (date, location, muscles injected, units), surgeries, hospitalizations
 - Medications and doses
-- Botox sessions (dates, muscles, units)
-- Comorbidities (HTN, DM, AF, etc.)
-- Formal therapy service schedule
+- Therapist names, therapy types (PT, OT, SDE), session frequency and duration
+- Recovery timeline and milestones
+- Goals
 
-DOES NOT BELONG HERE (stored in My Training instead):
+DOES NOT BELONG HERE (goes in My Training instead):
 - Which exercises work well or poorly
-- Session timing preferences
+- Session timing preferences (morning vs evening)
 - Fatigue patterns during workouts
 - Equipment preferences
 - Progression notes for specific exercises
 
-Target ~300 words. Return ONLY the profile text.`, cache_control: { type: 'ephemeral' } }],
-          messages: [{ role: 'user', content:
-            `CURRENT PROFILE:\n${fullMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated profile (or unchanged if no new info belongs here):`
-          }]
+Target ~600 words. Return ONLY the profile text.` },
+            { role: 'user', content: `CURRENT PROFILE:\n${fullMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated profile (or unchanged if no new info belongs here):` }
+          ]
         })
       }),
-      fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
+      fetch(DS_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: dsHeaders,
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'deepseek-chat',
           max_tokens: 3000,
-          system: [{ type: 'text', text: `You maintain the MY TRAINING section of a stroke rehabilitation patient's profile.
+          messages: [
+            { role: 'system', content: `You maintain the MY TRAINING section of a stroke rehabilitation patient's profile.
 If NO new information belonging to this section is found — return the memory UNCHANGED, word for word.
 Write as compact bullet points and short factual statements. No narrative, no opinions.
 Rewrite entirely with most current info when updating — remove stale data.
@@ -4155,10 +4188,9 @@ DOES NOT BELONG HERE (goes in Personal & Medical instead):
 - Spasticity levels or tone baselines — unless directly linked to a specific exercise
 - Therapist names or therapy session types
 
-Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'ephemeral' } }],
-          messages: [{ role: 'user', content:
-            `CURRENT MY TRAINING:\n${exerciseMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated my training (or unchanged if no new info belongs here):`
-          }]
+Target ~500 words. Return ONLY the my training text.` },
+            { role: 'user', content: `CURRENT MY TRAINING:\n${exerciseMemory || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn updated my training (or unchanged if no new info belongs here):` }
+          ]
         })
       }),
       // Clinical Profile auto-sync
@@ -4166,13 +4198,14 @@ Target ~500 words. Return ONLY the my training text.`, cache_control: { type: 'e
         let currentCP = {};
         try { const raw = await window._idbGet('clinical_profile'); if (raw) currentCP = JSON.parse(raw); } catch(e) {}
         const currentSummary = buildClinicalSummary(currentCP);
-        return fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
+        return fetch(DS_ENDPOINT, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: dsHeaders,
           body: JSON.stringify({
-            model: 'claude-haiku-4-5-20251001',
+            model: 'deepseek-chat',
             max_tokens: 4000,
-            system: [{ type: 'text', text: `You update a structured clinical profile for a stroke patient. You receive the CURRENT profile fields and RECENT CONVERSATION. Extract any NEW or CHANGED clinical data from the conversation and return a JSON object with ONLY the fields that need updating. Return ONLY valid JSON — no markdown, no backticks, no explanation.
+            messages: [
+              { role: 'system', content: `You update a structured clinical profile for a stroke patient. You receive the CURRENT profile fields and RECENT CONVERSATION. Extract any NEW or CHANGED clinical data from the conversation and return a JSON object with ONLY the fields that need updating. Return ONLY valid JSON — no markdown, no backticks, no explanation.
 
 If the conversation contains NO new clinical information, return exactly: {}
 
@@ -4213,10 +4246,9 @@ RULES:
 - ONLY include fields with genuinely new or updated info from the conversation
 - For Brunnstrom/MAS/FAC, infer from described abilities if not explicitly scored
 - Be conservative — don't guess fields without evidence
-- For text fields (meds, botox, therapy, goals, notes): if adding new info, include the FULL updated text (merge with existing)`, cache_control: { type: 'ephemeral' } }],
-            messages: [{ role: 'user', content:
-              `CURRENT CLINICAL PROFILE:\n${currentSummary || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn JSON with fields to update (or {} if no new clinical data):`
-            }]
+- For text fields (meds, botox, therapy, goals, notes): if adding new info, include the FULL updated text (merge with existing)` },
+              { role: 'user', content: `CURRENT CLINICAL PROFILE:\n${currentSummary || '(empty)'}\n\nRECENT CONVERSATION:\n${recentConvo}\n\nReturn JSON with fields to update (or {} if no new clinical data):` }
+            ]
           })
         });
       })()
@@ -4225,14 +4257,14 @@ RULES:
     if (aboutRes.status === 'fulfilled') {
       try {
         const data = await aboutRes.value.json();
-        const updated = data.content?.[0]?.text?.trim();
+        const updated = data.choices?.[0]?.message?.content?.trim();
         if (updated && updated !== fullMemory) { fullMemory = updated; await saveLayer('ai_full_memory', fullMemory); }
       } catch(e) {}
     }
     if (exRes.status === 'fulfilled') {
       try {
         const data = await exRes.value.json();
-        const updated = data.content?.[0]?.text?.trim();
+        const updated = data.choices?.[0]?.message?.content?.trim();
         if (updated && updated !== exerciseMemory) { exerciseMemory = updated; await saveLayer('ai_exercise_memory', exerciseMemory); }
       } catch(e) {}
     }
@@ -4240,7 +4272,7 @@ RULES:
     if (cpRes.status === 'fulfilled') {
       try {
         const data = await cpRes.value.json();
-        const rawText = data.content?.[0]?.text?.trim() || '';
+        const rawText = data.choices?.[0]?.message?.content?.trim() || '';
         const clean = rawText.replace(/```json|```/g, '').trim();
         if (clean && clean !== '{}') {
           const updates = JSON.parse(clean);
@@ -4279,6 +4311,8 @@ RULES:
   fab.addEventListener('click', async () => {
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    // Load DeepSeek key and show bar if missing
+    await loadDsKey();
     // Wait for memory if not ready yet
     if (!_memoryReady) {
       await waitForDB();
@@ -4388,87 +4422,108 @@ RULES:
     } catch(e) { return 'Unable to read app data.'; }
   }
 
-  // ── Tool definitions ──────────────────────────────────────────────────
+  // ── Tool definitions (OpenAI function-calling format) ─────────────────
   const AI_TOOLS = [
 
     {
-      name: 'schedule_week',
-      description: 'Schedule multiple exercises across multiple days. Use this instead of add_exercise_to_day whenever scheduling more than 3 exercises at once. Pass the entire plan as one array. Use week_offset: 0 for THIS week (real current week based on today), 1 for next week. Maximum 1.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          schedule: {
-            type: 'array',
-            description: 'List of exercise+day pairs',
-            items: {
-              type: 'object',
-              properties: {
-                exercise_name: { type: 'string', description: 'Exact exercise name from the bank' },
-                day: { type: 'string', enum: ['MON','TUE','WED','THU','FRI','SAT','SUN'] }
-              },
-              required: ['exercise_name', 'day']
-            }
+      type: 'function',
+      function: {
+        name: 'schedule_week',
+        description: 'Schedule multiple exercises across multiple days. Use this instead of add_exercise_to_day whenever scheduling more than 3 exercises at once. Pass the entire plan as one array. Use week_offset: 0 for THIS week (real current week based on today), 1 for next week. Maximum 1.',
+        parameters: {
+          type: 'object',
+          properties: {
+            schedule: {
+              type: 'array',
+              description: 'List of exercise+day pairs',
+              items: {
+                type: 'object',
+                properties: {
+                  exercise_name: { type: 'string', description: 'Exact exercise name from the bank' },
+                  day: { type: 'string', enum: ['MON','TUE','WED','THU','FRI','SAT','SUN'] }
+                },
+                required: ['exercise_name', 'day']
+              }
+            },
+            week_offset: { type: 'number', description: 'Which week relative to TODAY: 0=current real week, 1=next week. Maximum 1, minimum 0.' }
           },
-          week_offset: { type: 'number', description: 'Which week relative to TODAY: 0=current real week, 1=next week. Maximum 1, minimum 0.' }
-        },
-        required: ['schedule']
+          required: ['schedule']
+        }
       }
     },
     {
-      name: 'add_exercise_to_day',
-      description: 'Add an exercise from the bank to a specific day of the current week. Only use exercise names that exist in the exercise bank.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          exercise_name: { type: 'string', description: 'Exact name of the exercise from the bank' },
-          day: { type: 'string', enum: ['MON','TUE','WED','THU','FRI','SAT','SUN'], description: 'Day of the week' }
-        },
-        required: ['exercise_name', 'day']
+      type: 'function',
+      function: {
+        name: 'add_exercise_to_day',
+        description: 'Add an exercise from the bank to a specific day of the current week. Only use exercise names that exist in the exercise bank.',
+        parameters: {
+          type: 'object',
+          properties: {
+            exercise_name: { type: 'string', description: 'Exact name of the exercise from the bank' },
+            day: { type: 'string', enum: ['MON','TUE','WED','THU','FRI','SAT','SUN'], description: 'Day of the week' }
+          },
+          required: ['exercise_name', 'day']
+        }
       }
     },
     {
-      name: 'remove_exercise_from_day',
-      description: 'Remove an exercise from a specific day of the current week.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          exercise_name: { type: 'string', description: 'Exact name of the exercise to remove' },
-          day: { type: 'string', enum: ['MON','TUE','WED','THU','FRI','SAT','SUN'] }
-        },
-        required: ['exercise_name', 'day']
+      type: 'function',
+      function: {
+        name: 'remove_exercise_from_day',
+        description: 'Remove an exercise from a specific day of the current week.',
+        parameters: {
+          type: 'object',
+          properties: {
+            exercise_name: { type: 'string', description: 'Exact name of the exercise to remove' },
+            day: { type: 'string', enum: ['MON','TUE','WED','THU','FRI','SAT','SUN'] }
+          },
+          required: ['exercise_name', 'day']
+        }
       }
     },
     {
-      name: 'clear_day',
-      description: 'Remove all exercises from a specific day.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          day: { type: 'string', enum: ['MON','TUE','WED','THU','FRI','SAT','SUN'] }
-        },
-        required: ['day']
+      type: 'function',
+      function: {
+        name: 'clear_day',
+        description: 'Remove all exercises from a specific day.',
+        parameters: {
+          type: 'object',
+          properties: {
+            day: { type: 'string', enum: ['MON','TUE','WED','THU','FRI','SAT','SUN'] }
+          },
+          required: ['day']
+        }
       }
     },
     {
-      name: 'clear_week',
-      description: 'Remove all exercises from all days of a week. Use week_offset 0 for this week, 1 for next week.',
-      input_schema: { type: 'object', properties: {
-        week_offset: { type: 'number', description: '0=this week, 1=next week. Default 0.' }
-      }}
+      type: 'function',
+      function: {
+        name: 'clear_week',
+        description: 'Remove all exercises from all days of a week. Use week_offset 0 for this week, 1 for next week.',
+        parameters: {
+          type: 'object',
+          properties: {
+            week_offset: { type: 'number', description: '0=this week, 1=next week. Default 0.' }
+          }
+        }
+      }
     },
     {
-      name: 'create_exercise',
-      description: 'Create a new exercise and add it to the exercise bank. Use this when the user asks to create, add, or suggest a new exercise that does not yet exist in the bank.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          name: { type: 'string', description: 'Name of the new exercise' },
-          category: { type: 'string', enum: ['arm','leg','alt'], description: 'Category: arm, leg, or alt (physio/strength)' },
-          sets: { type: 'string', description: 'Default number of sets (e.g. "2"), or empty string' },
-          reps: { type: 'string', description: 'Default number of reps (e.g. "10"), or empty string' },
-          mins: { type: 'string', description: 'Default minutes (e.g. "5"), or empty string' }
-        },
-        required: ['name', 'category']
+      type: 'function',
+      function: {
+        name: 'create_exercise',
+        description: 'Create a new exercise and add it to the exercise bank. Use this when the user asks to create, add, or suggest a new exercise that does not yet exist in the bank.',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Name of the new exercise' },
+            category: { type: 'string', enum: ['arm','leg','alt'], description: 'Category: arm, leg, or alt (physio/strength)' },
+            sets: { type: 'string', description: 'Default number of sets (e.g. "2"), or empty string' },
+            reps: { type: 'string', description: 'Default number of reps (e.g. "10"), or empty string' },
+            mins: { type: 'string', description: 'Default minutes (e.g. "5"), or empty string' }
+          },
+          required: ['name', 'category']
+        }
       }
     }
   ];
@@ -4614,6 +4669,11 @@ RULES:
   // ── Main send loop with tool use ──────────────────────────────────────
   async function sendMessage(userText) {
     if (!userText.trim() || thinking) return;
+    if (!_dsKey) {
+      dsKeyBar.style.display = 'flex';
+      dsKeyInput.focus();
+      return;
+    }
     thinking = true;
     sendBtn.style.opacity = '0.4';
     suggestRow.style.display = 'none';
@@ -4669,12 +4729,7 @@ When asked to create a new exercise — use create_exercise.
 When asked about exercises for a muscle/condition — answer from your knowledge, then use create_exercise if needed.
 When reporting what is scheduled for a day or week, always include completion status: show [DONE], [X%], or "not done" for each exercise based on the schedule data.
 Always use the memories below — never say you don't know something already in the profile or history.
-MEMORY SECTIONS — what lives where:
-- CLINICAL PROFILE: All structured medical data (stroke type, scores, MAS, Brunnstrom, Botox, medications, comorbidities). This is your primary clinical reference for prognoses.
-- ABOUT ME: Personal context only (personality, daily routine, motivation, lifestyle, qualitative observations). NOT clinical data.
-- MY TRAINING: Exercise-specific observations (what works, fatigue patterns, technique notes).
-Never duplicate clinical data across sections. If asked about medical facts, always reference the Clinical Profile first.
-If the CLINICAL PROFILE is empty — ask the patient to fill it in (button on main screen). If ABOUT ME is also empty, ask 1-2 personal questions naturally.
+If both the CLINICAL PROFILE and ABOUT ME are empty — your first priority is to ask the patient to fill in their Clinical Profile (accessible from the main screen) for the best possible clinical guidance. Alternatively, ask 1-2 specific questions about their stroke naturally.
 
 RESPONSE STYLE:
 - For clinical/prognostic questions: Be detailed and specific. Use paragraph form. Reference the evidence base. No character limit for clinical discussions.
@@ -4686,9 +4741,9 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
 
     // User memories + clinical profile
     const memoriesBlock = [
-      clinicalSummary ? `=== CLINICAL PROFILE (STRUCTURED — stroke registries VISTA/GWTG/SITS/RES-Q/KBRD) ===\n${clinicalSummary}` : '',
-      fullMemory ? `=== ABOUT ME (personal context, preferences, qualitative observations — NOT clinical data) ===\n${fullMemory}` : '',
-      exerciseMemory ? `=== MY TRAINING (exercise-specific observations and preferences) ===\n${exerciseMemory}` : '',
+      clinicalSummary ? `=== CLINICAL PROFILE (STRUCTURED — from stroke registries VISTA/GWTG/SITS/RES-Q/KBRD field set) ===\n${clinicalSummary}` : '',
+      fullMemory ? `=== ABOUT ME ===\n${fullMemory}` : '=== ABOUT ME ===\nNew user — learn about them naturally.',
+      exerciseMemory ? `=== MY TRAINING ===\n${exerciseMemory}` : '',
       rehabRules ? `=== REHAB RULES ===\n${rehabRules}` : '',
     ].filter(Boolean).join('\n\n');
 
@@ -4700,24 +4755,14 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
       ? `\n\n=== AI RULES — FOLLOW THESE STRICTLY, THEY OVERRIDE DEFAULT BEHAVIOR ===\n${aiModelRules}`
       : '';
 
-    const dynamicContent = [memoriesBlock, appContext].filter(Boolean).join('\n\n') + aiRulesBlock;
-
-    const systemPrompt = [
-      { type: 'text', text: staticInstructions, cache_control: { type: 'ephemeral' } },
-      { type: 'text', text: dynamicContent }
-    ];
+    const systemPrompt = [staticInstructions, memoriesBlock, appContext].filter(Boolean).join('\n\n') + aiRulesBlock;
 
     // Last 4 messages as active window — always includes current user message
     const windowedHistory = chatHistory.slice(-CHAT_WINDOW);
 
-    // Always use Haiku
-    const useHaiku = true;
-    const model = 'claude-haiku-4-5-20251001';
+    // Always use DeepSeek-V3
+    const model = 'deepseek-chat';
     const maxTok = 4000;
-    // Cache tool definitions (add cache_control to last tool)
-    const toolsParam = AI_TOOLS.map((t, i) =>
-      i === AI_TOOLS.length - 1 ? { ...t, cache_control: { type: 'ephemeral' } } : t
-    );
 
     // Inject live schedule into the last user message so AI can't miss it
     const thisWeekLive = getSchedule(0);
@@ -4734,25 +4779,26 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
       let loopMessages = [...windowedWithSchedule];
       let finalText = null;
       const actionsDone = [];
-      let isFirstTurn = true;
 
       while (true) {
-        isFirstTurn = false;
         const fetchBody = {
-            model: model,
-            max_tokens: maxTok,
-            system: systemPrompt,
-            messages: loopMessages,
-            stream: true
-          };
-        if (toolsParam.length) fetchBody.tools = toolsParam;
-        const res = await fetch('https://rehab-proxy.petkov-0a2.workers.dev/', {
+          model,
+          max_tokens: maxTok,
+          messages: [{ role: 'system', content: systemPrompt }, ...loopMessages],
+          stream: true,
+          tools: AI_TOOLS
+        };
+
+        const res = await fetch(DS_ENDPOINT, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + _dsKey
+          },
           body: JSON.stringify(fetchBody)
         });
 
-        // ── Parse SSE stream ──────────────────────────────────────────
+        // ── Parse OpenAI-compatible SSE stream ────────────────────────────
         if (!res.ok) {
           const errText = await res.text();
           thinkingEl.textContent = 'API error ' + res.status + ': ' + errText.slice(0, 200);
@@ -4767,9 +4813,7 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
         let buf = '';
         let streamText = '';
         let stopReason = null;
-        let toolBlocks = [];
-        let currentTool = null;
-        let fullContent = [];
+        let toolBlocks = [];  // indexed by tool_calls index
 
         thinkingEl.className = 'ai-msg assistant';
 
@@ -4784,57 +4828,76 @@ Labels must be under 20 characters. No punctuation inside labels. Example: CHIPS
             if (!line.startsWith('data: ')) continue;
             const raw = line.slice(6).trim();
             if (raw === '[DONE]') break;
-            let evt;
-            try { evt = JSON.parse(raw); } catch { continue; }
+            let chunk;
+            try { chunk = JSON.parse(raw); } catch { continue; }
 
-            if (evt.type === 'content_block_start') {
-              if (evt.content_block.type === 'text') {
-                fullContent[evt.index] = { type: 'text', text: '' };
-              } else if (evt.content_block.type === 'tool_use') {
-                currentTool = { type: 'tool_use', id: evt.content_block.id, name: evt.content_block.name, input: '' };
-                fullContent[evt.index] = currentTool;
-                toolBlocks.push(currentTool);
-              }
-            } else if (evt.type === 'content_block_delta') {
-              if (evt.delta.type === 'text_delta') {
-                streamText += evt.delta.text;
-                if (fullContent[evt.index]) fullContent[evt.index].text += evt.delta.text;
-                const liveDisplay = streamText.replace(/\nCHIPS: ?\[.*$/s, '').trim();
-                thinkingEl.innerHTML = renderMd(liveDisplay);
-                msgsEl.scrollTop = msgsEl.scrollHeight;
-              } else if (evt.delta.type === 'input_json_delta' && currentTool) {
-                currentTool.input += evt.delta.partial_json;
-              }
-            } else if (evt.type === 'message_delta') {
-              stopReason = evt.delta.stop_reason;
-            } else if (evt.type === 'error') {
-              thinkingEl.textContent = 'API error: ' + (evt.error?.message || 'unknown');
+            // Error block
+            if (chunk.error) {
+              thinkingEl.textContent = 'API error: ' + (chunk.error.message || 'unknown');
               thinkingEl.className = 'ai-msg assistant';
               chatHistory.pop();
               thinking = false;
               sendBtn.style.opacity = '1';
               return;
             }
+
+            const choice = chunk.choices?.[0];
+            if (!choice) continue;
+            if (choice.finish_reason) stopReason = choice.finish_reason;
+
+            const delta = choice.delta;
+            if (!delta) continue;
+
+            // Text delta
+            if (delta.content) {
+              streamText += delta.content;
+              const liveDisplay = streamText.replace(/\nCHIPS: ?\[.*$/s, '').trim();
+              thinkingEl.innerHTML = renderMd(liveDisplay);
+              msgsEl.scrollTop = msgsEl.scrollHeight;
+            }
+
+            // Tool call deltas
+            if (delta.tool_calls) {
+              for (const tc of delta.tool_calls) {
+                const idx = tc.index ?? 0;
+                if (!toolBlocks[idx]) toolBlocks[idx] = { id: '', name: '', input: '' };
+                if (tc.id) toolBlocks[idx].id = tc.id;
+                if (tc.function?.name) toolBlocks[idx].name += tc.function.name;
+                if (tc.function?.arguments) toolBlocks[idx].input += tc.function.arguments;
+              }
+            }
           }
         }
 
+        // Filter empty slots
+        toolBlocks = toolBlocks.filter(Boolean);
+
+        // Parse tool inputs from JSON strings
         toolBlocks.forEach(tb => {
           try { tb.input = JSON.parse(tb.input || '{}'); } catch { tb.input = {}; }
         });
 
-        const cleanContent = fullContent.filter(Boolean);
-
-        if (stopReason === 'tool_use' && toolBlocks.length > 0) {
+        if (stopReason === 'tool_calls' && toolBlocks.length > 0) {
           const toolResults = [];
+          // Build assistant message in OpenAI format
+          const assistantMsg = {
+            role: 'assistant',
+            content: streamText || null,
+            tool_calls: toolBlocks.map(tb => ({
+              id: tb.id,
+              type: 'function',
+              function: { name: tb.name, arguments: JSON.stringify(tb.input) }
+            }))
+          };
           toolBlocks.forEach(tb => {
-            if (tb.name === 'web_search') return;
             const result = executeTool(tb.name, tb.input);
             if (result.success) actionsDone.push(result.message);
-            toolResults.push({ type: 'tool_result', tool_use_id: tb.id, content: JSON.stringify(result) });
+            // Each tool result is its own message with role:'tool'
+            toolResults.push({ role: 'tool', tool_call_id: tb.id, content: JSON.stringify(result) });
           });
           thinkingEl.remove();
-          loopMessages.push({ role: 'assistant', content: cleanContent });
-          loopMessages.push({ role: 'user', content: toolResults });
+          loopMessages.push(assistantMsg);
+          toolResults.forEach(tr => loopMessages.push(tr));
           continue;
         } else {
           finalText = streamText || (actionsDone.length ? 'Done.' : 'Sorry, something went wrong.');
